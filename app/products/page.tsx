@@ -131,8 +131,7 @@ export default function ProductsPage() {
   const minQuantity = Math.min(...products.map(p => p.quantity));
   const maxQuantity = Math.max(...products.map(p => p.quantity));
 
-  // Update filter values
-  const handleFilterChange = (filterName, value) => {
+  const handleFilterChange = (filterName: keyof typeof filters, value: number) => {
     setFilters(prev => ({
       ...prev,
       [filterName]: value
