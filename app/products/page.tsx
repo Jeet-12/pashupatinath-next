@@ -3,109 +3,47 @@
 import Image from 'next/image';
 import React, { useState, useEffect } from 'react';
 
-const products = [
-  { 
-    id: 1, 
-    name: '12 Mukhi Nepali Rudraksh', 
-    price: 25500, 
-    oldPrice: 30000, 
-    rating: 4, 
-    discount: 15, 
-    quantity: 5,
-    image: '/placeholder-rudraksh.jpg'
-  },
-  { 
-    id: 2, 
-    name: '13 Mukhi Nepali Rudraksh', 
-    price: 34000, 
-    oldPrice: 40000, 
-    rating: 5, 
-    discount: 15, 
-    quantity: 2,
-    image: '/placeholder-rudraksh.jpg'
-  },
-  { 
-    id: 3, 
-    name: '11 Mukhi Nepali Rudraksh', 
-    price: 21250, 
-    oldPrice: 25000, 
-    rating: 5, 
-    discount: 15, 
-    quantity: 8,
-    image: '/placeholder-rudraksh.jpg'
-  },
-  { 
-    id: 4, 
-    name: '10 Mukhi Nepali Rudraksh', 
-    price: 13600, 
-    oldPrice: 16000, 
-    rating: 4, 
-    discount: 15, 
-    quantity: 10,
-    image: '/placeholder-rudraksh.jpg'
-  },
-  { 
-    id: 5, 
-    name: '8 Mukhi Nepali Rudraksh', 
-    price: 6375, 
-    oldPrice: 7500, 
-    rating: 3, 
-    discount: 15, 
-    quantity: 15,
-    image: '/placeholder-rudraksh.jpg'
-  },
-  { 
-    id: 6, 
-    name: '9 Mukhi Nepali Rudraksh', 
-    price: 12750, 
-    oldPrice: 15000, 
-    rating: 4, 
-    discount: 15, 
-    quantity: 7,
-    image: '/placeholder-rudraksh.jpg'
-  },
-  { 
-    id: 7, 
-    name: '7 Mukhi Nepali Rudraksh', 
-    price: 2125, 
-    oldPrice: 2500, 
-    rating: 5, 
-    discount: 15, 
-    quantity: 20,
-    image: '/placeholder-rudraksh.jpg'
-  },
-  { 
-    id: 8, 
-    name: '6 Mukhi Nepali Rudraksh', 
-    price: 800, 
-    oldPrice: 1000, 
-    rating: 4, 
-    discount: 20, 
-    quantity: 25,
-    image: '/placeholder-rudraksh.jpg'
-  },
-  { 
-    id: 9, 
-    name: '4 Mukhi Nepali Rudraksh', 
-    price: 800, 
-    oldPrice: 1000, 
-    rating: 5, 
-    discount: 20, 
-    quantity: 12,
-    image: '/placeholder-rudraksh.jpg'
-  },
+type Product = {
+  id: number;
+  name: string;
+  price: number;
+  oldPrice: number;
+  rating: number;
+  discount: number;
+  quantity: number;
+  image: string;
+};
+
+type Filters = {
+  minPrice: number;
+  maxPrice: number;
+  minRating: number;
+  minQuantity: number;
+};
+
+// -------------------- Data --------------------
+const products: Product[] = [
+  { id: 1, name: '12 Mukhi Nepali Rudraksh', price: 25500, oldPrice: 30000, rating: 4, discount: 15, quantity: 5, image: '/placeholder-rudraksh.jpg' },
+  { id: 2, name: '13 Mukhi Nepali Rudraksh', price: 34000, oldPrice: 40000, rating: 5, discount: 15, quantity: 2, image: '/placeholder-rudraksh.jpg' },
+  { id: 3, name: '11 Mukhi Nepali Rudraksh', price: 21250, oldPrice: 25000, rating: 5, discount: 15, quantity: 8, image: '/placeholder-rudraksh.jpg' },
+  { id: 4, name: '10 Mukhi Nepali Rudraksh', price: 13600, oldPrice: 16000, rating: 4, discount: 15, quantity: 10, image: '/placeholder-rudraksh.jpg' },
+  { id: 5, name: '8 Mukhi Nepali Rudraksh', price: 6375, oldPrice: 7500, rating: 3, discount: 15, quantity: 15, image: '/placeholder-rudraksh.jpg' },
+  { id: 6, name: '9 Mukhi Nepali Rudraksh', price: 12750, oldPrice: 15000, rating: 4, discount: 15, quantity: 7, image: '/placeholder-rudraksh.jpg' },
+  { id: 7, name: '7 Mukhi Nepali Rudraksh', price: 2125, oldPrice: 2500, rating: 5, discount: 15, quantity: 20, image: '/placeholder-rudraksh.jpg' },
+  { id: 8, name: '6 Mukhi Nepali Rudraksh', price: 800, oldPrice: 1000, rating: 4, discount: 20, quantity: 25, image: '/placeholder-rudraksh.jpg' },
+  { id: 9, name: '4 Mukhi Nepali Rudraksh', price: 800, oldPrice: 1000, rating: 5, discount: 20, quantity: 12, image: '/placeholder-rudraksh.jpg' },
 ];
 
 const recentlyAddedProducts = products.slice(-3);
 
-const categories = [
+const categories: string[] = [
   'Jap Malas', 'Ganesh', 'Siddhi Mala', '1 Mukhi', '2 Mukhi', '3 Mukhi', '4 Mukhi',
   '5 Mukhi', '6 Mukhi', '7 Mukhi', '8 Mukhi', '9 Mukhi', '10 Mukhi', '11 Mukhi', 
   '12 Mukhi', '13 Mukhi', '14 Mukhi'
 ];
 
 export default function ProductsPage() {
-  const [selectedCategory, setSelectedCategory] = useState(null);
+ const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState('default');
   const [showFilters, setShowFilters] = useState(false);
   const [showRecentProducts, setShowRecentProducts] = useState(true);
@@ -184,8 +122,7 @@ export default function ProductsPage() {
     return a.id - b.id; // default sort by original order
   });
 
-  const addToCart = (product) => {
-    // Implement your add to cart logic here
+ const addToCart = (product: Product) => {
     console.log('Added to cart:', product);
   };
 
