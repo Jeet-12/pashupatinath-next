@@ -250,16 +250,17 @@ export default function Header() {
                                         <div className="relative">
                                             <button
                                                 className="flex items-center space-x-1 px-3 xl:px-4 py-2 text-gray-700 hover:text-amber-700 transition-all duration-200 font-medium rounded-lg hover:bg-amber-50 group whitespace-nowrap"
-                                                onClick={() => setActiveDropdown(activeDropdown === item.name ? null : item.name)}
+                                               
                                                 aria-expanded={activeDropdown === item.name}
                                                 aria-haspopup="true"
                                             >
-                                                <span className="text-sm">{item.icon}</span>
-                                                <span className="text-sm">{item.name}</span>
+                                               <Link  key={item.name} href={item.path}> <span className="text-sm">{item.icon}</span>
+                                                <span className="text-sm">{item.name}</span> </Link>
                                                 <svg 
                                                     className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform duration-200 ${
                                                         activeDropdown === item.name ? 'rotate-180' : ''
                                                     }`}
+                                                     onClick={() => setActiveDropdown(activeDropdown === item.name ? null : item.name)}
                                                     fill="none" 
                                                     stroke="currentColor" 
                                                     viewBox="0 0 24 24"
