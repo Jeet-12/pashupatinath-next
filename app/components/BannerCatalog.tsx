@@ -46,7 +46,7 @@ export default function SacredCollections() {
     <div className="container mx-auto px-4 relative z-10">
       <div className="flex flex-col md:flex-row items-center gap-12">
         {/* Left Side - Text Content */}
-        <div className="md:w-1/2">
+        <div className="md:w-2/5">
           <h1 className="text-4xl md:text-5xl font-bold text-[#5F3623] mb-6">
             Discover Our Sacred Collections
           </h1>
@@ -59,7 +59,7 @@ export default function SacredCollections() {
         </div>
         
         {/* Right Side - Images Grid */}
-        <div className="md:w-1/2 w-full">
+        <div className="md:w-3/5 w-full">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
            {collections.map((collection) => (
               <div key={collection.id} className="group relative">

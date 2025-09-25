@@ -1,6 +1,7 @@
 "use client";
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { memo } from 'react';
 
 // Social media icons as separate components for better performance
@@ -102,6 +103,25 @@ const LinkList = memo(({ title, links }: { title: string; links: Array<{ href: s
 
 LinkList.displayName = 'LinkList';
 
+
+const LogoSection = memo(() => (
+  <div className="flex flex-col items-center text-center">
+    <div className="relative w-28 h-28">
+      <Image
+        src="https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/PR_Logo.png"
+        alt="Pashupatinath Rudraksh Logo"
+        fill
+        sizes="112px"
+        className="object-contain"
+        priority
+      />
+    </div>
+  </div>
+));
+
+
+LogoSection.displayName = 'LogoSection';
+
 export default function Footer() {
   const informationLinks = [
     { href: "/about", label: "About Us" },
@@ -126,14 +146,11 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company info and logo */}
           <div className="lg:col-span-1">
-            <div className="mb-6">
-              <div className="text-2xl font-bold bg-gradient-to-r from-[#f5821f] to-[#f8a45f] bg-clip-text text-transparent">
-                PASHUPATINATH RUDRAKSH
-              </div>
-              <p className="text-sm text-gray-200 mt-2 leading-relaxed">
-                Authentic, high-quality Rudraksha beads and spiritual items for peace, health, and spiritual growth.
-              </p>
-            </div>
+            <LogoSection />
+            
+            <p className="text-sm text-gray-200 mb-6 leading-relaxed">
+              Authentic, high-quality Rudraksha beads and spiritual items for peace, health, and spiritual growth.
+            </p>
             
             <div className="mb-6">
               <h3 className="text-lg font-semibold mb-2 text-gray-100">Got Question? Call us 24/7</h3>

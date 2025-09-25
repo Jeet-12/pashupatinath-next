@@ -8,16 +8,29 @@ import Image from 'next/image';
 export default function Header() {
     const [searchQuery, setSearchQuery] = useState('');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [isLoggedIn, setIsLoggedIn] = useState(false); // You would get this from auth context
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [rudrakshaDropdownOpen, setRudrakshaDropdownOpen] = useState(false);
     const [accessoriesDropdownOpen, setAccessoriesDropdownOpen] = useState(false);
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+    const [isScrolled, setIsScrolled] = useState(false);
     const router = useRouter();
 
     // Refs for dropdowns to handle click outside
     const rudrakshaDropdownRef = useRef<HTMLDivElement>(null);
     const accessoriesDropdownRef = useRef<HTMLDivElement>(null);
     const profileDropdownRef = useRef<HTMLDivElement>(null);
+    const mobileMenuRef = useRef<HTMLDivElement>(null);
+
+    // Scroll effect
+    useEffect(() => {
+        const handleScroll = () => {
+            const scrollTop = window.scrollY;
+            setIsScrolled(scrollTop > 100);
+        };
+
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     // Close dropdowns when clicking outside
     useEffect(() => {
@@ -31,16 +44,34 @@ export default function Header() {
             if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
                 setProfileDropdownOpen(false);
             }
+            if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node) && isMenuOpen) {
+                setIsMenuOpen(false);
+            }
         };
 
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    }, [isMenuOpen]);
+
+    // Handle keyboard navigation for mobile dropdowns
+    const handleMobileDropdownKeyPress = (e: React.KeyboardEvent, itemName: string) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            if (itemName === 'Rudraksha') {
+                setRudrakshaDropdownOpen(!rudrakshaDropdownOpen);
+                setAccessoriesDropdownOpen(false);
+            } else if (itemName === 'Rudraksha Accessories') {
+                setAccessoriesDropdownOpen(!accessoriesDropdownOpen);
+                setRudrakshaDropdownOpen(false);
+            }
+        }
+    };
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
             router.push(`/search?q=${encodeURIComponent(searchQuery)}`);
+            setIsMenuOpen(false);
         }
     };
 
@@ -87,13 +118,13 @@ export default function Header() {
         { name: 'Home', path: '/' },
         {
             name: 'Rudraksha',
-            path: '/rudraksha',
+            path: '/products',
             hasDropdown: true,
             dropdownItems: rudrakshaItems
         },
         {
             name: 'Rudraksha Accessories',
-            path: '/rudraksha-accessories',
+            path: '/products',
             hasDropdown: true,
             dropdownItems: accessoriesItems
         },
@@ -102,89 +133,102 @@ export default function Header() {
     ];
 
     return (
-        <header className="bg-white shadow-md sticky top-0 z-50">
-            {/* Top bar */}
-            <div className="bg-gradient-to-r from-[#5F3623] to-[#f5821f] text-white py-2 px-4">
-                <div className="container mx-auto flex justify-between items-center">
-                    <div className="text-sm">
-                        Free shipping on orders over ₹500
+        <header className={`bg-white shadow-lg sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'py-2' : 'py-0'}`}>
+            {/* Top bar - Hidden on scroll */}
+            <div className={`bg-gradient-to-r from-[#5F3623] to-[#f5821f] text-white transition-all duration-300 overflow-hidden ${isScrolled ? 'max-h-0' : 'max-h-20 py-2'}`}>
+                <div className="container mx-auto px-4 flex justify-between items-center">
+                    <div className="text-sm font-medium">
+                        🚚 Free shipping on orders over ₹500
                     </div>
                     <div className="flex space-x-4 text-sm">
-                        <span>Help</span>
-                        <span>Orders & Returns</span>
+                        <span className="hover:text-gray-200 transition-colors cursor-pointer">Help</span>
+                        <span className="hover:text-gray-200 transition-colors cursor-pointer">Orders & Returns</span>
                     </div>
                 </div>
             </div>
 
-            {/* Main header */}
-            <div className="container mx-auto px-4 py-4">
-                <div className="flex items-center justify-between">
+            {/* Main header - Single row layout on scroll */}
+            <div className="container mx-auto px-4">
+                <div className={`flex items-center justify-between transition-all duration-300 ${isScrolled ? 'py-0' : 'py-3'}`}>
                     {/* Logo */}
-                    <Link href="/" className="flex items-center">
-                        <div className="flex-shrink-0">
+                    <Link href="/" className="flex items-center flex-shrink-0">
+                        <div className={`relative transition-all duration-300 ${isScrolled ? 'w-12 h-12' : 'w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24'}`}>
                             <Image
                                 src="https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/PR_Logo.png"
-                                alt="Rudraksha World Logo"
-                                width={480}
-                                height={480}
-                                className="w-12 h-12 object-contain"
+                                alt="Pashupatinath Rudraksh Logo"
+                                fill
+                                sizes="(max-width: 768px) 48px, (max-width: 1024px) 64px, 96px"
+                                className="object-contain"
+                                priority
                             />
                         </div>
+                        <span className={`ml-2 font-bold bg-gradient-to-r from-[#5F3623] to-[#f5821f] bg-clip-text text-transparent transition-all duration-300 ${isScrolled ? 'text-base hidden sm:block' : 'text-lg md:text-xl hidden sm:block'}`}>
+                            {isScrolled ? 'Pashupatinath' : 'Pashupatinath Rudraksh'}
+                        </span>
                     </Link>
 
-                    {/* Search Bar */}
-                    <div className="hidden md:flex flex-1 max-w-2xl mx-8">
+                    {/* Search Bar - Hidden on scroll */}
+                    <div className={`hidden md:flex flex-1 max-w-2xl mx-4 lg:mx-6 transition-all duration-300 ${isScrolled ? 'max-w-0 opacity-0 pointer-events-none' : 'max-w-2xl opacity-100'}`}>
                         <form onSubmit={handleSearch} className="flex w-full">
                             <input
                                 type="text"
-                                placeholder="Search for products..."
+                                placeholder="Search for rudraksha, malas, accessories..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="flex-grow px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-[#5F3623] text-black placeholder-gray-700"
+                                className="flex-grow px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-[#f5821f] focus:border-transparent text-black placeholder-gray-600"
                             />
                             <button
                                 type="submit"
-                                className="bg-gradient-to-r from-[#5F3623] to-[#f5821f] text-white px-6 py-2 rounded-r-lg hover:opacity-90 transition-opacity"
+                                className="bg-gradient-to-r from-[#5F3623] to-[#f5821f] text-white px-4 py-2 rounded-r-lg hover:opacity-90 transition-all duration-200 flex items-center justify-center min-w-[50px]"
                             >
-                                Search
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
                             </button>
                         </form>
                     </div>
 
-                    {/* Right side icons */}
-                    <div className="flex items-center space-x-6">
+                    {/* Right side icons - Always visible in single row */}
+                    <div className="flex items-center space-x-3 md:space-x-4">
                         {/* Wishlist */}
-                        <Link href="/wishlist" className="hidden md:flex flex-col items-center cursor-pointer">
-                            <svg className="w-6 h-6 text-gray-700 hover:text-[#f5821f] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                            </svg>
+                        <Link href="/wishlist" className="flex flex-col items-center cursor-pointer group">
+                            <div className="relative p-1 md:p-2 rounded-full hover:bg-gray-100 transition-colors">
+                                <svg className="w-5 h-5 md:w-6 md:h-6 text-gray-700 group-hover:text-[#f5821f] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                </svg>
+                            </div>
+                            <span className={`text-xs text-gray-600 mt-0.5 group-hover:text-[#f5821f] transition-colors ${isScrolled ? 'hidden' : 'hidden md:block'}`}>Wishlist</span>
                         </Link>
 
                         {/* Cart */}
-                        <Link href="/cart" className="flex flex-col items-center cursor-pointer relative">
-                            <svg className="w-6 h-6 text-gray-700 hover:text-[#f5821f] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg>
-                            <span className="absolute -top-2 -right-2 bg-[#f5821f] text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">3</span>
+                        <Link href="/cart" className="flex flex-col items-center cursor-pointer group relative">
+                            <div className="relative p-1 md:p-2 rounded-full hover:bg-gray-100 transition-colors">
+                                <svg className="w-5 h-5 md:w-6 md:h-6 text-gray-700 group-hover:text-[#f5821f] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                                </svg>
+                                <span className="absolute -top-1 -right-1 bg-[#f5821f] text-white rounded-full w-4 h-4 md:w-5 md:h-5 flex items-center justify-center text-xs font-bold shadow-lg">3</span>
+                            </div>
+                            <span className={`text-xs text-gray-600 mt-0.5 group-hover:text-[#f5821f] transition-colors ${isScrolled ? 'hidden' : 'hidden md:block'}`}>Cart</span>
                         </Link>
 
                         {/* User Profile Dropdown */}
-                        <div className="hidden md:flex flex-col items-center cursor-pointer relative" ref={profileDropdownRef}>
+                        <div className="hidden md:flex flex-col items-center cursor-pointer group" ref={profileDropdownRef}>
                             <div
-                                className="flex items-center"
+                                className="p-1 md:p-2 rounded-full hover:bg-gray-100 transition-colors"
                                 onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                             >
-                                <svg className="w-6 h-6 text-gray-700 hover:text-[#f5821f] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-5 h-5 md:w-6 md:h-6 text-gray-700 group-hover:text-[#f5821f] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                 </svg>
                             </div>
+                            <span className={`text-xs text-gray-600 mt-0.5 group-hover:text-[#f5821f] transition-colors ${isScrolled ? 'hidden' : 'block'}`}>Account</span>
                             {profileDropdownOpen && (
-                                <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                                <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl border border-gray-100 py-3 z-50 animate-fadeIn">
                                     {profileItems.map((item) => (
                                         <Link
                                             key={item.name}
                                             href={item.path}
-                                            className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#f5821f] transition-colors"
+                                            className="flex items-center px-4 py-2 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50 hover:text-[#f5821f] transition-all duration-200 border-b border-gray-100 last:border-b-0"
                                             onClick={(e) => {
                                                 if (item.action) {
                                                     e.preventDefault();
@@ -193,7 +237,7 @@ export default function Header() {
                                                 setProfileDropdownOpen(false);
                                             }}
                                         >
-                                            {item.name}
+                                            <span className="font-medium text-sm">{item.name}</span>
                                         </Link>
                                     ))}
                                 </div>
@@ -202,72 +246,86 @@ export default function Header() {
 
                         {/* Mobile menu button */}
                         <button
-                            className="md:hidden"
+                            className="md:hidden p-2 rounded-lg bg-gradient-to-r from-[#5F3623] to-[#f5821f] text-white shadow-lg hover:shadow-xl transition-all"
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
+                            aria-label="Toggle menu"
                         >
-                            <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                            </svg>
+                            {isMenuOpen ? (
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            ) : (
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                                </svg>
+                            )}
                         </button>
                     </div>
                 </div>
 
-                {/* Mobile search bar */}
-                <div className="mt-4 md:hidden">
-                    <form onSubmit={handleSearch} className="flex">
+                {/* Mobile search bar - Hidden on scroll */}
+                <div className={`md:hidden transition-all duration-300 overflow-hidden ${isScrolled || isMenuOpen ? 'max-h-0' : 'max-h-20 mt-3'}`}>
+                    <form onSubmit={handleSearch} className="flex shadow-lg rounded-lg overflow-hidden">
                         <input
                             type="text"
-                            placeholder="Search for products..."
+                            placeholder="🔍 Search products..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="flex-grow px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-[#5F3623] text-black placeholder-gray-700"
+                            className="flex-grow px-4 py-3 border-0 focus:outline-none focus:ring-2 focus:ring-[#f5821f] text-black"
                         />
                         <button
                             type="submit"
-                            className="bg-gradient-to-r from-[#5F3623] to-[#f5821f] text-white px-4 py-2 rounded-r-lg"
+                            className="bg-gradient-to-r from-[#5F3623] to-[#f5821f] text-white px-4 py-3 min-w-[50px]"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21-6-6m2-5a7 7  11-14 0 7 7 0 0114 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                         </button>
                     </form>
                 </div>
 
-                {/* Navigation menu */}
-                <nav className="hidden md:flex justify-center space-x-8 mt-4">
+                {/* Navigation menu - Desktop - Always visible */}
+                <nav className={`hidden md:flex justify-center space-x-6 transition-all duration-300 ${isScrolled ? 'mt-1' : 'mt-3'}`}>
                     {menuItems.map((item) => (
                         item.hasDropdown ? (
                             <div key={item.name} className="relative group" ref={item.name === 'Rudraksha' ? rudrakshaDropdownRef : accessoriesDropdownRef}>
-                                <button
-                                    className="text-gray-700 hover:text-[#f5821f] transition-colors font-medium flex items-center"
-                                    onClick={() => {
-                                        if (item.name === 'Rudraksha') {
-                                            setRudrakshaDropdownOpen(!rudrakshaDropdownOpen);
-                                            setAccessoriesDropdownOpen(false);
-                                        } else {
-                                            setAccessoriesDropdownOpen(!accessoriesDropdownOpen);
-                                            setRudrakshaDropdownOpen(false);
-                                        }
-                                    }}
-                                >
-                                    {item.name}
-                                    <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </button>
+                                <div className="flex items-center">
+                                    <Link
+                                        href={item.path}
+                                        className="text-gray-800 hover:text-[#f5821f] transition-colors font-semibold text-sm lg:text-base py-1 px-2 rounded-lg hover:bg-orange-50"
+                                    >
+                                        {item.name}
+                                    </Link>
+                                    <button
+                                        className="ml-1 text-gray-600 hover:text-[#f5821f] transition-colors p-1 rounded-full hover:bg-orange-50"
+                                        onClick={() => {
+                                            if (item.name === 'Rudraksha') {
+                                                setRudrakshaDropdownOpen(!rudrakshaDropdownOpen);
+                                                setAccessoriesDropdownOpen(false);
+                                            } else {
+                                                setAccessoriesDropdownOpen(!accessoriesDropdownOpen);
+                                                setRudrakshaDropdownOpen(false);
+                                            }
+                                        }}
+                                    >
+                                        <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                </div>
                                 {(item.name === 'Rudraksha' ? rudrakshaDropdownOpen : accessoriesDropdownOpen) && (
-                                    <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 max-h-96 overflow-y-auto">
+                                    <div className="absolute top-full left-0 mt-1 w-56 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-50 animate-fadeIn max-h-96 overflow-y-auto">
                                         {item.dropdownItems.map((dropdownItem) => (
                                             <Link
                                                 key={dropdownItem.name}
                                                 href={dropdownItem.path}
-                                                className="block px-4 py-2 text-gray-700 hover:bg-gray-100 hover:text-[#f5821f] transition-colors"
+                                                className="flex items-center px-3 py-2 text-gray-700 hover:bg-gradient-to-r hover:from-orange-50 hover:to-amber-50 hover:text-[#f5821f] transition-all duration-200 border-b border-gray-100 last:border-b-0"
                                                 onClick={() => {
                                                     setRudrakshaDropdownOpen(false);
                                                     setAccessoriesDropdownOpen(false);
                                                 }}
                                             >
-                                                {dropdownItem.name}
+                                                <span className="font-medium text-sm">{dropdownItem.name}</span>
                                             </Link>
                                         ))}
                                     </div>
@@ -277,68 +335,126 @@ export default function Header() {
                             <Link
                                 key={item.name}
                                 href={item.path}
-                                className="text-gray-700 hover:text-[#f5821f] transition-colors font-medium"
+                                className="text-gray-800 hover:text-[#f5821f] transition-colors font-semibold text-sm lg:text-base py-1 px-2 rounded-lg hover:bg-orange-50"
                             >
                                 {item.name}
                             </Link>
                         )
                     ))}
                 </nav>
+            </div>
 
-                {/* Mobile menu */}
-                {isMenuOpen && (
-                    <div className="md:hidden mt-4 bg-white border rounded-lg shadow-lg py-2">
-                        {menuItems.map((item) => (
-                            item.hasDropdown ? (
-                                <div key={item.name} className="border-b last:border-b-0">
-                                    <button
-                                        className="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100 flex items-center justify-between"
-                                        onClick={() => {
-                                            if (item.name === 'Rudraksha') {
-                                                setRudrakshaDropdownOpen(!rudrakshaDropdownOpen);
-                                            } else {
-                                                setAccessoriesDropdownOpen(!accessoriesDropdownOpen);
-                                            }
-                                        }}
-                                    >
-                                        {item.name}
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </button>
-                                    {(item.name === 'Rudraksha' ? rudrakshaDropdownOpen : accessoriesDropdownOpen) && (
-                                        <div className="bg-gray-50 pl-6 py-2">
-                                            {item.dropdownItems.map((dropdownItem) => (
-                                                <Link
-                                                    key={dropdownItem.name}
-                                                    href={dropdownItem.path}
-                                                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100 text-sm"
-                                                    onClick={() => setIsMenuOpen(false)}
-                                                >
-                                                    {dropdownItem.name}
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    )}
+            {/* Enhanced Mobile menu */}
+            {isMenuOpen && (
+                <div
+                    ref={mobileMenuRef}
+                    className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-50 animate-fadeIn"
+                    onClick={() => setIsMenuOpen(false)}
+                >
+                    <div
+                        className="absolute top-0 left-0 right-0 bg-white rounded-b-2xl shadow-2xl border border-gray-100 overflow-hidden max-h-screen animate-slideDown"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Mobile profile section */}
+                        <div className="bg-gradient-to-r from-[#5F3623] to-[#f5821f] p-6 text-white">
+                            <div className="flex items-center space-x-4">
+                                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+                                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
                                 </div>
-                            ) : (
-                                <Link
-                                    key={item.name}
-                                    href={item.path}
-                                    className="block px-4 py-2 text-gray-700 hover:bg-gray-100 border-b last:border-b-0"
-                                    onClick={() => setIsMenuOpen(false)}
-                                >
-                                    {item.name}
-                                </Link>
-                            )
-                        ))}
-                        <div className="border-t mt-2 pt-2 px-4">
-                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p className="font-semibold text-lg">Welcome!</p>
+                                    <p className="text-white/80">Sign in to your account</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Mobile menu items */}
+                        {/* Mobile menu items */}
+                        <div className="max-h-[70vh] overflow-y-auto">
+                            {menuItems.map((item) =>
+                                item.hasDropdown ? (
+                                    <div key={item.name} className="border-b border-gray-100 last:border-b-0">
+                                        <div className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+                                            <Link
+                                                href={item.path}
+                                                className="flex-1 text-gray-800 font-semibold text-lg"
+                                                onClick={() => setIsMenuOpen(false)}
+                                            >
+                                                {item.name}
+                                            </Link>
+                                            <button
+                                                className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+                                                onClick={() => {
+                                                    if (item.name === 'Rudraksha') {
+                                                        setRudrakshaDropdownOpen((prev) => !prev); // toggle only Rudraksha
+                                                    } else if (item.name === 'Rudraksha Accessories') {
+                                                        setAccessoriesDropdownOpen((prev) => !prev); // toggle only Accessories
+                                                    }
+                                                }}
+                                                onKeyPress={(e) => handleMobileDropdownKeyPress(e, item.name)}
+                                                tabIndex={0}
+                                                aria-expanded={item.name === 'Rudraksha' ? rudrakshaDropdownOpen : accessoriesDropdownOpen}
+                                                aria-label={`Toggle ${item.name} dropdown`}
+                                            >
+                                                <svg
+                                                    className={`w-5 h-5 text-gray-600 transition-transform ${(item.name === 'Rudraksha' ? rudrakshaDropdownOpen : accessoriesDropdownOpen)
+                                                            ? 'rotate-180'
+                                                            : ''
+                                                        }`}
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </button>
+
+                                        </div>
+
+                                        {/* Dropdown content */}
+                                        {(item.name === "Rudraksha"
+                                            ? rudrakshaDropdownOpen
+                                            : accessoriesDropdownOpen) && (
+                                                <div className="bg-gray-50 animate-fadeIn">
+                                                    {item.dropdownItems.map((dropdownItem) => (
+                                                        <Link
+                                                            key={dropdownItem.name}
+                                                            href={dropdownItem.path}
+                                                            className="flex items-center px-6 py-3 text-gray-700 hover:text-[#f5821f] transition-colors border-b border-gray-100 last:border-b-0"
+                                                            onClick={() => setIsMenuOpen(false)}
+                                                        >
+                                                            <span className="w-2 h-2 bg-[#f5821f] rounded-full mr-3"></span>
+                                                            {dropdownItem.name}
+                                                        </Link>
+                                                    ))}
+                                                </div>
+                                            )}
+                                    </div>
+                                ) : (
+                                    <Link
+                                        key={item.name}
+                                        href={item.path}
+                                        className="flex items-center px-6 py-4 text-gray-800 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 font-semibold text-lg"
+                                        onClick={() => setIsMenuOpen(false)}
+                                    >
+                                        <span className="w-2 h-2 bg-[#5F3623] rounded-full mr-3"></span>
+                                        {item.name}
+                                    </Link>
+                                )
+                            )}
+                        </div>
+
+
+                        {/* Mobile auth buttons */}
+                        <div className="p-4 bg-gray-50 border-t border-gray-100">
+                            <div className="grid grid-cols-2 gap-3">
                                 {profileItems.map((item) => (
                                     <Link
                                         key={item.name}
                                         href={item.path}
-                                        className="text-center px-3 py-2 bg-gray-100 rounded hover:bg-[#f5821f] hover:text-white transition-colors text-sm"
+                                        className="text-center px-4 py-3 bg-gradient-to-r from-[#5F3623] to-[#f5821f] text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-200"
                                         onClick={() => setIsMenuOpen(false)}
                                     >
                                         {item.name}
@@ -346,9 +462,19 @@ export default function Header() {
                                 ))}
                             </div>
                         </div>
+
+                        {/* Close button */}
+                        <div className="p-4 border-t border-gray-100">
+                            <button
+                                onClick={() => setIsMenuOpen(false)}
+                                className="w-full text-center py-3 text-gray-600 hover:text-[#f5821f] font-semibold transition-colors"
+                            >
+                                Close Menu
+                            </button>
+                        </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
         </header>
     );
 }
