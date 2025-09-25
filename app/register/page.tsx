@@ -123,9 +123,12 @@ export default function RegisterPage() {
       if (isMounted) {
         router.push('/');
       }
-    } catch (error) {
-      setErrors({ general: 'Google registration failed. Please try again.' });
-    } finally {
+    } catch (err: unknown) {
+  setErrors({
+    general: err instanceof Error ? err.message : 'Google registration failed. Please try again.'
+  });
+}
+ finally {
       setIsGoogleLoading(false);
     }
   };

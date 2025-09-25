@@ -85,8 +85,8 @@ export default function ContactPage() {
       await new Promise(resolve => setTimeout(resolve, 1500));
       console.log('Form submitted', formData);
       setIsSubmitted(true);
-    } catch (error) {
-      setErrors({ general: 'An error occurred. Please try again.' });
+    } catch (error: any) {
+  setErrors({ general: error?.message || 'An unexpected error occurred.' });
     } finally {
       setIsSubmitting(false);
     }

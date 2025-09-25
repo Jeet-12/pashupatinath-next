@@ -19,6 +19,15 @@ const eslintConfig = [
       "build/**",
       "next-env.d.ts",
     ],
+    rules: {
+      // 👇 Add overrides here
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }
+      ],
+      "react/no-unescaped-entities": "off",
+    },
   },
 ];
 

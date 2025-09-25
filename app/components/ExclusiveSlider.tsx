@@ -28,7 +28,8 @@ export default function ElegantCategorySlider({ products }: ElegantCategorySlide
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const sliderRef = useRef(null);
-  const autoSlideRef = useRef(null);
+ const autoSlideRef = useRef<NodeJS.Timeout | number | null>(null);
+
 
   // Transform products to categories format using your existing logic
   const categories = products && products.length > 0 
@@ -106,22 +107,20 @@ export default function ElegantCategorySlider({ products }: ElegantCategorySlide
   // Determine how many items to show based on screen size
   const itemsToShow = isMobile ? 2 : 4;
 
-  // Set up auto slide - only if categories exist
   useEffect(() => {
-    if (categories.length === 0) return;
+  if (categories.length === 0) return;
 
-    autoSlideRef.current = setInterval(() => {
-      setCurrentIndex((prevIndex) => 
-        (prevIndex + 1) % categories.length
-      );
-    }, 4000);
+  autoSlideRef.current = setInterval(() => {
+    setCurrentIndex((prevIndex) => (prevIndex + 1) % categories.length);
+  }, 4000);
 
-    return () => {
-      if (autoSlideRef.current) {
-        clearInterval(autoSlideRef.current);
-      }
-    };
-  }, [categories.length]);
+  return () => {
+    if (autoSlideRef.current !== null) {
+      clearInterval(autoSlideRef.current as number);
+    }
+  };
+}, [categories.length]);
+
 
   // Navigate to next items
   const nextItems = () => {
@@ -132,14 +131,13 @@ export default function ElegantCategorySlider({ products }: ElegantCategorySlide
     );
     
     // Reset auto slide timer on manual navigation
-    if (autoSlideRef.current) {
-      clearInterval(autoSlideRef.current);
-      autoSlideRef.current = setInterval(() => {
-        setCurrentIndex((prevIndex) => 
-          (prevIndex + 1) % categories.length
-        );
-      }, 4000);
-    }
+    if (autoSlideRef.current !== null) {
+  clearInterval(autoSlideRef.current as number);
+  autoSlideRef.current = setInterval(() => {
+    setCurrentIndex((prevIndex) => (prevIndex + 1) % categories.length);
+  }, 4000);
+}
+
   };
 
   // Navigate to previous items

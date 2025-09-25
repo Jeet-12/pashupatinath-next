@@ -5,8 +5,6 @@ import {
   verifyOTP, 
   resendOTP, 
   getSessionToken, 
-  setAuthToken, 
-  setSessionToken 
 } from '../libs/api';
 
 export const useOTPVerification = () => {

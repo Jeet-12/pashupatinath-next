@@ -57,7 +57,7 @@ export default function Home() {
           <p className="text-sm">Showing default content</p>
         </div>
       )}
-     <HeroBanner homeData={homeContent.banners} />
+     <HeroBanner />
 
       <SacredCollection products={homeContent.product_lists}  categories={homeContent.category_lists} />
       <SacredCollections />

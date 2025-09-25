@@ -86,18 +86,17 @@ export default function BlogSlider({ homeData = [] }) {
 };
 
   // Function to get complete image URL
-  const getImageUrl = (imagePath) => {
-    if (!imagePath) return '/placeholder-blog.jpg';
-    
-    // If it's already a full URL, return as is
-    if (imagePath.startsWith('http')) {
-      return imagePath;
-    }
-    
-    // If it's a relative path, prepend the domain
-    const domain = 'https://www.pashupatinathrudraksh.com';
-    return `${domain}${imagePath.startsWith('/') ? imagePath : `/${imagePath}`}`;
-  };
+ const getImageUrl = (imagePath: string | undefined): string => {
+  if (!imagePath) return '/placeholder-blog.jpg';
+  
+  if (imagePath.startsWith('http')) {
+    return imagePath;
+  }
+  
+  const domain = 'https://www.pashupatinathrudraksh.com';
+  return `${domain}${imagePath.startsWith('/') ? imagePath : `/${imagePath}`}`;
+};
+
 
   // If no blog posts available, don't render the component
   if (!blogPosts || blogPosts.length === 0) {
@@ -125,15 +124,15 @@ export default function BlogSlider({ homeData = [] }) {
                 <div className="h-48 bg-gradient-to-r from-amber-100 to-orange-100 relative overflow-hidden">
                   {post.photo ? (
                     <Image
-                      src={getImageUrl(post.photo)}
-                      alt={post.title || 'Blog post image'}
-                      fill
-                      className="object-cover"
-                      onError={(e) => {
-                        // Fallback if image fails to load
-                        e.target.style.display = 'none';
-                      }}
-                    />
+  src={getImageUrl(post.photo)}
+  alt={post.title || 'Blog post image'}
+  fill
+  className="object-cover"
+  onError={(e) => {
+    const target = e.target as HTMLImageElement;
+    target.style.display = 'none';
+  }}
+/>
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <svg className="w-12 h-12 text-amber-500" fill="currentColor" viewBox="0 0 20 20">

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { RegisterData, checkEmail, registerUser, setSessionToken, clearSessionToken } from '../libs/api';
+import { RegisterData, checkEmail, registerUser, clearSessionToken } from '../libs/api';
 
 export const useUserRegistration = () => {
   const [isLoading, setIsLoading] = useState(false);

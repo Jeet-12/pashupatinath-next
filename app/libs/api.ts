@@ -263,9 +263,9 @@ export const resendLoginOTP = async (resendData: ResendOTPData): Promise<ApiResp
 
 
 // Google OAuth functions
-export const getGoogleAuthUrl = async (redirectTo?: string): Promise<ApiResponse> => {
-  return await apiCall('/auth/google/config', 'GET');
-};
+// export const getGoogleAuthUrl = async (redirectTo?: string): Promise<ApiResponse> => {
+//   return await apiCall('/auth/google/config', 'GET');
+// };
 
 export const initiateGoogleLogin = async (redirectTo?: string): Promise<ApiResponse> => {
   const params = new URLSearchParams();

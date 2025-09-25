@@ -1,7 +1,5 @@
 "use client";
 
-import Image from 'next/image';
-
 export default function MissionPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50">

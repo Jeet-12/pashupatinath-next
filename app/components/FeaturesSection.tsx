@@ -1,7 +1,5 @@
 "use client";
 
-import Image from 'next/image';
-
 export default function FeaturesSection() {
   return (
     <section className="py-16 md:py-24 bg-amber-50">

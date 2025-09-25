@@ -61,7 +61,7 @@ export default function SacredCollections() {
         {/* Right Side - Images Grid */}
         <div className="md:w-1/2 w-full">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {collections.map((collection, index) => (
+           {collections.map((collection) => (
               <div key={collection.id} className="group relative">
                 <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all duration-500 border border-amber-100 h-full flex flex-col">
                   {/* Image container */}

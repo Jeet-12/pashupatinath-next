@@ -33,7 +33,9 @@ export const getGoogleOAuthUrl = (redirectTo?: string): string => {
 export const decodeState = (state: string): any => {
   try {
     return JSON.parse(atob(state));
-  } catch (error) {
-    return {};
+  } catch (err: any) {
+  console.error('Error occurred:', err);
+  return {}; 
+
   }
 };

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from 'next/image';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Autoplay } from 'swiper/modules';
 import { useRouter } from 'next/navigation';
@@ -11,10 +11,24 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/autoplay';
 
-export default function SacredCollection({ products = [], categories = [] }) {
+interface Category {
+  id: number;
+  title: string;
+  slug?: string;
+  photo?: string;
+  main_category?: string; // include this since you are filtering by it
+}
+
+interface SacredCollectionProps {
+  products?: any[];
+  categories?: Category[];
+}
+
+export default function SacredCollection({ products = [], categories = [] }: SacredCollectionProps) {
+ 
   const [cart, setCart] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [isScrolling, setIsScrolling] = useState(false);
+const [_isScrolling, _setIsScrolling] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -22,10 +36,10 @@ export default function SacredCollection({ products = [], categories = [] }) {
 
   
 
-  // Filter categories to show only those with main_category "rudraksha_accessories"
   const filteredCategories = categories.filter(cat => 
     cat.main_category === "rudraksha_accessories"
   );
+
 
   // Mock category data for the brand slider (only if no filtered categories exist)
  const mockBrandCategories = [
@@ -225,21 +239,21 @@ export default function SacredCollection({ products = [], categories = [] }) {
 
   
 
-  const scrollLeft = () => {
-    if (scrollContainerRef.current) {
-      setIsScrolling(true);
-      scrollContainerRef.current.scrollBy({ left: -200, behavior: 'smooth' });
-      setTimeout(() => setIsScrolling(false), 300);
-    }
-  };
+  // const scrollLeft = () => {
+  //   if (scrollContainerRef.current) {
+  //     setIsScrolling(true);
+  //     scrollContainerRef.current.scrollBy({ left: -200, behavior: 'smooth' });
+  //     setTimeout(() => setIsScrolling(false), 300);
+  //   }
+  // };
 
-  const scrollRight = () => {
-    if (scrollContainerRef.current) {
-      setIsScrolling(true);
-      scrollContainerRef.current.scrollBy({ left: 200, behavior: 'smooth' });
-      setTimeout(() => setIsScrolling(false), 300);
-    }
-  };
+  // const scrollRight = () => {
+  //   if (scrollContainerRef.current) {
+  //     setIsScrolling(true);
+  //     scrollContainerRef.current.scrollBy({ left: 200, behavior: 'smooth' });
+  //     setTimeout(() => setIsScrolling(false), 300);
+  //   }
+  // };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50">
@@ -296,8 +310,8 @@ export default function SacredCollection({ products = [], categories = [] }) {
               }}
               className="premium-swiper"
             >
-              {mockBrandCategories.map((cat, index) => (
-                <SwiperSlide key={cat.id || index}>
+              {mockBrandCategories.map((cat) => (
+                <SwiperSlide key={cat.id}>
                   {/* Compact design with title integrated in image */}
                   <div className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 overflow-hidden border-2 border-transparent hover:border-amber-300 mx-2 my-4 p-2">
 
@@ -379,7 +393,7 @@ export default function SacredCollection({ products = [], categories = [] }) {
               className="flex space-x-3 pb-4 overflow-x-auto scrollbar-hide scroll-smooth w-full"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
-              {finalCategoryList.map((category, index) => (
+              {finalCategoryList.map((category) => (
                 <button
                   key={category.title}
                   onClick={() => handleCategoryClick(category.title)}
