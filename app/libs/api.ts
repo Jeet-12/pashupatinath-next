@@ -293,3 +293,69 @@ export const handleGoogleCallback = async (code: string, state?: string): Promis
 export const homeData = async (): Promise<ApiResponse> => {
   return await apiCall('/home', 'GET');
 }
+
+export interface Product {
+  id: number;
+  title: string;
+  slug: string;
+  price: number;
+  oldPrice: number;
+  rating: number;
+  discount: number;
+  stock: number;
+  photo: string;
+  images?: string[];
+  photos?: string[];
+  image?: string;
+  category: string;
+  isNew: boolean;
+  isBestSeller: boolean;
+  tags: string[];
+  createdAt?: string;
+  reviews_avg_rate?: number;
+  reviews_count?: number;
+}
+
+export interface RecentProduct{
+
+  id: number;
+  title: string;
+  slug: string;
+  price: number;
+  oldPrice: number;
+  rating: number;
+  discount: number;
+  stock: number;
+  photo: string;
+  images?: string[];
+  photos?: string[];
+  image?: string;
+  category: string;
+  isNew: boolean;
+  isBestSeller: boolean;
+  tags: string[];
+  createdAt?: string;
+  reviews_avg_rate?: number;
+  reviews_count?: number;
+
+}
+
+export interface ProductsApiResponse {
+  success: boolean;
+  message: string;
+  products: Product[];
+  recent_products: RecentProduct[];
+}
+export const fetchProducts = async (): Promise<ProductsApiResponse> => {
+  const response = await apiCall(`/product-grids`, 'GET');
+
+  const products = response.data?.products || [];
+  const recent_products = response.data?.recent_products || [];
+
+  return {
+    success: response.success,
+    message: response.message,
+    products,
+    recent_products,
+  };
+};

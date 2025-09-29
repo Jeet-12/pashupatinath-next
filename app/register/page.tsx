@@ -117,9 +117,7 @@ export default function RegisterPage() {
       // Simulate Google OAuth process
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      console.log('Google registration successful');
-      
-      // Redirect to dashboard on successful registration
+     
       if (isMounted) {
         router.push('/');
       }

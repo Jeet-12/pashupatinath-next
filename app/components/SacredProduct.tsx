@@ -16,7 +16,7 @@ interface Category {
   title: string;
   slug?: string;
   photo?: string;
-  main_category?: string; // include this since you are filtering by it
+  main_category?: string;
 }
 
 interface SacredCollectionProps {
@@ -25,112 +25,64 @@ interface SacredCollectionProps {
 }
 
 export default function SacredCollection({ products = [], categories = [] }: SacredCollectionProps) {
- 
   const [cart, setCart] = useState<any[]>([]);
+  const [wishlist, setWishlist] = useState<number[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
-const [_isScrolling, _setIsScrolling] = useState(false);
+  const [_isScrolling, _setIsScrolling] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  console.log(products);
-
-  
+  //console.log(products);
 
   const filteredCategories = categories.filter(cat => 
     cat.main_category === "rudraksha_accessories"
   );
 
+  const mockBrandCategories = [
+    {
+      id: 1,
+      title: "1 Mukhi",
+      slug: "1-mukhi",
+      photo: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/1%20mukhi.png",
+    },
+    {
+      id: 2,
+      title: "2 Mukhi",
+      slug: "2-mukhi",
+      photo: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/2_mukhi.png",
+    },
+    {
+      id: 3,
+      title: "3 Mukhi",
+      slug: "3-mukhi",
+      photo: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/3_mukhi.png",
+    },
+    {
+      id: 4,
+      title: "4 Mukhi",
+      slug: "4-mukhi",
+      photo: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/4_mukhi.jpeg",
+    },
+    {
+      id: 5,
+      title: "5 Mukhi",
+      slug: "5-mukhi",
+      photo: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/5%20mukhi.png",
+    },
+    {
+      id: 6,
+      title: "6 Mukhi",
+      slug: "6-mukhi",
+      photo: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/6%20mukhi.png",
+    },
+    {
+      id: 7,
+      title: "7 Mukhi",
+      slug: "7-mukhi",
+      photo: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/7%20mukhi.png",
+    },
+  ];
 
-  // Mock category data for the brand slider (only if no filtered categories exist)
- const mockBrandCategories = [
-  {
-    id: 1,
-    title: "1 Mukhi",
-    slug: "1-mukhi",
-    photo: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/1%20mukhi.png",
-  },
-  {
-    id: 2,
-    title: "2 Mukhi",
-    slug: "2-mukhi",
-    photo: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/2_mukhi.png",
-  },
-  {
-    id: 3,
-    title: "3 Mukhi",
-    slug: "3-mukhi",
-    photo: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/3_mukhi.png",
-  },
-  {
-    id: 4,
-    title: "4 Mukhi",
-    slug: "4-mukhi",
-    photo: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/4_mukhi.jpeg",
-  },
-  {
-    id: 5,
-    title: "5 Mukhi",
-    slug: "5-mukhi",
-    photo: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/5%20mukhi.png",
-  },
-  {
-    id: 6,
-    title: "6 Mukhi",
-    slug: "6-mukhi",
-    photo: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/6%20mukhi.png",
-  },
-  {
-    id: 7,
-    title: "7 Mukhi",
-    slug: "7-mukhi",
-    photo: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/7%20mukhi.png",
-  },
-  // {
-  //   id: 8,
-  //   title: "8 Mukhi",
-  //   slug: "8-mukhi",
-  //   photo: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/8_mukhi.png",
-  // },
-  // {
-  //   id: 9,
-  //   title: "9 Mukhi",
-  //   slug: "9-mukhi",
-  //   photo: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/9_mukhi.png",
-  // },
-  // {
-  //   id: 10,
-  //   title: "10 Mukhi",
-  //   slug: "10-mukhi",
-  //   photo: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/10_mukhi.png",
-  // },
-  // {
-  //   id: 11,
-  //   title: "11 Mukhi",
-  //   slug: "11-mukhi",
-  //   photo: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/11_mukhi.png",
-  // },
-  // {
-  //   id: 12,
-  //   title: "12 Mukhi",
-  //   slug: "12-mukhi",
-  //   photo: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/12_mukhi.png",
-  // },
-  // {
-  //   id: 13,
-  //   title: "13 Mukhi",
-  //   slug: "13-mukhi",
-  //   photo: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/13_mukhi.png",
-  // },
-  // {
-  //   id: 14,
-  //   title: "14 Mukhi",
-  //   slug: "14-mukhi",
-  //   photo: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/14_mukhi.png",
-  // }
-];
-
-
-  // Use filtered categories or mock data
   const brandCategories = filteredCategories.length > 0 ? filteredCategories : mockBrandCategories;
 
   const defaultProducts = [
@@ -138,10 +90,10 @@ const [_isScrolling, _setIsScrolling] = useState(false);
       id: 1,
       name: "Jap Mala 108 beads (5mm)",
       image: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/5%20mm%20mala.jpeg",
-      discount: "50% Off",
-      price: "₹499.00",
-      originalPrice: "₹999.00",
+      price: 499.00,
+      originalPrice: 999.00,
       category: "Jap Malas",
+      slug: "jap-mala-108-beads-5mm"
     },
   ];
 
@@ -155,25 +107,33 @@ const [_isScrolling, _setIsScrolling] = useState(false);
     "Rudraksha"
   ];
 
-  // Use provided or fallback
   const productList = products.length > 0 ? products : defaultProducts;
   
-  // Create category list from brandCategories for the filter buttons
   const categoryList = [
     { title: "All" },
-    ...brandCategories.map(cat => ({ title: cat.title })),{ title: "Rudraksha" }
+    ...brandCategories.map(cat => ({ title: cat.title })),
+    { title: "Rudraksha" }
   ];
 
-  // Also create a fallback category list if brandCategories is empty
   const fallbackCategoryList = 
     categories.length > 0
-      ? [{ title: "All" }, ...categories.map(cat => ({ title: cat.title })),{ title: "Rudraksha" }]
+      ? [{ title: "All" }, ...categories.map(cat => ({ title: cat.title })), { title: "Rudraksha" }]
       : defaultCategories.map((cat) => ({ title: cat }));
 
-  // Use brandCategories-based list or fallback
   const finalCategoryList = categoryList.length > 1 ? categoryList : fallbackCategoryList;
 
-  // Format product data
+  // Function to calculate discount percentage
+  // const calculateDiscountPercentage = (originalPrice: number, currentPrice: number): number => {
+  //   if (!originalPrice || originalPrice <= currentPrice) return 0;
+  //   return Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
+  // };
+
+  // Function to format price with Indian Rupee symbol
+  const formatPrice = (price: number): string => {
+    return `₹${price.toFixed(2)}`;
+  };
+
+  // Format product data with proper pricing
   const formattedProducts = productList.map((product: any) => {
     let productImage = "";
 
@@ -187,73 +147,84 @@ const [_isScrolling, _setIsScrolling] = useState(false);
       productImage = product.image.split(",")[0].trim();
     }
 
-    if (
-      productImage &&
-      !productImage.startsWith("http") &&
-      !productImage.startsWith("//")
-    ) {
-      productImage = `https://www.pashupatinathrudraksh.com${productImage.startsWith("/") ? "" : "/"
-        }${productImage}`;
+    if (productImage && !productImage.startsWith("http") && !productImage.startsWith("//")) {
+      productImage = `https://www.pashupatinathrudraksh.com${productImage.startsWith("/") ? "" : "/"}${productImage}`;
     }
 
-    return {
-      id: product.id,
-      name: (product.title || product.name || "").length > 20
-        ? (product.title || product.name || "").substring(0, 18) + "..."
-        : (product.title || product.name || ""),
-      image: productImage,
-      discount: product.discount ? `${product.discount}% Off` : product.discount,
-      price: product.price
-        ? `₹${Number(product.price).toFixed(2)}`
-        : product.price,
-      originalPrice:
-        product.originalPrice ||
-        (product.price ? `₹${Number(product.price).toFixed(2)}` : ""),
-      category: product.cat_title || product.category,
-    };
+    // Generate slug from title/name if not provided
+    const productSlug = product.slug || 
+                       (product.title || product.name || "")
+                         .toLowerCase()
+                         .replace(/[^a-z0-9]+/g, '-')
+                         .replace(/(^-|-$)+/g, '');
+
+  // Parse prices from API (string or number safe)
+const apiPrice = typeof product.price === "string"
+  ? parseFloat(product.price.replace(/[^\d.]/g, ""))
+  : Number(product.price) || 0;
+
+// If backend already sends final price (sometimes called selling_price / discounted_price),
+// prefer it, otherwise calculate from discount
+let discountedPrice = apiPrice;
+if (product.finalPrice) {
+  discountedPrice = typeof product.finalPrice === "string"
+    ? parseFloat(product.finalPrice.replace(/[^\d.]/g, ""))
+    : Number(product.finalPrice) || apiPrice;
+} else if (product.discount && product.discount > 0) {
+  discountedPrice = apiPrice - (apiPrice * product.discount) / 100;
+}
+
+// Calculate discount % only if discount actually exists
+const discountPercentage =
+  apiPrice > 0 && discountedPrice < apiPrice
+    ? Math.round(((apiPrice - discountedPrice) / apiPrice) * 100)
+    : 0;
+
+
+    // Calculate discount percentage
+
+
+  return {
+  id: product.id,
+  name: (product.title || product.name || "").length > 20
+    ? (product.title || product.name || "").substring(0, 18) + "..."
+    : (product.title || product.name || ""),
+  image: productImage,
+  price: discountedPrice,          
+  originalPrice: apiPrice,   
+  discountPercentage,
+  category: product.cat_title || product.category,
+  slug: productSlug,
+};
+
   });
 
-  const filteredProducts =
-    selectedCategory === "All"
-      ? formattedProducts
-      : formattedProducts.filter(
-        (product) => product.category === selectedCategory
-      );
+  const filteredProducts = selectedCategory === "All"
+    ? formattedProducts
+    : formattedProducts.filter((product) => product.category === selectedCategory);
 
   const addToCart = (product: any) => {
     setCart([...cart, product]);
     alert(`${product.name} added to cart!`);
   };
 
-  const handleCategoryClick = (categoryTitle: string) => {
-    // setSelectedCategory(categoryTitle);
-    // // Scroll to products section
-    // setTimeout(() => {
-    //   const productsSection = document.getElementById('products-section');
-    //   if (productsSection) {
-    //     productsSection.scrollIntoView({ behavior: 'smooth' });
-    //   }
-    // }, 100);
-     router.push(`/products?title=${categoryTitle}`);
+  const toggleWishlist = (productId: number) => {
+    setWishlist(prev => {
+      if (prev.includes(productId)) {
+        return prev.filter(id => id !== productId);
+      } else {
+        return [...prev, productId];
+      }
+    });
   };
 
-  
+  const handleCategoryClick = (categoryTitle: string) => {
+    router.push(`/products?title=${categoryTitle}`);
+  };
 
-  // const scrollLeft = () => {
-  //   if (scrollContainerRef.current) {
-  //     setIsScrolling(true);
-  //     scrollContainerRef.current.scrollBy({ left: -200, behavior: 'smooth' });
-  //     setTimeout(() => setIsScrolling(false), 300);
-  //   }
-  // };
-
-  // const scrollRight = () => {
-  //   if (scrollContainerRef.current) {
-  //     setIsScrolling(true);
-  //     scrollContainerRef.current.scrollBy({ left: 200, behavior: 'smooth' });
-  //     setTimeout(() => setIsScrolling(false), 300);
-  //   }
-  // };
+  const handleProductClick = (productSlug: string) => {
+    router.push(`/product/${productSlug}`);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50">
@@ -273,7 +244,6 @@ const [_isScrolling, _setIsScrolling] = useState(false);
             </p>
           </div>
 
-          {/* Enhanced Swiper Container */}
           <div className="relative max-w-7xl mx-auto">
             <Swiper
               modules={[Navigation, Autoplay]}
@@ -287,40 +257,21 @@ const [_isScrolling, _setIsScrolling] = useState(false);
               }}
               loop={true}
               breakpoints={{
-                320: {
-                  slidesPerView: 2,
-                  spaceBetween: 15,
-                },
-                480: {
-                  slidesPerView: 2,
-                  spaceBetween: 20,
-                },
-                768: {
-                  slidesPerView: 3,
-                  spaceBetween: 25,
-                },
-                1024: {
-                  slidesPerView: 4,
-                  spaceBetween: 30,
-                },
-                1280: {
-                  slidesPerView: 5,
-                  spaceBetween: 30,
-                },
+                320: { slidesPerView: 2, spaceBetween: 15 },
+                480: { slidesPerView: 2, spaceBetween: 20 },
+                768: { slidesPerView: 3, spaceBetween: 25 },
+                1024: { slidesPerView: 4, spaceBetween: 30 },
+                1280: { slidesPerView: 5, spaceBetween: 30 },
               }}
               className="premium-swiper"
             >
               {mockBrandCategories.map((cat) => (
                 <SwiperSlide key={cat.id}>
-                  {/* Compact design with title integrated in image */}
                   <div className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 overflow-hidden border-2 border-transparent hover:border-amber-300 mx-2 my-4 p-2">
-
-                    {/* Combined image and title container */}
                     <div
                       className="relative h-52 rounded-xl overflow-hidden cursor-pointer"
                       onClick={() => handleCategoryClick(cat.title)}
                     >
-                      {/* Background image container */}
                       <div className="relative w-full h-40 bg-gradient-to-br from-amber-50 to-orange-100">
                         <div className="absolute inset-0 flex items-center justify-center p-4">
                           <Image
@@ -336,15 +287,11 @@ const [_isScrolling, _setIsScrolling] = useState(false);
                           />
                         </div>
                       </div>
-
-                      {/* Title section below image */}
                       <div className="absolute bottom-0 left-0 right-0 h-12 bg-white flex items-center justify-center border-t border-amber-100">
                         <h3 className="font-bold text-md text-[#5F3623] text-center group-hover:text-amber-600 transition-colors">
                           {cat.title}
                         </h3>
                       </div>
-
-                      {/* Hover overlay */}
                       <div className="absolute inset-0 bg-amber-500/0 group-hover:bg-amber-500/5 transition-colors duration-300"></div>
                     </div>
                   </div>
@@ -352,7 +299,6 @@ const [_isScrolling, _setIsScrolling] = useState(false);
               ))}
             </Swiper>
 
-            {/* Premium Navigation Buttons */}
             <button className="premium-swiper-prev absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-4 z-10 w-12 h-12 bg-white rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-110 group">
               <span className="sr-only">Previous</span>
               <div className="w-full h-full flex items-center justify-center">
@@ -384,10 +330,7 @@ const [_isScrolling, _setIsScrolling] = useState(false);
             <p className="text-gray-600 text-lg">Discover our handcrafted spiritual products</p>
           </div>
 
-          {/* Enhanced Category Filter - Always scrollable */}
           <div className="mb-12 relative">
-           
-
             <div
               ref={scrollContainerRef}
               className="flex space-x-3 pb-4 overflow-x-auto scrollbar-hide scroll-smooth w-full"
@@ -406,12 +349,9 @@ const [_isScrolling, _setIsScrolling] = useState(false);
                     relative overflow-hidden group min-w-max
                   `}
                 >
-                  {/* Active indicator */}
                   {selectedCategory === category.title && (
                     <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-400"></div>
                   )}
-
-                  {/* Content */}
                   <span className="relative z-10 font-medium flex items-center text-sm md:text-base">
                     {category.title}
                     {selectedCategory === category.title && (
@@ -420,24 +360,45 @@ const [_isScrolling, _setIsScrolling] = useState(false);
                       </svg>
                     )}
                   </span>
-
-                  {/* Hover effect */}
                   <div className="absolute inset-0 bg-gradient-to-r from-amber-400 to-orange-400 opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
                 </button>
               ))}
             </div>
-            
           </div>
 
-          {/* Product Grid - Always 2 columns on mobile and smaller screens */}
+          {/* Product Grid with Links and Wishlist */}
           <div className="grid grid-cols-2 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
             {filteredProducts.map((product) => (
               <div
                 key={product.id}
-                className="bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-lg hover:shadow-xl sm:hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border border-amber-100 group"
+                className="bg-white rounded-xl sm:rounded-2xl overflow-hidden shadow-lg hover:shadow-xl sm:hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border border-amber-100 group relative"
               >
-                {/* Product Image */}
-                <div className="relative h-40 sm:h-60 md:h-72 lg:h-80 overflow-hidden">
+                {/* Wishlist Button */}
+                <button
+                  onClick={() => toggleWishlist(product.id)}
+                  className="absolute top-2 right-2 z-10 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-all duration-300 hover:scale-110"
+                  aria-label={wishlist.includes(product.id) ? "Remove from wishlist" : "Add to wishlist"}
+                >
+                  <svg
+                    className={`w-4 h-4 ${wishlist.includes(product.id) ? 'text-red-500 fill-current' : 'text-gray-400'}`}
+                    fill={wishlist.includes(product.id) ? "currentColor" : "none"}
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                    />
+                  </svg>
+                </button>
+
+                {/* Product Image with Link */}
+                <div 
+                  className="relative h-40 sm:h-60 md:h-72 lg:h-80 overflow-hidden cursor-pointer"
+                  onClick={() => handleProductClick(product.slug)}
+                >
                   {product.image ? (
                     <Image
                       src={product.image}
@@ -468,54 +429,91 @@ const [_isScrolling, _setIsScrolling] = useState(false);
                   )}
 
                   {/* Discount Badge */}
-                  {product.discount && (
+                  {product.discountPercentage > 0 && (
                     <div className="absolute top-2 sm:top-4 left-2 sm:left-4 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs sm:text-sm font-bold py-1 px-2 sm:py-2 sm:px-3 rounded-full shadow-lg">
-                      {product.discount}
+                      {product.discountPercentage}% OFF
                     </div>
                   )}
 
-                  {/* Overlay on hover */}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300"></div>
+                  {/* View Details Overlay */}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 flex items-center justify-center">
+                    <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/70 text-white text-sm font-medium py-2 px-4 rounded-lg">
+                      View Details
+                    </span>
+                  </div>
                 </div>
 
                 {/* Product Info */}
                 <div className="p-3 sm:p-4 md:p-5 lg:p-6">
-                  <h3 className="font-semibold text-sm sm:text-base md:text-lg text-amber-900 mb-2 sm:mb-3 line-clamp-2 group-hover:text-amber-700 transition-colors">
+                  {/* Product Name with Link */}
+                  <h3 
+                    className="font-semibold text-sm sm:text-base md:text-lg text-amber-900 mb-2 sm:mb-3 line-clamp-2 group-hover:text-amber-700 transition-colors cursor-pointer"
+                    onClick={() => handleProductClick(product.slug)}
+                  >
                     {product.name}
                   </h3>
 
                   {/* Pricing */}
-                  <div className="flex items-center mb-3 sm:mb-4">
-                    <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
-                      {product.price}
-                    </span>
-                    {product.originalPrice && (
-                      <span className="ml-2 text-gray-500 line-through text-xs sm:text-base">
-                        {product.originalPrice}
+                  <div className="flex flex-col mb-3 sm:mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+                        {formatPrice(product.price)}
                       </span>
-                    )}
+                      {product.discountPercentage > 0 && product.originalPrice > 0 && (
+                        <span className="text-gray-500 line-through text-xs sm:text-base">
+                          {formatPrice(product.originalPrice)}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Add to Cart */}
-                  <button
-                    onClick={() => addToCart(product)}
-                    className="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold py-2 sm:py-3 px-3 sm:px-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center group/btn text-xs sm:text-sm"
-                  >
-                    <svg
-                      className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 mr-1 sm:mr-2 group-hover/btn:scale-110 transition-transform"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                  {/* Action Buttons */}
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleProductClick(product.slug)}
+                      className="flex-1 bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-700 hover:to-gray-800 text-white font-semibold py-2 sm:py-3 px-3 sm:px-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center group/btn text-xs sm:text-sm"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                      />
-                    </svg>
-                    Add to cart
-                  </button>
+                      <svg
+                        className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 mr-1 sm:mr-2 group-hover/btn:scale-110 transition-transform"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                        />
+                      </svg>
+                      Details
+                    </button>
+                    <button
+                      onClick={() => addToCart(product)}
+                      className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold py-2 sm:py-3 px-3 sm:px-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center group/btn text-xs sm:text-sm"
+                    >
+                      <svg
+                        className="w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 mr-1 sm:mr-2 group-hover/btn:scale-110 transition-transform"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+                        />
+                      </svg>
+                      Cart
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

@@ -168,15 +168,15 @@ export default function Header() {
     ];
 
     // Close mobile menu when route changes
-    useEffect(() => {
-        const handleRouteChange = () => {
-            setIsMenuOpen(false);
-            setActiveDropdown(null);
-        };
+    // useEffect(() => {
+    //     const handleRouteChange = () => {
+    //         setIsMenuOpen(false);
+    //         setActiveDropdown(null);
+    //     };
 
-        // This would typically be with next/router events, but we'll simulate it
-        // For actual implementation, use router.events
-    }, []);
+    //     // This would typically be with next/router events, but we'll simulate it
+    //     // For actual implementation, use router.events
+    // }, []);
 
     return (
         <>
@@ -187,9 +187,10 @@ export default function Header() {
                 } ${isMenuOpen ? 'bg-white' : ''}`}
             >
                 {/* Top announcement bar */}
-                <div className={`bg-gradient-to-r from-amber-900 via-amber-700 to-amber-600 text-white transition-all duration-300 overflow-hidden ${
-                    isScrolled || isMenuOpen ? 'max-h-0' : 'max-h-12'
-                }`}>
+               <div className={`bg-gradient-to-r from-amber-900 via-amber-700 to-amber-600 text-white transform transition-transform duration-300 origin-top ${
+    isScrolled || isMenuOpen ? 'scale-y-100 opacity-100' : 'scale-y-100 opacity-100'
+}`}>
+
                     <div className="container mx-auto px-4 h-12 flex items-center justify-center">
                         <div className="flex items-center space-x-3 text-sm font-medium flex-wrap justify-center">
                             <span className="flex items-center space-x-1 whitespace-nowrap">
@@ -207,9 +208,8 @@ export default function Header() {
 
                 {/* Main header */}
                 <div className="container mx-auto px-4">
-                    <div className={`flex items-center justify-between transition-all duration-300 ${
-                        isScrolled ? 'py-2' : 'py-4'
-                    }`}>
+                    <div className="flex items-center justify-between h-20 sm:h-24 transition-all duration-300">
+
                         
                         {/* Logo */}
                         <Link 

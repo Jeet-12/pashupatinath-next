@@ -46,7 +46,7 @@ export default function Home() {
     return <LoadingSpinner />;
   }
   
-  console.log(homeContent);
+  //console.log(homeContent);
   
 
   return (

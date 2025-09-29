@@ -5,7 +5,7 @@ import Image from 'next/image';
 
 export default function BlogSlider({ homeData = [] }) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  console.log(homeData);
+  //console.log(homeData);
 
   // Use homeData if available, otherwise fallback to sample data
   const blogPosts = homeData && homeData.length > 0 ? homeData : [

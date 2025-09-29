@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface Product {
   id: number;
@@ -10,7 +11,7 @@ interface Product {
   photo: string;
   summary?: string;
   description?: string;
-  price?: number;
+  price?: number | string;
   discount?: number;
   originalPrice?: number;
   cat_title?: string;
@@ -18,6 +19,9 @@ interface Product {
   images?: string[];
   photos?: string[];
   image?: string;
+  slug?: string;
+  url?: string;
+  finalPrice?: number | string;
 }
 
 interface ElegantCategorySliderProps {
@@ -27,9 +31,47 @@ interface ElegantCategorySliderProps {
 export default function ElegantCategorySlider({ products }: ElegantCategorySliderProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
+  const [wishlist, setWishlist] = useState<number[]>([]);
   const sliderRef = useRef(null);
- const autoSlideRef = useRef<NodeJS.Timeout | number | null>(null);
+  const autoSlideRef = useRef<NodeJS.Timeout | number | null>(null);
 
+  // Load wishlist from localStorage on component mount
+  useEffect(() => {
+    const savedWishlist = localStorage.getItem('rudrakshaWishlist');
+    if (savedWishlist) {
+      setWishlist(JSON.parse(savedWishlist));
+    }
+  }, []);
+
+  // Save wishlist to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('rudrakshaWishlist', JSON.stringify(wishlist));
+  }, [wishlist]);
+
+  // Toggle wishlist item
+  const toggleWishlist = (productId: number, event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    setWishlist(prev => {
+      if (prev.includes(productId)) {
+        return prev.filter(id => id !== productId);
+      } else {
+        return [...prev, productId];
+      }
+    });
+  };
+
+  // Function to calculate discount percentage
+  // const calculateDiscountPercentage = (originalPrice: number, currentPrice: number): number => {
+  //   if (!originalPrice || originalPrice <= currentPrice) return 0;
+  //   return Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
+  // };
+
+  // Function to format price with Indian Rupee symbol
+  const formatPrice = (price: number): string => {
+    return `₹${price.toFixed(2)}`;
+  };
 
   // Transform products to categories format using your existing logic
   const categories = products && products.length > 0 
@@ -58,22 +100,48 @@ export default function ElegantCategorySlider({ products }: ElegantCategorySlide
             }${productImage}`;
         }
 
+        // Generate product URL
+        const productUrl = product.slug 
+          ? `/product/${product.slug}`
+          : product.url 
+          ? product.url 
+          : `/product/${product.id}`;
+
+        // Parse prices from API (string or number safe)
+        const apiPrice =
+  typeof product.price === "string"
+    ? parseFloat((product.price as string).replace(/[^\d.]/g, ""))
+    : Number(product.price) || 0;
+
+        let discountedPrice = apiPrice;
+        if (product.finalPrice) {
+          discountedPrice = typeof product.finalPrice === "string"
+            ? parseFloat(product.finalPrice.replace(/[^\d.]/g, ""))
+            : Number(product.finalPrice) || apiPrice;
+        } else if (product.discount && product.discount > 0) {
+          discountedPrice = apiPrice - (apiPrice * product.discount) / 100;
+        }
+
+        // Calculate discount % only if discount actually exists
+        const discountPercentage =
+          apiPrice > 0 && discountedPrice < apiPrice
+            ? Math.round(((apiPrice - discountedPrice) / apiPrice) * 100)
+            : 0;
+
         return {
           id: product.id,
           name: (product.title || product.name || "").length > 20
             ? (product.title || product.name || "").substring(0, 20) + "..."
             : (product.title || product.name || ""),
           image: productImage,
-          discount: product.discount ? `${product.discount}% Off` : product.discount,
-          price: product.price
-            ? `₹${Number(product.price).toFixed(2)}`
-            : product.price,
-          originalPrice:
-            product.originalPrice ||
-            (product.price ? `₹${Number(product.price).toFixed(2)}` : ""),
+          price: discountedPrice,
+          originalPrice: apiPrice,
+          discountPercentage: discountPercentage,
           category: product.cat_title || product.category,
           description: extractDescription(product.summary || product.description || 'Divine blessing'),
-          benefits: extractBenefits(product.summary || product.description || 'Spiritual benefits')
+          benefits: extractBenefits(product.summary || product.description || 'Spiritual benefits'),
+          url: productUrl,
+          isInWishlist: wishlist.includes(product.id)
         };
       })
     : [];
@@ -108,19 +176,18 @@ export default function ElegantCategorySlider({ products }: ElegantCategorySlide
   const itemsToShow = isMobile ? 2 : 4;
 
   useEffect(() => {
-  if (categories.length === 0) return;
+    if (categories.length === 0) return;
 
-  autoSlideRef.current = setInterval(() => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % categories.length);
-  }, 4000);
+    autoSlideRef.current = setInterval(() => {
+      setCurrentIndex((prevIndex) => (prevIndex + 1) % categories.length);
+    }, 4000);
 
-  return () => {
-    if (autoSlideRef.current !== null) {
-      clearInterval(autoSlideRef.current as number);
-    }
-  };
-}, [categories.length]);
-
+    return () => {
+      if (autoSlideRef.current !== null) {
+        clearInterval(autoSlideRef.current as number);
+      }
+    };
+  }, [categories.length]);
 
   // Navigate to next items
   const nextItems = () => {
@@ -132,12 +199,11 @@ export default function ElegantCategorySlider({ products }: ElegantCategorySlide
     
     // Reset auto slide timer on manual navigation
     if (autoSlideRef.current !== null) {
-  clearInterval(autoSlideRef.current as number);
-  autoSlideRef.current = setInterval(() => {
-    setCurrentIndex((prevIndex) => (prevIndex + 1) % categories.length);
-  }, 4000);
-}
-
+      clearInterval(autoSlideRef.current as number);
+      autoSlideRef.current = setInterval(() => {
+        setCurrentIndex((prevIndex) => (prevIndex + 1) % categories.length);
+      }, 4000);
+    }
   };
 
   // Navigate to previous items
@@ -244,9 +310,10 @@ export default function ElegantCategorySlider({ products }: ElegantCategorySlide
                   width: `${extendedCategories.length * (100 / itemsToShow)}%`
                 }}>
                   {extendedCategories.map((category, index) => (
-                    <div
+                    <Link
                       key={`${category.id}-${index}`}
-                      className="relative group cursor-pointer"
+                      href={category.url}
+                      className="relative group cursor-pointer block"
                     >
                       {/* Card with curved design */}
                       <div className="bg-gradient-to-b from-white to-amber-50 rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 border border-amber-100 h-full flex flex-col">
@@ -267,16 +334,31 @@ export default function ElegantCategorySlider({ products }: ElegantCategorySlide
                           />
                           
                           {/* Discount badge */}
-                          {category.discount && (
-                            <div className="absolute top-4 left-4 bg-red-500 text-white text-xs font-semibold py-1 px-2 rounded-full shadow-md">
-                              {category.discount}
+                          {category.discountPercentage > 0 && (
+                            <div className="absolute top-4 left-4 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-semibold py-1 px-2 rounded-full shadow-md">
+                              {category.discountPercentage}% OFF
                             </div>
                           )}
                           
-                          {/* Floating label */}
-                          {/* <div className="absolute top-4 right-4 bg-amber-500 text-white text-xs font-semibold py-1 px-3 rounded-full shadow-md">
-                            {category.name}
-                          </div> */}
+                          {/* Wishlist button */}
+                          <button
+                            onClick={(e) => toggleWishlist(category.id, e)}
+                            className={`absolute top-4 right-4 p-2 rounded-full shadow-md transition-all duration-300 ${
+                              category.isInWishlist 
+                                ? 'bg-red-500 text-white' 
+                                : 'bg-white/90 text-gray-600 hover:bg-white'
+                            }`}
+                            aria-label={category.isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+                          >
+                            <svg 
+                              className={`w-4 h-4 ${category.isInWishlist ? 'fill-current' : ''}`} 
+                              viewBox="0 0 24 24" 
+                              stroke="currentColor" 
+                              strokeWidth={category.isInWishlist ? 0 : 2}
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            </svg>
+                          </button>
                           
                           {/* Curved bottom for image section */}
                           <div className="absolute -bottom-4 left-0 w-full h-8 bg-white rounded-t-3xl"></div>
@@ -290,18 +372,22 @@ export default function ElegantCategorySlider({ products }: ElegantCategorySlide
                           </div>
                           
                           <h3 className="font-semibold text-amber-900 text-center mb-2">{category.name}</h3>
-                        
                           
                           {/* Price section */}
-                          <div className="flex justify-center items-center gap-2 mb-3">
-                            {category.price && (
+                          <div className="flex flex-col items-center gap-1 mb-3">
+                            <div className="flex items-center gap-2">
                               <span className="text-lg font-bold text-amber-800">
-                                {category.price}
+                                {formatPrice(category.price)}
                               </span>
-                            )}
-                            {category.originalPrice && category.originalPrice !== category.price && (
-                              <span className="text-sm text-gray-500 line-through">
-                                {category.originalPrice}
+                              {category.discountPercentage > 0 && category.originalPrice > 0 && (
+                                <span className="text-sm text-gray-500 line-through">
+                                  {formatPrice(category.originalPrice)}
+                                </span>
+                              )}
+                            </div>
+                            {category.discountPercentage > 0 && (
+                              <span className="text-xs text-green-600 font-semibold bg-green-50 px-2 py-1 rounded">
+                                You save {formatPrice(category.originalPrice - category.price)}
                               </span>
                             )}
                           </div>
@@ -313,7 +399,7 @@ export default function ElegantCategorySlider({ products }: ElegantCategorySlide
                           </div>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               </div>

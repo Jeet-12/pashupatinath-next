@@ -83,7 +83,7 @@ export default function ContactPage() {
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log('Form submitted', formData);
+      //console.log('Form submitted', formData);
       setIsSubmitted(true);
     } catch (error: any) {
   setErrors({ general: error?.message || 'An unexpected error occurred.' });
