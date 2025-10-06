@@ -1,17 +1,9 @@
 "use client";
 
 import { useState } from 'react';
-import { createRazorpayOrder, verifyAndStoreConsultation } from '../libs/payment-api';
-
-declare global {
-  interface Window {
-    Razorpay: any;
-  }
-}
 
 export default function RudrakshaConsultation() {
   const [activeTab, setActiveTab] = useState('free');
-  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -29,175 +21,9 @@ export default function RudrakshaConsultation() {
     });
   };
 
-  const initializeRazorpay = () => {
-    return new Promise((resolve) => {
-      if (window.Razorpay) {
-        resolve(true);
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-
-      script.onload = () => {
-        resolve(true);
-      };
-
-      script.onerror = () => {
-        resolve(false);
-      };
-
-      document.body.appendChild(script);
-    });
-  };
-
-  const handlePayment = async () => {
-    // Validate form data
-    const requiredFields = ['name', 'email', 'mobile', 'birthPlace', 'dob', 'birthTime'];
-    const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
-
-    if (missingFields.length > 0) {
-      alert(`Please fill all required fields: ${missingFields.join(', ')}`);
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      // Initialize Razorpay
-      const razorpayLoaded = await initializeRazorpay();
-
-      if (!razorpayLoaded) {
-        alert('Razorpay SDK failed to load. Please check your internet connection.');
-        setLoading(false);
-        return;
-      }
-
-      // Create order
-      const orderData = await createRazorpayOrder({
-        amount: 100, // 1 rupee in paise
-        currency: 'INR'
-      });
-
-      if (!orderData.success) {
-        alert(`Order creation failed: ${orderData.message}`);
-        setLoading(false);
-        return;
-      }
-
-      const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-
-      if (!razorpayKey) {
-        alert('Payment configuration error. Please contact support.');
-        setLoading(false);
-        return;
-      }
-
-      const options = {
-        key: razorpayKey,
-        amount: orderData.data.amount,
-        currency: orderData.data.currency,
-        name: 'Pashupatinath Rudraksh',
-        description: 'Personalized Rudraksha Recommendation',
-        order_id: orderData.data.id,
-        handler: async function (response: any) {
-          console.log('Payment successful, verifying...', response);
-
-          try {
-            // Verify payment and store consultation
-            const verificationResult = await verifyAndStoreConsultation({
-              ...formData,
-              payment_id: response.razorpay_payment_id,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_signature: response.razorpay_signature,
-              amount: 1,
-              consultation_type: 'personalized'
-            });
-
-            if (verificationResult.success) {
-
-              // Reset form
-              setFormData({
-                name: '',
-                email: '',
-                mobile: '',
-                birthPlace: '',
-                dob: '',
-                birthTime: '',
-                astroName: ''
-              });
-
-              // WhatsApp redirection
-              const phoneNumber = "7377371008";
-              const details = verificationResult.data;
-
-              // Build message (excluding email & mobile)
-              const message =
-                `Hello, I have booked a consultation.  
-                Here are my details:
-
-                Name: ${details.name}
-                Birth Place: ${details.bplace}
-                Date of Birth: ${details.dob}
-                Birth Time: ${details.btime}`;
-
-              const whatsappUrl = `https://wa.me/91${phoneNumber}?text=${encodeURIComponent(message)}`;
-              window.location.href = whatsappUrl;
-
-            } else {
-              alert(`Payment successful but verification failed: ${verificationResult.message}`);
-            }
-          } catch (error) {
-            console.error('Error after payment:', error);
-            alert(`Payment successful but there was an error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-          } finally {
-            setLoading(false);
-          }
-        },
-        prefill: {
-          name: formData.name,
-          email: formData.email,
-          contact: formData.mobile,
-        },
-        notes: {
-          consultation_type: 'personalized',
-        },
-        theme: {
-          color: '#f5821f',
-        },
-        modal: {
-          ondismiss: function () {
-            setLoading(false);
-          }
-        }
-      };
-
-      const paymentObject = new window.Razorpay(options);
-
-      paymentObject.on('payment.failed', function (response: any) {
-        console.error('Payment failed:', response.error);
-        alert(`Payment failed: ${response.error.description}. Please try again.`);
-        setLoading(false);
-      });
-
-      paymentObject.open();
-
-    } catch (error) {
-      console.error('Payment initialization error:', error);
-      alert(`Failed to initiate payment: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (activeTab === 'personalized') {
-      await handlePayment();
-    } else {
-      // For free consultation
-      alert('Consultation booked successfully! We will contact you soon.');
-    }
+    alert('Consultation booked successfully! We will contact you soon.');
   };
 
   return (
@@ -211,7 +37,7 @@ export default function RudrakshaConsultation() {
           <p className="text-xl text-gray-700 max-w-3xl mx-auto mb-8">
             Connect with our experts to find the perfect Rudraksha for your spiritual journey
           </p>
-
+          
           {/* Toggle Button */}
           <div className="inline-flex rounded-md shadow-sm border border-amber-200 bg-white overflow-hidden">
             <button
@@ -241,7 +67,7 @@ export default function RudrakshaConsultation() {
               <p className="text-gray-700 mb-6">
                 Get a quick and personalized Rudraksha recommendation through chats. Ideal for those seeking basic guidance, without astrological insights.
               </p>
-
+              
               <ul className="space-y-3">
                 <li className="flex items-start">
                   <svg className="w-5 h-5 text-[#f5821f] mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -288,7 +114,7 @@ export default function RudrakshaConsultation() {
                   viewBox="0 0 16 16"
                   xmlns="http://www.w3.org/2000/svg"
                 >
-                  <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.932 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z" />
+                  <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.932 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.615-4.934c-.197-.099-1.17-.578-1.353-.646-.182-.065-.315-.099-.445.099-.133.197-.513.646-.627.775-.114.133-.232.148-.43.05-.197-.1-.836-.308-1.592-.985-.59-.525-.985-1.175-1.103-1.372-.114-.198-.011-.304.088-.403.087-.088.197-.232.296-.346.1-.114.133-.198.198-.33.065-.134.034-.248-.015-.347-.05-.099-.445-1.076-.612-1.47-.16-.389-.323-.335-.445-.34-.114-.007-.247-.007-.38-.007a.729.729 0 0 0-.529.247c-.182.198-.691.677-.691 1.654 0 .977.71 1.916.81 2.049.098.133 1.394 2.132 3.383 2.992.47.205.84.326 1.129.418.475.152.904.129 1.246.08.38-.058 1.171-.48 1.338-.943.164-.464.164-.86.114-.943-.049-.084-.182-.133-.38-.232z"/>
                 </svg>
                 Chat for Free Consultation
               </button>
@@ -314,7 +140,7 @@ export default function RudrakshaConsultation() {
                 <p className="text-gray-700 mb-6">
                   Perfect for those looking for more clarity in their selection with astrological insights.
                 </p>
-
+                
                 <ul className="space-y-3">
                   <li className="flex items-start">
                     <svg className="w-5 h-5 text-[#f5821f] mt-0.5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -355,9 +181,9 @@ export default function RudrakshaConsultation() {
             <div className="bg-white rounded-2xl p-6 shadow-lg border border-amber-100">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <h3 className="text-xl font-semibold text-[#5F3623] mb-2">Let's Get Started</h3>
-
+                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">What should we call you? *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">What should we call you?</label>
                   <input
                     type="text"
                     name="name"
@@ -368,9 +194,8 @@ export default function RudrakshaConsultation() {
                     required
                   />
                 </div>
-
+                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Email Address *</label>
                   <input
                     type="email"
                     name="email"
@@ -381,9 +206,8 @@ export default function RudrakshaConsultation() {
                     required
                   />
                 </div>
-
+                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number *</label>
                   <input
                     type="tel"
                     name="mobile"
@@ -394,9 +218,8 @@ export default function RudrakshaConsultation() {
                     required
                   />
                 </div>
-
+                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Birth Place *</label>
                   <input
                     type="text"
                     name="birthPlace"
@@ -407,9 +230,9 @@ export default function RudrakshaConsultation() {
                     required
                   />
                 </div>
-
+                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
                   <input
                     type="date"
                     name="dob"
@@ -419,9 +242,9 @@ export default function RudrakshaConsultation() {
                     required
                   />
                 </div>
-
+                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Birth Time *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Birth Time</label>
                   <input
                     type="time"
                     name="birthTime"
@@ -431,27 +254,27 @@ export default function RudrakshaConsultation() {
                     required
                   />
                 </div>
-
+                
+                {/* <div>
+                  <input
+                    type="text"
+                    name="astroName"
+                    value={formData.astroName}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#f5821f] focus:border-transparent text-gray-900 placeholder-gray-500"
+                    placeholder="Astro Name"
+                  />
+                </div> */}
+                
                 <p className="text-sm text-gray-600 mt-4">
                   We will provide you the appointment date and necessary information via your provided email address after your appointment date has been updated.
                 </p>
-
+                
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-full bg-[#f5821f] hover:bg-[#e07a1d] disabled:bg-gray-400 text-white font-semibold py-3 rounded-lg transition-colors mt-4 flex items-center justify-center"
+                  className="w-full bg-[#f5821f] hover:bg-[#e07a1d] text-white font-semibold py-3 rounded-lg transition-colors mt-4"
                 >
-                  {loading ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Processing...
-                    </>
-                  ) : (
-                    'Pay ₹1 & Book Expert Consultation'
-                  )}
+                  Book Now for expert consultation
                 </button>
               </form>
             </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import { storeMessage } from '../libs/api';
 
 interface ContactForm {
   name: string;
@@ -73,24 +74,28 @@ export default function ContactPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!validateForm()) return;
+ const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    setIsSubmitting(true);
+  if (!validateForm()) return;
 
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      //console.log('Form submitted', formData);
+  setIsSubmitting(true);
+
+  try {
+    const response = await storeMessage(formData);
+    console.log('API Response:', response); 
+
+    if (response.success) {
       setIsSubmitted(true);
-    } catch (error: any) {
-  setErrors({ general: error?.message || 'An unexpected error occurred.' });
-    } finally {
-      setIsSubmitting(false);
+    } else {
+      setErrors({ general: response.message || 'Failed to send message.' });
     }
-  };
+  } catch (error: any) {
+    setErrors({ general: error?.message || 'An unexpected error occurred.' });
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">

@@ -223,7 +223,7 @@ const discountPercentage =
   };
 
   const handleProductClick = (productSlug: string) => {
-    router.push(`/product/${productSlug}`);
+    router.push(`/product-details/${productSlug}`);
   };
 
   return (

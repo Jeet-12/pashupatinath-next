@@ -102,10 +102,10 @@ export default function ElegantCategorySlider({ products }: ElegantCategorySlide
 
         // Generate product URL
         const productUrl = product.slug 
-          ? `/product/${product.slug}`
+          ? `/product-details/${product.slug}`
           : product.url 
           ? product.url 
-          : `/product/${product.id}`;
+          : `/product-details/${product.id}`;
 
         // Parse prices from API (string or number safe)
         const apiPrice =

@@ -91,26 +91,34 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [wishlist, setWishlist] = useState<number[]>([]);
 
-  // Fetch products on component mount
+
+  
 useEffect(() => {
   const loadProducts = async () => {
     setLoading(true);
     try {
       const fetchedProducts: ProductsApiResponse = await fetchProducts();
-setProducts(fetchedProducts.products || []);
-setRecentProduct(fetchedProducts.recent_products || []);
+      console.log('Fetched products:', fetchedProducts);
+      
+      setProducts(fetchedProducts.products || []);
+      setRecentProduct(fetchedProducts.recent_products || []);
 
-
-      if (fetchedProducts.products.length > 0) {
-        const prices = fetchedProducts.products.map(p => p.price);
-        setFilters(prev => ({
-          ...prev,
-          minPrice: Math.min(...prices),
-          maxPrice: Math.max(...prices),
-        }));
+      // Update price range only if we have products
+      if (fetchedProducts.products && fetchedProducts.products.length > 0) {
+        const prices = fetchedProducts.products.map(p => p.price).filter(price => !isNaN(price));
+        if (prices.length > 0) {
+          setFilters(prev => ({
+            ...prev,
+            minPrice: Math.min(...prices),
+            maxPrice: Math.max(...prices),
+          }));
+        }
       }
     } catch (error) {
       console.error('Error loading products:', error);
+      // Set empty arrays on error
+      setProducts([]);
+      setRecentProduct([]);
     } finally {
       setLoading(false);
     }
@@ -297,28 +305,34 @@ setRecentProduct(fetchedProducts.recent_products || []);
     // Add your buy now logic here
   // };
 
+
 const ProductCard = ({ product }: { product: Product }) => {
   const productImage = getProductImage(product);
   const isInWishlist = wishlist.includes(product.id);
 
-
-   const hasDiscount = product.discount > 0 ;
+  // Safely handle potentially undefined values
+  const hasDiscount = (product.discount || 0) > 0;
   const currentPrice = hasDiscount
-    ? Math.round(product.price - (product.price * product.discount) / 100)
+    ? Math.round(product.price - (product.price * (product.discount || 0)) / 100)
     : product.price;
   const discountAmount = hasDiscount
     ? product.price - currentPrice
-    : product.price;
-    
+    : 0;
+  
+  const stock = product.stock || 0;
+  const _rating = product.rating || 0;
+  const reviewsCount = product.reviews_count || 0;
+  const reviewsAvgRate = product.reviews_avg_rate || 0;
+
   return (
-   <div className="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-amber-100 flex flex-col transform hover:-translate-y-1">
+    <div className="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-amber-100 flex flex-col transform hover:-translate-y-1">
       {/* Make the card clickable */}
       <Link href={`/product-details/${product.slug}`} className="flex-1 flex flex-col">
         {/* Product Image */}
         <div className="relative h-48 sm:h-64 overflow-hidden">
           <Image
             src={productImage}
-            alt={product.title}
+            alt={product.title || 'Product image'}
             fill
             className="object-cover group-hover:scale-110 transition-transform duration-500"
             onError={(e) => {
@@ -346,7 +360,8 @@ const ProductCard = ({ product }: { product: Product }) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
           </button>
-          {/* ...badges... */}
+          
+          {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-2">
             {product.isNew && (
               <span className="bg-green-500 text-white text-xs font-bold py-1 px-2 rounded-full">NEW</span>
@@ -354,45 +369,50 @@ const ProductCard = ({ product }: { product: Product }) => {
             {product.isBestSeller && (
               <span className="bg-purple-500 text-white text-xs font-bold py-1 px-2 rounded-full">BEST SELLER</span>
             )}
-            {product.discount > 0 && (
+            {hasDiscount && (
               <span className="bg-red-500 text-white text-xs font-bold py-1 px-2 rounded-full">
                 {product.discount}% OFF
               </span>
             )}
           </div>
+          
           {/* Stock Badge */}
           <div className={`absolute bottom-3 left-3 text-white text-xs font-bold py-1 px-2 rounded-full ${
-            product.stock > 10 ? 'bg-green-500' : product.stock > 0 ? 'bg-amber-500' : 'bg-red-500'
+            stock > 10 ? 'bg-green-500' : stock > 0 ? 'bg-amber-500' : 'bg-red-500'
           }`}>
-            {product.stock > 0 ? `${product.stock} left` : 'Out of Stock'}
+            {stock > 0 ? `${stock} left` : 'Out of Stock'}
           </div>
         </div>
+        
         {/* Product Info */}
-         <div className="p-3 sm:p-5 flex flex-col flex-grow">
+        <div className="p-3 sm:p-5 flex flex-col flex-grow">
           <div className="flex justify-between items-start mb-2">
-            <h3 className="font-bold text-lg text-amber-900 line-clamp-2 flex-1">{product.title}</h3>
+            <h3 className="font-bold text-lg text-amber-900 line-clamp-2 flex-1">
+              {product.title || 'Untitled Product'}
+            </h3>
           </div>
+          
           {/* Rating */}
           <div className="flex items-center mb-3">
             <div className="flex">
-            {[...Array(5)].map((_, i) => (
-  <svg
-    key={i}
-    className={`w-4 h-4 ${
-      i < Math.floor(product.reviews_avg_rate ?? 0) ? 'text-yellow-400' : 'text-gray-300'
-    }`}
-    fill="currentColor"
-    viewBox="0 0 20 20"
-  >
-    <path d="M9.049 2.927C9.3 2.215 10.7 2.215 10.951 2.927l1.286 3.964a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 00-.364 1.118l1.286 3.963c.251.712-.587 1.3-1.18.866l-3.37-2.448a1 1 0 00-1.176 0l-3.37 2.448c-.593.434-1.431-.154-1.18-.866l1.286-3.963a1 1 0 00-.364-1.118L2.067 9.39c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69l1.286-3.964z" />
-  </svg>
-))}
-
+              {[...Array(5)].map((_, i) => (
+                <svg
+                  key={i}
+                  className={`w-4 h-4 ${
+                    i < Math.floor(reviewsAvgRate) ? 'text-yellow-400' : 'text-gray-300'
+                  }`}
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M9.049 2.927C9.3 2.215 10.7 2.215 10.951 2.927l1.286 3.964a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 00-.364 1.118l1.286 3.963c.251.712-.587 1.3-1.18.866l-3.37-2.448a1 1 0 00-1.176 0l-3.37 2.448c-.593.434-1.431-.154-1.18-.866l1.286-3.963a1 1 0 00-.364-1.118L2.067 9.39c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69l1.286-3.964z" />
+                </svg>
+              ))}
             </div>
-            <span className="ml-2 text-sm text-gray-600">({product.reviews_count})</span>
+            <span className="ml-2 text-sm text-gray-600">({reviewsCount})</span>
           </div>
+          
           {/* Pricing */}
-           <div className="mt-auto">
+          <div className="mt-auto">
             <div className="flex items-center justify-between mb-4">
               <div className="flex flex-col">
                 <span className="text-2xl font-bold text-[#f5821f]">
@@ -410,22 +430,21 @@ const ProductCard = ({ product }: { product: Product }) => {
                 )}
               </div>
             </div>
-           
           </div>
         </div>
       </Link>
-  
-  <div className="flex flex-col sm:flex-row gap-2 px-5 pb-5">
+      
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row gap-2 px-5 pb-5">
         <button
-          // onClick={() => addToCart(product)}
-          disabled={product.stock === 0}
+          disabled={stock === 0}
           className={`flex-1 font-semibold py-3 rounded-xl transition-all duration-300 flex items-center justify-center text-sm ${
-            product.stock === 0 
+            stock === 0 
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
               : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl'
           }`}
         >
-          {product.stock === 0 ? (
+          {stock === 0 ? (
             'Out of Stock'
           ) : (
             <>
@@ -437,10 +456,9 @@ const ProductCard = ({ product }: { product: Product }) => {
           )}
         </button>
         <button
-          // onClick={() => buyNow(product)}
-          disabled={product.stock === 0}
+          disabled={stock === 0}
           className={`px-4 font-semibold py-3 rounded-xl transition-all duration-300 flex items-center justify-center text-sm ${
-            product.stock === 0 
+            stock === 0 
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
               : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl'
           }`}

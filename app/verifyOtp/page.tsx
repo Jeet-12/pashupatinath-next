@@ -197,7 +197,7 @@ function OTPVerificationPageInner() {
                     onChange={(e) => handleChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     onPaste={handlePaste}
-                    className="w-12 h-12 border border-gray-300 rounded-lg text-center text-xl font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    className="w-12 h-12 border border-gray-300 rounded-lg text-center text-xl font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-900 bg-white"
                   />
                 ))}
               </div>

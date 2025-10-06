@@ -346,16 +346,124 @@ export interface ProductsApiResponse {
   products: Product[];
   recent_products: RecentProduct[];
 }
+// In your libs/api.ts - Fix the fetchProducts function
 export const fetchProducts = async (): Promise<ProductsApiResponse> => {
-  const response = await apiCall(`/product-grids`, 'GET');
+  try {
+    const response = await apiCall(`/product-grids`, 'GET');
+    
+    console.log('API Response:', response); // Debug log
+    
+    // Handle different possible response structures
+    let products: Product[] = [];
+    let recent_products: RecentProduct[] = [];
 
-  const products = response.data?.products || [];
-  const recent_products = response.data?.recent_products || [];
+    // Check if data exists and has the expected structure
+    if (response.data) {
+      // Try different possible structures
+      if (Array.isArray(response.data.products)) {
+        products = response.data.products;
+      } else if (Array.isArray(response.data)) {
+        products = response.data;
+      }
+      
+      if (Array.isArray(response.data.recent_products)) {
+        recent_products = response.data.recent_products;
+      }
+    }
 
-  return {
-    success: response.success,
-    message: response.message,
-    products,
-    recent_products,
+    // If no products found in data, check the root level (some API variants return arrays at root)
+    const respAny = response as any;
+    if (products.length === 0 && Array.isArray(respAny.products)) {
+      products = respAny.products;
+    }
+    if (recent_products.length === 0 && Array.isArray(respAny.recent_products)) {
+      recent_products = respAny.recent_products;
+    }
+
+    return {
+      success: response.success !== false, // Default to true if not specified
+      message: response.message || 'Products fetched successfully',
+      products,
+      recent_products,
+    };
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to fetch products',
+      products: [],
+      recent_products: [],
+    };
+  }
+};
+
+
+
+
+export interface ProductDetails {
+  id: number;
+  title: string;
+  slug: string;
+  price: number;
+  oldPrice: number;
+  rating: number;
+  discount: number;
+  stock: number;
+  photo: string;
+  images?: string[];
+  photos?: string[];
+  image?: string;
+  videos?: string[];
+  category: string;
+  isNew: boolean;
+  isBestSeller: boolean;
+  tags: string[];
+  description: string;
+  specifications?: {
+    material: string;
+    origin: string;
+    mukhi: string;
+    size: string;
+    color: string;
+    weight: string;
+    natural: boolean;
+    benefits: string[];
   };
+  summary: string;
+  createdAt?: string;
+  reviews_avg_rate?: number;
+  reviews_count?: number;
+}
+
+export interface Review {
+  id: number;
+  productId: number;
+  userName: string;
+  userAvatar?: string;
+  rating: number;
+  title: string;
+  comment: string;
+  date: string;
+  verified: boolean;
+  helpful: number;
+  images?: string[];
+}
+
+export interface ProductDetailsResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    product: ProductDetails;
+    reviews: Review[];
+    related_products: ProductDetails[];
+  };
+}
+
+// Fetch product details by slug
+export const fetchProductDetails = async (slug: string): Promise<ProductDetailsResponse> => {
+  return await apiCall(`/product-detail/${slug}`, 'GET') as ProductDetailsResponse;
+};
+
+export const storeMessage = async (formData: any): Promise<ApiResponse> => {
+  return await apiCall('/contact-messages', 'POST', formData);
 };
