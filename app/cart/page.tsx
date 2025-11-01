@@ -3,31 +3,7 @@
 import Image from 'next/image';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-
-
- const sampleAddresses: Address[] = [
-    {
-      id: 1,
-      name: 'Rajesh Sharma',
-      mobile: '9876543210',
-      address: '123 Spiritual Lane, Ashram Road',
-      city: 'Haridwar',
-      state: 'Uttarakhand',
-      pincode: '249401',
-      landmark: 'Near Ganga Temple',
-      isDefault: true
-    },
-    {
-      id: 2,
-      name: 'Rajesh Sharma',
-      mobile: '9876543210',
-      address: '456 Meditation Street, Rishikesh Road',
-      city: 'Rishikesh',
-      state: 'Uttarakhand',
-      pincode: '249201',
-      isDefault: false
-    }
-  ];
+import { getCart, removeFromCart, clearCart } from '../libs/api';
 
 type CartItem = {
   id: number;
@@ -41,57 +17,76 @@ type CartItem = {
   maxQuantity: number;
 };
 
-type Address = {
-  id: number;
-  name: string;
-  mobile: string;
-  address: string;
-  city: string;
-  state: string;
-  pincode: string;
-  landmark?: string;
-  isDefault: boolean;
-};
-
 export default function CartPage() {
   const router = useRouter();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [couponCode, setCouponCode] = useState('');
-  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(null);
-  const [discountAmount, setDiscountAmount] = useState(0);
-  const [showAddressForm, setShowAddressForm] = useState(false);
-  const [addresses, setAddresses] = useState<Address[]>([]);
-  const [selectedAddress, setSelectedAddress] = useState<number | null>(null);
+  const [removingItem, setRemovingItem] = useState<number | null>(null);
+  const [clearingCart, setClearingCart] = useState(false);
 
-  // Sample addresses
- 
-
-  // Load cart items from localStorage on component mount
+  // Load cart items on component mount
   useEffect(() => {
-    const loadCartItems = () => {
+    let mounted = true;
+    
+    const loadInitialData = async () => {
       try {
-        const savedCart = localStorage.getItem('rudraksha_cart');
-        if (savedCart) {
-          const items = JSON.parse(savedCart);
-          setCartItems(items);
-        }
+        setLoading(true);
+        await loadCartItems();
       } catch (error) {
-        console.error('Error loading cart items:', error);
+        console.error('Error loading cart data:', error);
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
-    loadCartItems();
-    setAddresses(sampleAddresses);
-    setSelectedAddress(sampleAddresses.find(addr => addr.isDefault)?.id || null);
+    loadInitialData();
+
+    const onCounts = () => loadCartItems();
+    window.addEventListener('countsUpdated', onCounts as EventListener);
+
+    return () => { 
+      mounted = false; 
+      window.removeEventListener('countsUpdated', onCounts as EventListener); 
+    };
   }, []);
+
+  const loadCartItems = async () => {
+    try {
+      const res = await getCart();
+      
+      if (res.success && res.data && Array.isArray(res.data.cart_items)) {
+        const items = res.data.cart_items.map((ci: any) => ({
+          id: ci.id || ci.product_id,
+          name: ci.product?.title || ci.name || ci.product_name || '',
+          price: Number(ci.price || ci.product?.price || 0),
+          oldPrice: Number(ci.product?.old_price || ci.product?.price || 0),
+          discount: Number(ci.discount || 0),
+          quantity: Number(ci.quantity || 1),
+          image: Array.isArray(ci.product?.photos) ? (ci.product.photos[0] || '') : (ci.product?.photo || ''),
+          category: ci.product?.category || ci.category || '',
+          maxQuantity: Number(ci.product?.stock || ci.maxQuantity || 10)
+        }));
+        setCartItems(items);
+      } else {
+        // fallback to localStorage
+        try {
+          const savedCart = localStorage.getItem('rudraksha_cart');
+          if (savedCart) setCartItems(JSON.parse(savedCart));
+        } catch {}
+      }
+    } catch (error) {
+      console.error('Error loading cart items:', error);
+    }
+  };
 
   // Save cart items to localStorage whenever cart changes
   useEffect(() => {
     if (!loading) {
-      localStorage.setItem('rudraksha_cart', JSON.stringify(cartItems));
+      try { 
+        localStorage.setItem('rudraksha_cart', JSON.stringify(cartItems)); 
+      } catch {}
     }
   }, [cartItems, loading]);
 
@@ -107,52 +102,52 @@ export default function CartPage() {
     );
   };
 
-  const removeItem = (id: number) => {
-    setCartItems(prev => prev.filter(item => item.id !== id));
-  };
-
-  const applyCoupon = () => {
-    const coupons = {
-      'DIVINE10': 10,
-      'RUDRAKSHA15': 15,
-      'SPIRITUAL20': 20,
-      'FIRSTORDER': 5
-    };
-
-    const discount = coupons[couponCode.toUpperCase() as keyof typeof coupons];
-    if (discount) {
-      setAppliedCoupon(couponCode.toUpperCase());
-      setDiscountAmount(discount);
-    } else {
-      alert('Invalid coupon code. Please try again.');
+  const removeItem = async (id: number) => {
+    setRemovingItem(id);
+    try {
+      const result = await removeFromCart(id);
+      if (result.success) {
+        setCartItems(prev => prev.filter(item => item.id !== id));
+        // The cart count update will be handled by the event listener
+      } else {
+        alert(result.message || 'Failed to remove item from cart');
+      }
+    } catch (error) {
+      console.error('Error removing item:', error);
+      alert('Failed to remove item from cart');
+    } finally {
+      setRemovingItem(null);
     }
   };
 
-  const removeCoupon = () => {
-    setAppliedCoupon(null);
-    setDiscountAmount(0);
-    setCouponCode('');
+  const clearAllItems = async () => {
+    if (!confirm('Are you sure you want to clear your entire cart?')) {
+      return;
+    }
+
+    setClearingCart(true);
+    try {
+      const result = await clearCart();
+      if (result.success) {
+        setCartItems([]);
+        // The cart count update will be handled by the event listener
+      } else {
+        alert(result.message || 'Failed to clear cart');
+      }
+    } catch (error) {
+      console.error('Error clearing cart:', error);
+      alert('Failed to clear cart');
+    } finally {
+      setClearingCart(false);
+    }
   };
 
   const calculateSubtotal = () => {
     return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
   };
 
-  const calculateDiscount = () => {
-    const subtotal = calculateSubtotal();
-    return (subtotal * discountAmount) / 100;
-  };
-
-  const calculateShipping = () => {
-    const subtotal = calculateSubtotal();
-    return subtotal > 5000 ? 0 : 100; // Free shipping above ₹5000
-  };
-
   const calculateTotal = () => {
-    const subtotal = calculateSubtotal();
-    const discount = calculateDiscount();
-    const shipping = calculateShipping();
-    return subtotal - discount + shipping;
+    return calculateSubtotal();
   };
 
   const proceedToCheckout = () => {
@@ -161,20 +156,10 @@ export default function CartPage() {
       return;
     }
 
-    if (!selectedAddress) {
-      alert('Please select a delivery address.');
-      return;
-    }
-
-    // Save order details and redirect to checkout
     const orderDetails = {
       items: cartItems,
       subtotal: calculateSubtotal(),
-      discount: calculateDiscount(),
-      shipping: calculateShipping(),
-      total: calculateTotal(),
-      addressId: selectedAddress,
-      coupon: appliedCoupon
+      total: calculateTotal()
     };
 
     localStorage.setItem('current_order', JSON.stringify(orderDetails));
@@ -234,18 +219,44 @@ export default function CartPage() {
           <div className="lg:w-2/3">
             <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-amber-900">
-                  Cart Items ({cartItems.length})
-                </h2>
-                <button
-                  onClick={continueShopping}
-                  className="text-amber-600 hover:text-amber-800 font-semibold flex items-center gap-2"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                  </svg>
-                  Continue Shopping
-                </button>
+                <div>
+                  <h2 className="text-2xl font-bold text-amber-900">
+                    Cart Items ({cartItems.length})
+                  </h2>
+                  <p className="text-sm text-amber-600 mt-1">
+                    Total: {cartItems.reduce((sum, item) => sum + item.quantity, 0)} items
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={clearAllItems}
+                    disabled={clearingCart}
+                    className="text-red-600 hover:text-red-800 font-semibold flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {clearingCart ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                        Clearing...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Clear All
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={continueShopping}
+                    className="text-amber-600 hover:text-amber-800 font-semibold flex items-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Continue Shopping
+                  </button>
+                </div>
               </div>
 
               {/* Cart Items List */}
@@ -255,7 +266,7 @@ export default function CartPage() {
                     {/* Product Image */}
                     <div className="relative w-20 h-20 flex-shrink-0">
                       <Image
-                        src={item.image}
+                        src={`${process.env.NEXT_PUBLIC_APP_URL}${item.image}`}
                         alt={item.name}
                         fill
                         className="object-cover rounded-lg"
@@ -311,60 +322,21 @@ export default function CartPage() {
                     {/* Remove Button */}
                     <button
                       onClick={() => removeItem(item.id)}
-                      className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                      disabled={removingItem === item.id}
+                      className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       title="Remove item"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                      </svg>
+                      {removingItem === item.id ? (
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-500"></div>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      )}
                     </button>
                   </div>
                 ))}
               </div>
-            </div>
-
-            {/* Delivery Address Section */}
-            <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h2 className="text-2xl font-bold text-amber-900 mb-6">Delivery Address</h2>
-              
-              <div className="grid gap-4 md:grid-cols-2">
-                {addresses.map((address) => (
-                  <div
-                    key={address.id}
-                    className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${
-                      selectedAddress === address.id
-                        ? 'border-amber-500 bg-amber-50'
-                        : 'border-gray-200 hover:border-amber-300'
-                    }`}
-                    onClick={() => setSelectedAddress(address.id)}
-                  >
-                    <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-semibold text-black">{address.name}</h3>
-                      {address.isDefault && (
-                        <span className="bg-amber-500 text-white text-xs px-2 py-1 rounded-full">Default</span>
-                      )}
-                    </div>
-                    <p className="text-black text-sm mb-1">{address.address}</p>
-                    <p className="text-black text-sm mb-1">
-                      {address.city}, {address.state} - {address.pincode}
-                    </p>
-                    {address.landmark && (
-                      <p className="text-black text-sm mb-2">Landmark: {address.landmark}</p>
-                    )}
-                    <p className="text-black text-sm">Mobile: {address.mobile}</p>
-                  </div>
-                ))}
-              </div>
-
-              <button
-                onClick={() => setShowAddressForm(true)}
-                className="mt-4 flex items-center gap-2 text-amber-600 hover:text-amber-800 font-semibold"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Add New Address
-              </button>
             </div>
           </div>
 
@@ -373,65 +345,12 @@ export default function CartPage() {
             <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-6">
               <h2 className="text-2xl font-bold text-amber-900 mb-6">Order Summary</h2>
 
-              {/* Coupon Code */}
-              <div className="mb-6">
-                <label className="block text-sm font-semibold text-black mb-2">Coupon Code</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={couponCode}
-                    onChange={(e) => setCouponCode(e.target.value)}
-                    placeholder="Enter coupon code"
-                    disabled={!!appliedCoupon}
-                    className="flex-1 border border-amber-200 rounded-xl p-3 text-black disabled:bg-gray-100"
-                  />
-                  {appliedCoupon ? (
-                    <button
-                      onClick={removeCoupon}
-                      className="bg-red-500 text-white px-4 rounded-xl hover:bg-red-600 transition-colors"
-                    >
-                      Remove
-                    </button>
-                  ) : (
-                    <button
-                      onClick={applyCoupon}
-                      className="bg-amber-500 text-white px-4 rounded-xl hover:bg-amber-600 transition-colors"
-                    >
-                      Apply
-                    </button>
-                  )}
-                </div>
-                {appliedCoupon && (
-                  <p className="text-green-600 text-sm mt-2">
-                    Coupon <strong>{appliedCoupon}</strong> applied! {discountAmount}% discount.
-                  </p>
-                )}
-              </div>
-
               {/* Price Breakdown */}
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-black">
                   <span>Subtotal ({cartItems.reduce((sum, item) => sum + item.quantity, 0)} items)</span>
                   <span>₹{calculateSubtotal().toLocaleString()}</span>
                 </div>
-                
-                {discountAmount > 0 && (
-                  <div className="flex justify-between text-green-600">
-                    <span>Discount ({discountAmount}%)</span>
-                    <span>-₹{calculateDiscount().toLocaleString()}</span>
-                  </div>
-                )}
-                
-                <div className="flex justify-between text-black">
-                  <span>Shipping</span>
-                  <span>{calculateShipping() === 0 ? 'FREE' : `₹${calculateShipping()}`}</span>
-                </div>
-                
-                {calculateSubtotal() < 5000 && (
-                  <div className="text-sm text-amber-600">
-                    Add ₹{(5000 - calculateSubtotal()).toLocaleString()} more for free shipping!
-                  </div>
-                )}
               </div>
 
               {/* Total */}
@@ -442,13 +361,22 @@ export default function CartPage() {
                 </div>
               </div>
 
-              {/* Checkout Button */}
-              <button
-                onClick={proceedToCheckout}
-                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-4 rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all duration-300 font-semibold text-lg shadow-lg hover:shadow-xl"
-              >
-                Proceed to Checkout
-              </button>
+              {/* Action Buttons */}
+              <div className="space-y-4">
+                <button
+                  onClick={proceedToCheckout}
+                  className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-4 rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all duration-300 font-semibold text-lg shadow-lg hover:shadow-xl"
+                >
+                  Proceed to Checkout
+                </button>
+                
+                <button
+                  onClick={continueShopping}
+                  className="w-full border border-amber-500 text-amber-500 py-4 rounded-xl hover:bg-amber-50 transition-all duration-300 font-semibold text-lg"
+                >
+                  Continue Shopping
+                </button>
+              </div>
 
               {/* Security Badges */}
               <div className="mt-6 text-center">
@@ -476,40 +404,6 @@ export default function CartPage() {
           </div>
         </div>
       </div>
-
-      {/* Add Address Modal */}
-      {showAddressForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-            <h3 className="text-xl font-bold text-amber-900 mb-4">Add New Address</h3>
-            <div className="space-y-4">
-              <input type="text" placeholder="Full Name" className="w-full border border-amber-200 rounded-xl p-3 text-black" />
-              <input type="tel" placeholder="Mobile Number" className="w-full border border-amber-200 rounded-xl p-3 text-black" />
-              <textarea placeholder="Full Address" className="w-full border border-amber-200 rounded-xl p-3 text-black h-20" />
-              <div className="grid grid-cols-2 gap-4">
-                <input type="text" placeholder="City" className="border border-amber-200 rounded-xl p-3 text-black" />
-                <input type="text" placeholder="State" className="border border-amber-200 rounded-xl p-3 text-black" />
-              </div>
-              <input type="text" placeholder="Pincode" className="w-full border border-amber-200 rounded-xl p-3 text-black" />
-              <input type="text" placeholder="Landmark (Optional)" className="w-full border border-amber-200 rounded-xl p-3 text-black" />
-            </div>
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={() => setShowAddressForm(false)}
-                className="flex-1 border border-amber-500 text-amber-500 py-3 rounded-xl hover:bg-amber-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => setShowAddressForm(false)}
-                className="flex-1 bg-amber-500 text-white py-3 rounded-xl hover:bg-amber-600 transition-colors"
-              >
-                Save Address
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

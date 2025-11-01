@@ -1,105 +1,88 @@
 "use client";
-
-import { useState } from 'react';
-
-type AddressForm = {
-  id?: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  country: string;
-  state: string;
-  city: string;
-  addressLine1: string;
-  addressLine2?: string;
-  postalCode: string;
-  isDefault: boolean;
-  type: 'home' | 'work' | 'other';
-};
-
-type Address = AddressForm & { id: number };
+import React, { useState, useEffect } from 'react';
+import { 
+  getUserAddresses, 
+  createAddress, 
+  updateAddress, 
+  deleteAddress, 
+  setDefaultAddress,
+  getCountries,
+  getIndianStates,
+  Address,
+  AddressFormData
+} from '../../../libs/api';
 
 export default function UserAddressPage() {
   const [activeTab, setActiveTab] = useState('list');
-  const [addresses, setAddresses] = useState<Address[]>([
-    {
-      id: 1,
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john.doe@example.com',
-      phone: '+91 98765 43210',
-      country: 'India',
-      state: 'Maharashtra',
-      city: 'Mumbai',
-      addressLine1: '123 Main Street, Andheri East',
-      addressLine2: 'Near Metro Station, Building A',
-      postalCode: '400069',
-      isDefault: true,
-      type: 'home'
-    },
-    {
-      id: 2,
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john.doe@example.com',
-      phone: '+91 98765 43210',
-      country: 'India',
-      state: 'Gujarat',
-      city: 'Ahmedabad',
-      addressLine1: '456 Business Park',
-      addressLine2: 'Corporate Office, Floor 3',
-      postalCode: '380009',
-      isDefault: false,
-      type: 'work'
-    },
-    {
-      id: 3,
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john.doe@example.com',
-      phone: '+91 98765 43210',
-      country: 'India',
-      state: 'Rajasthan',
-      city: 'Jaipur',
-      addressLine1: '789 Heritage Street',
-      addressLine2: 'Near City Palace',
-      postalCode: '302001',
-      isDefault: false,
-      type: 'other'
-    }
-  ]);
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [countries, setCountries] = useState<{ [key: string]: string }>({});
+  const [indianStates, setIndianStates] = useState<{ [key: string]: string[] }>({});
 
-  const [newAddress, setNewAddress] = useState<AddressForm>({
-    firstName: '',
-    lastName: '',
-    email: 'pashupatinathrudraksh@gmail.com',
+  const [newAddress, setNewAddress] = useState<AddressFormData>({
+    first_name: '',
+    last_name: '',
+    email: '',
     phone: '',
     country: 'India',
     state: '',
     city: '',
-    addressLine1: '',
-    addressLine2: '',
-    postalCode: '',
-    isDefault: false,
-    type: 'home'
+    address_line_1: '',
+    address_line_2: '',
+    postal_code: '',
+    address_type: 'home',
+    is_default: false
   });
 
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
-  // Indian states and cities data
-  const states = [
-    { name: 'Maharashtra', cities: ['Mumbai', 'Pune', 'Nagpur', 'Nashik', 'Aurangabad'] },
-    { name: 'Gujarat', cities: ['Ahmedabad', 'Surat', 'Vadodara', 'Rajkot', 'Gandhinagar'] },
-    { name: 'Rajasthan', cities: ['Jaipur', 'Jodhpur', 'Udaipur', 'Kota', 'Ajmer'] },
-    { name: 'Karnataka', cities: ['Bangalore', 'Mysore', 'Hubli', 'Mangalore', 'Belgaum'] },
-    { name: 'Tamil Nadu', cities: ['Chennai', 'Coimbatore', 'Madurai', 'Trichy', 'Salem'] },
-    { name: 'Delhi', cities: ['New Delhi', 'Delhi Cantonment'] },
-    { name: 'Uttar Pradesh', cities: ['Lucknow', 'Kanpur', 'Varanasi', 'Agra', 'Allahabad'] }
-  ];
+  useEffect(() => {
+    fetchAddresses();
+    fetchCountries();
+    fetchIndianStates();
+  }, []);
 
-  const handleInputChange = (field: keyof AddressForm, value: AddressForm[keyof AddressForm]) => {
+  const fetchAddresses = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await getUserAddresses();
+      
+      if (response.success) {
+        setAddresses(response.data || []);
+      } else {
+        if (response.message.includes('Authentication') || response.message.includes('login')) {
+          setError('Please log in to view your addresses');
+        } else {
+          setError(response.message || 'Failed to fetch addresses');
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCountries = async () => {
+    const response = await getCountries();
+    if (response.success) {
+      setCountries(response.data);
+    }
+  };
+
+  const fetchIndianStates = async () => {
+    const response = await getIndianStates();
+    if (response.success) {
+      setIndianStates(response.data);
+    }
+  };
+
+  const handleInputChange = (field: keyof AddressFormData, value: any) => {
     setNewAddress(prev => ({
       ...prev,
       [field]: value
@@ -114,112 +97,122 @@ export default function UserAddressPage() {
     }));
   };
 
-  const handleAddAddress = () => {
-    const newId = Date.now();
-    if (newAddress.isDefault) {
-      // Remove default from other addresses
-      const updatedAddresses = addresses.map(addr => ({
-        ...addr,
-        isDefault: false
-      }));
-      setAddresses([...updatedAddresses, { ...(newAddress as AddressForm), id: newId }]);
-    } else {
-      setAddresses([...addresses, { ...(newAddress as AddressForm), id: newId }]);
+  const handleAddAddress = async () => {
+    try {
+      setActionLoading(-1); // Use -1 for create action
+      const response = await createAddress(newAddress);
+
+      if (response.success) {
+        await fetchAddresses(); // Refresh the list
+        resetForm();
+        setActiveTab('list');
+      } else {
+        setError(response.message || 'Failed to create address');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create address');
+    } finally {
+      setActionLoading(null);
     }
-
-    // Reset form
-    setNewAddress({
-      firstName: '',
-      lastName: '',
-      email: 'pashupatinathrudraksh@gmail.com',
-      phone: '',
-      country: 'India',
-      state: '',
-      city: '',
-      addressLine1: '',
-      addressLine2: '',
-      postalCode: '',
-      isDefault: false,
-      type: 'home'
-    });
-
-    setActiveTab('list');
   };
 
-  const handleUpdateAddress = () => {
+  const handleUpdateAddress = async () => {
     if (editingId == null) return;
 
-    const updatedAddresses: Address[] = addresses.map(addr => {
-      if (addr.id === editingId) {
-        // merge while keeping the existing id
-        return { ...addr, ...(newAddress as AddressForm), id: addr.id } as Address;
+    try {
+      setActionLoading(editingId);
+      const response = await updateAddress(editingId, newAddress);
+
+      if (response.success) {
+        await fetchAddresses(); // Refresh the list
+        resetForm();
+        setActiveTab('list');
+      } else {
+        setError(response.message || 'Failed to update address');
       }
-      return addr;
-    });
-
-    // Ensure only one default address
-    if (newAddress.isDefault) {
-      const finalAddresses = updatedAddresses.map(addr => ({
-        ...addr,
-        isDefault: addr.id === editingId
-      }));
-      setAddresses(finalAddresses);
-    } else {
-      setAddresses(updatedAddresses);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update address');
+    } finally {
+      setActionLoading(null);
     }
-
-    // Reset editing state
-    setIsEditing(false);
-    setEditingId(null);
-    setNewAddress({
-      firstName: '',
-      lastName: '',
-      email: 'pashupatinathrudraksh@gmail.com',
-      phone: '',
-      country: 'India',
-      state: '',
-      city: '',
-      addressLine1: '',
-      addressLine2: '',
-      postalCode: '',
-      isDefault: false,
-      type: 'home'
-    });
-    setActiveTab('list');
   };
 
   const handleEditAddress = (address: Address) => {
-    setNewAddress(address);
+    setNewAddress({
+      first_name: address.first_name,
+      last_name: address.last_name,
+      email: address.email,
+      phone: address.phone,
+      country: address.country,
+      state: address.state,
+      city: address.city,
+      address_line_1: address.address_line_1,
+      address_line_2: address.address_line_2 || '',
+      postal_code: address.postal_code,
+      address_type: address.address_type,
+      is_default: address.is_default
+    });
     setIsEditing(true);
     setEditingId(address.id);
     setActiveTab('create');
   };
 
-  const handleDeleteAddress = (id: number) => {
+  const handleDeleteAddress = async (id: number) => {
     if (!confirm('Are you sure you want to delete this address?')) return;
 
-    const addressToDelete = addresses.find(addr => addr.id === id);
-    if (!addressToDelete) return;
+    try {
+      setActionLoading(id);
+      const response = await deleteAddress(id);
 
-    const newAddresses = addresses.filter(addr => addr.id !== id);
-
-    // If deleting default address, set the first remaining address as default
-    if (addressToDelete.isDefault && newAddresses.length > 0) {
-      newAddresses[0] = { ...newAddresses[0], isDefault: true };
+      if (response.success) {
+        await fetchAddresses(); // Refresh the list
+      } else {
+        setError(response.message || 'Failed to delete address');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete address');
+    } finally {
+      setActionLoading(null);
     }
-
-    setAddresses(newAddresses);
   };
 
-  const handleSetDefault = (id: number) => {
-    const updatedAddresses = addresses.map(addr => ({
-      ...addr,
-      isDefault: addr.id === id
-    }));
-    setAddresses(updatedAddresses);
+  const handleSetDefault = async (id: number) => {
+    try {
+      setActionLoading(id);
+      const response = await setDefaultAddress(id);
+
+      if (response.success) {
+        await fetchAddresses(); // Refresh the list
+      } else {
+        setError(response.message || 'Failed to set default address');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to set default address');
+    } finally {
+      setActionLoading(null);
+    }
   };
 
-  const getTypeIcon = (type: Address['type']) => {
+  const resetForm = () => {
+    setNewAddress({
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone: '',
+      country: 'India',
+      state: '',
+      city: '',
+      address_line_1: '',
+      address_line_2: '',
+      postal_code: '',
+      address_type: 'home',
+      is_default: false
+    });
+    setIsEditing(false);
+    setEditingId(null);
+  };
+
+  const getTypeIcon = (type: string) => {
     switch (type) {
       case 'home': return '🏠';
       case 'work': return '🏢';
@@ -228,7 +221,7 @@ export default function UserAddressPage() {
     }
   };
 
-  const getTypeLabel = (type: Address['type']) => {
+  const getTypeLabel = (type: string) => {
     switch (type) {
       case 'home': return 'Home';
       case 'work': return 'Work';
@@ -236,6 +229,31 @@ export default function UserAddressPage() {
       default: return 'Other';
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="animate-pulse">
+            {/* Loading skeleton */}
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="h-8 bg-gray-200 rounded w-64 mb-4"></div>
+              <div className="h-4 bg-gray-200 rounded w-96 mb-8"></div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[1, 2].map(i => (
+                  <div key={i} className="border border-gray-200 rounded-lg p-6">
+                    <div className="h-4 bg-gray-200 rounded w-32 mb-4"></div>
+                    <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -250,22 +268,7 @@ export default function UserAddressPage() {
             <button
               onClick={() => {
                 setActiveTab('create');
-                setIsEditing(false);
-                setEditingId(null);
-                setNewAddress({
-                  firstName: '',
-                  lastName: '',
-                  email: 'pashupatinathrudraksh@gmail.com',
-                  phone: '',
-                  country: 'India',
-                  state: '',
-                  city: '',
-                  addressLine1: '',
-                  addressLine2: '',
-                  postalCode: '',
-                  isDefault: false,
-                  type: 'home'
-                });
+                resetForm();
               }}
               className="mt-4 md:mt-0 px-6 py-3 bg-gradient-to-r from-[#5F3623] to-[#f5821f] text-white rounded-lg hover:opacity-90 transition-opacity"
             >
@@ -273,6 +276,29 @@ export default function UserAddressPage() {
             </button>
           </div>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <h3 className="text-sm font-medium text-red-800">Error</h3>
+                <p className="text-sm text-red-600 mt-1">{error}</p>
+              </div>
+              <button
+                onClick={() => setError(null)}
+                className="ml-auto text-red-400 hover:text-red-600"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar */}
@@ -297,7 +323,10 @@ export default function UserAddressPage() {
                 </button>
 
                 <button
-                  onClick={() => setActiveTab('create')}
+                  onClick={() => {
+                    setActiveTab('create');
+                    resetForm();
+                  }}
                   className={`w-full flex items-center space-x-3 p-3 rounded-lg text-left transition-colors ${
                     activeTab === 'create'
                       ? 'bg-gradient-to-r from-[#5F3623] to-[#f5821f] text-white'
@@ -307,7 +336,7 @@ export default function UserAddressPage() {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
-                  <span>{isEditing ? 'Edit Address' : 'Add New Address'}</span>
+                  <span>Add New Address</span>
                 </button>
               </nav>
 
@@ -322,19 +351,19 @@ export default function UserAddressPage() {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Default Address:</span>
                     <span className="font-medium text-green-600">
-                      {addresses.find(addr => addr.isDefault)?.city || 'Not set'}
+                      {addresses.find(addr => addr.is_default)?.city || 'Not set'}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Home Addresses:</span>
                     <span className="font-medium text-gray-900">
-                      {addresses.filter(addr => addr.type === 'home').length}
+                      {addresses.filter(addr => addr.address_type === 'home').length}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Work Addresses:</span>
                     <span className="font-medium text-gray-900">
-                      {addresses.filter(addr => addr.type === 'work').length}
+                      {addresses.filter(addr => addr.address_type === 'work').length}
                     </span>
                   </div>
                 </div>
@@ -364,12 +393,12 @@ export default function UserAddressPage() {
                           <div
                             key={address.id}
                             className={`border-2 rounded-lg p-6 relative ${
-                              address.isDefault
+                              address.is_default
                                 ? 'border-[#5F3623] bg-orange-50'
                                 : 'border-gray-200 hover:border-gray-300'
                             }`}
                           >
-                            {address.isDefault && (
+                            {address.is_default && (
                               <span className="absolute -top-2 left-4 bg-[#5F3623] text-white px-3 py-1 rounded-full text-xs font-medium">
                                 Default
                               </span>
@@ -377,13 +406,13 @@ export default function UserAddressPage() {
                             
                             <div className="flex items-start justify-between mb-4">
                               <div className="flex items-center space-x-3">
-                                <span className="text-2xl">{getTypeIcon(address.type)}</span>
+                                <span className="text-2xl">{getTypeIcon(address.address_type)}</span>
                                 <div>
                                   <h3 className="font-semibold text-gray-900">
-                                    {address.firstName} {address.lastName}
+                                    {address.first_name} {address.last_name}
                                   </h3>
                                   <span className="text-sm text-gray-600 capitalize">
-                                    {getTypeLabel(address.type)}
+                                    {getTypeLabel(address.address_type)}
                                   </span>
                                 </div>
                               </div>
@@ -391,23 +420,25 @@ export default function UserAddressPage() {
                                 <button
                                   onClick={() => handleEditAddress(address)}
                                   className="text-blue-600 hover:text-blue-900 transition-colors"
+                                  disabled={actionLoading === address.id}
                                 >
                                   Edit
                                 </button>
                                 <button
                                   onClick={() => handleDeleteAddress(address.id)}
                                   className="text-red-600 hover:text-red-900 transition-colors"
+                                  disabled={actionLoading === address.id}
                                 >
-                                  Delete
+                                  {actionLoading === address.id ? 'Deleting...' : 'Delete'}
                                 </button>
                               </div>
                             </div>
 
                             <div className="space-y-2 text-sm text-gray-700">
-                              <p>{address.addressLine1}</p>
-                              {address.addressLine2 && <p>{address.addressLine2}</p>}
+                              <p>{address.address_line_1}</p>
+                              {address.address_line_2 && <p>{address.address_line_2}</p>}
                               <p>
-                                {address.city}, {address.state} - {address.postalCode}
+                                {address.city}, {address.state} - {address.postal_code}
                               </p>
                               <p>{address.country}</p>
                               <p className="mt-2">
@@ -419,12 +450,13 @@ export default function UserAddressPage() {
                             </div>
 
                             <div className="mt-4 pt-4 border-t border-gray-200">
-                              {!address.isDefault && (
+                              {!address.is_default && (
                                 <button
                                   onClick={() => handleSetDefault(address.id)}
                                   className="text-[#5F3623] hover:text-[#f5821f] transition-colors text-sm font-medium"
+                                  disabled={actionLoading === address.id}
                                 >
-                                  Set as Default
+                                  {actionLoading === address.id ? 'Setting...' : 'Set as Default'}
                                 </button>
                               )}
                             </div>
@@ -471,8 +503,8 @@ export default function UserAddressPage() {
                             <input
                               type="text"
                               required
-                              value={newAddress.firstName}
-                              onChange={(e) => handleInputChange('firstName', e.target.value)}
+                              value={newAddress.first_name}
+                              onChange={(e) => handleInputChange('first_name', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F3623] focus:border-transparent"
                               placeholder="Enter first name"
                             />
@@ -484,8 +516,8 @@ export default function UserAddressPage() {
                             <input
                               type="text"
                               required
-                              value={newAddress.lastName}
-                              onChange={(e) => handleInputChange('lastName', e.target.value)}
+                              value={newAddress.last_name}
+                              onChange={(e) => handleInputChange('last_name', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F3623] focus:border-transparent"
                               placeholder="Enter last name"
                             />
@@ -535,11 +567,9 @@ export default function UserAddressPage() {
                               onChange={(e) => handleInputChange('country', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F3623] focus:border-transparent"
                             >
-                              <option value="India">India</option>
-                              <option value="United States">United States</option>
-                              <option value="United Kingdom">United Kingdom</option>
-                              <option value="Canada">Canada</option>
-                              <option value="Australia">Australia</option>
+                              {Object.entries(countries).map(([code, name]) => (
+                                <option key={code} value={name}>{name}</option>
+                              ))}
                             </select>
                           </div>
                           <div>
@@ -553,9 +583,9 @@ export default function UserAddressPage() {
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F3623] focus:border-transparent"
                             >
                               <option value="">Select State</option>
-                              {states.map((state) => (
-                                <option key={state.name} value={state.name}>
-                                  {state.name}
+                              {Object.keys(indianStates).map((state) => (
+                                <option key={state} value={state}>
+                                  {state}
                                 </option>
                               ))}
                             </select>
@@ -575,14 +605,11 @@ export default function UserAddressPage() {
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F3623] focus:border-transparent disabled:bg-gray-100"
                             >
                               <option value="">Select City</option>
-                              {newAddress.state && states
-                                .find(state => state.name === newAddress.state)
-                                ?.cities.map(city => (
-                                  <option key={city} value={city}>
-                                    {city}
-                                  </option>
-                                ))
-                              }
+                              {newAddress.state && indianStates[newAddress.state]?.map(city => (
+                                <option key={city} value={city}>
+                                  {city}
+                                </option>
+                              ))}
                             </select>
                           </div>
                           <div>
@@ -592,8 +619,8 @@ export default function UserAddressPage() {
                             <input
                               type="text"
                               required
-                              value={newAddress.postalCode}
-                              onChange={(e) => handleInputChange('postalCode', e.target.value)}
+                              value={newAddress.postal_code}
+                              onChange={(e) => handleInputChange('postal_code', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F3623] focus:border-transparent"
                               placeholder="Enter postal code"
                             />
@@ -607,8 +634,8 @@ export default function UserAddressPage() {
                           <input
                             type="text"
                             required
-                            value={newAddress.addressLine1}
-                            onChange={(e) => handleInputChange('addressLine1', e.target.value)}
+                            value={newAddress.address_line_1}
+                            onChange={(e) => handleInputChange('address_line_1', e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F3623] focus:border-transparent"
                             placeholder="Enter street address, building, etc."
                           />
@@ -620,8 +647,8 @@ export default function UserAddressPage() {
                           </label>
                           <input
                             type="text"
-                            value={newAddress.addressLine2}
-                            onChange={(e) => handleInputChange('addressLine2', e.target.value)}
+                            value={newAddress.address_line_2}
+                            onChange={(e) => handleInputChange('address_line_2', e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F3623] focus:border-transparent"
                             placeholder="Apartment, suite, unit, etc. (optional)"
                           />
@@ -635,8 +662,8 @@ export default function UserAddressPage() {
                             Address Type
                           </label>
                           <select
-                            value={newAddress.type}
-                            onChange={(e) => handleInputChange('type', e.target.value)}
+                            value={newAddress.address_type}
+                            onChange={(e) => handleInputChange('address_type', e.target.value)}
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F3623] focus:border-transparent"
                           >
                             <option value="home">Home</option>
@@ -647,8 +674,8 @@ export default function UserAddressPage() {
                         <div className="flex items-center">
                           <input
                             type="checkbox"
-                            checked={newAddress.isDefault}
-                            onChange={(e) => handleInputChange('isDefault', e.target.checked)}
+                            checked={newAddress.is_default}
+                            onChange={(e) => handleInputChange('is_default', e.target.checked)}
                             className="w-4 h-4 text-[#5F3623] border-gray-300 rounded focus:ring-[#5F3623]"
                           />
                           <label className="ml-2 text-sm text-gray-700">
@@ -661,16 +688,17 @@ export default function UserAddressPage() {
                       <div className="flex space-x-3 pt-6 border-t border-gray-200">
                         <button
                           type="submit"
-                          className="px-6 py-3 bg-gradient-to-r from-[#5F3623] to-[#f5821f] text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
+                          disabled={actionLoading === (isEditing ? editingId : -1)}
+                          className="px-6 py-3 bg-gradient-to-r from-[#5F3623] to-[#f5821f] text-white rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
                         >
-                          {isEditing ? 'Update Address' : 'Save Address'}
+                          {actionLoading === (isEditing ? editingId : -1) ? 'Saving...' : 
+                           (isEditing ? 'Update Address' : 'Save Address')}
                         </button>
                         <button
                           type="button"
                           onClick={() => {
                             setActiveTab('list');
-                            setIsEditing(false);
-                            setEditingId(null);
+                            resetForm();
                           }}
                           className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
                         >

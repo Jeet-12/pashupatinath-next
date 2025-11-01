@@ -37,7 +37,7 @@ export default function FAQPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-amber-100 py-12 px-4 sm:px-6 lg:px-8" id="faq">
       <div className="max-w-7xl mx-auto">
         {/* Enhanced Header Section */}
         <div className="text-center mb-16">
@@ -118,7 +118,7 @@ export default function FAQPage() {
               We're just a message away. Connect with our Rudraksh experts on WhatsApp for personalized guidance tailored to your spiritual needs.
             </p>
             <a
-              href="https://wa.me/1234567890"
+              href="https://wa.me/917377371008"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center bg-green-600 hover:bg-green-700 transform hover:scale-105 text-white font-semibold py-4 px-8 rounded-2xl transition-all duration-300 shadow-lg hover:shadow-xl"

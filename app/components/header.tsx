@@ -4,16 +4,20 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { getUser, clearUser, logoutUser, getCart, getWishlistCount } from '../libs/api';
 
 export default function Header() {
     const [searchQuery, setSearchQuery] = useState('');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [user, setUserState] = useState<any | null>(null);
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
     const [searchFocused, setSearchFocused] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [cartCount, setCartCount] = useState<number>(0);
+    const [wishlistCount, setWishlistCount] = useState<number>(0);
 
     const router = useRouter();
 
@@ -22,6 +26,7 @@ export default function Header() {
     const mobileMenuRef = useRef<HTMLDivElement>(null);
     const searchRef = useRef<HTMLInputElement>(null);
     const headerRef = useRef<HTMLElement>(null);
+    const menuToggleRef = useRef<HTMLButtonElement>(null);
 
     // Scroll effect with throttle and intersection observer
     useEffect(() => {
@@ -49,10 +54,17 @@ export default function Header() {
     // Close dropdowns when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
+            // Close profile dropdown when clicking outside
             if (profileDropdownRef.current && !profileDropdownRef.current.contains(event.target as Node)) {
                 setProfileDropdownOpen(false);
             }
-            if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node) && isMenuOpen) {
+            
+            // Close mobile menu when clicking outside (but not on the toggle button)
+            if (mobileMenuRef.current && 
+                !mobileMenuRef.current.contains(event.target as Node) && 
+                menuToggleRef.current && 
+                !menuToggleRef.current.contains(event.target as Node) && 
+                isMenuOpen) {
                 setIsMenuOpen(false);
                 setActiveDropdown(null);
             }
@@ -61,6 +73,94 @@ export default function Header() {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [isMenuOpen]);
+
+    // Initialize auth/user state from localStorage
+    useEffect(() => {
+        try {
+            const u = getUser();
+            if (u) {
+                setUserState(u);
+                setIsLoggedIn(true);
+            } else {
+                setUserState(null);
+                setIsLoggedIn(false);
+            }
+        } catch {
+            setUserState(null);
+            setIsLoggedIn(false);
+        }
+    }, []);
+
+    // Fetch cart and wishlist counts (on mount and when login changes)
+    useEffect(() => {
+        let mounted = true;
+        const fetchCounts = async () => {
+            try {
+                const cartRes = await getCart();
+                if (!mounted) return;
+                let c = 0;
+                if (cartRes?.data) {
+                    if (typeof cartRes.data === 'number') c = cartRes.data;
+                    else if (cartRes.data.cart_count) c = Number(cartRes.data.cart_count) || 0;
+                    else if (Array.isArray(cartRes.data.cart_items)) c = cartRes.data.cart_items.length;
+                }
+                setCartCount(c);
+            } catch {
+                // ignore
+            }
+
+            try {
+                const wishRes = await getWishlistCount();
+                if (!mounted) return;
+                let w = 0;
+                if (wishRes?.data) {
+                    if (typeof wishRes.data === 'number') w = wishRes.data;
+                    else if (wishRes.data.count) w = Number(wishRes.data.count) || 0;
+                    else if (wishRes.data.total) w = Number(wishRes.data.total) || 0;
+                }
+                setWishlistCount(w);
+            } catch {
+                // ignore
+            }
+        };
+
+        fetchCounts();
+
+        const onStorage = (e: StorageEvent) => {
+            if (e.key && ['auth_token', 'registration_session_token', 'user'].includes(e.key)) {
+                fetchCounts();
+            }
+        };
+        const onCountsUpdated = () => fetchCounts();
+        window.addEventListener('storage', onStorage);
+        window.addEventListener('countsUpdated', onCountsUpdated as EventListener);
+
+        return () => {
+            mounted = false;
+            window.removeEventListener('storage', onStorage);
+            window.removeEventListener('countsUpdated', onCountsUpdated as EventListener);
+        };
+    }, [isLoggedIn]);
+
+    // Listen for global auth invalidation events (e.g., invalid/expired token)
+    useEffect(() => {
+        const onAuthInvalid = (e: Event) => {
+            try {
+                // show a simple message and redirect to login
+                const detail = (e as CustomEvent)?.detail?.message || 'Session expired. Please login again.';
+                alert(detail);
+            } catch {}
+            try {
+                clearUser();
+            } catch {}
+            setUserState(null);
+            setIsLoggedIn(false);
+            try { router.push('/login'); } catch {}
+        };
+
+        window.addEventListener('authInvalid', onAuthInvalid as EventListener);
+        return () => window.removeEventListener('authInvalid', onAuthInvalid as EventListener);
+    }, []);
 
     // Handle escape key and body scroll lock
     useEffect(() => {
@@ -107,38 +207,36 @@ export default function Header() {
         }
     };
 
-    // Data with improved structure
     const rudrakshaItems = [
-        { name: '1 Mukhi Rudraksha', path: '/rudraksha/1-mukhi' },
-        { name: '2 Mukhi Rudraksha', path: '/rudraksha/2-mukhi' },
-        { name: '3 Mukhi Rudraksha', path: '/rudraksha/3-mukhi' },
-        { name: '4 Mukhi Rudraksha', path: '/rudraksha/4-mukhi' },
-        { name: '5 Mukhi Rudraksha', path: '/rudraksha/5-mukhi' },
-        { name: '6 Mukhi Rudraksha', path: '/rudraksha/6-mukhi' },
-        { name: '7 Mukhi Rudraksha', path: '/rudraksha/7-mukhi' },
-        { name: '8 Mukhi Rudraksha', path: '/rudraksha/8-mukhi' },
-        { name: '9 Mukhi Rudraksha', path: '/rudraksha/9-mukhi' },
-        { name: '10 Mukhi Rudraksha', path: '/rudraksha/10-mukhi' },
-        { name: '11 Mukhi Rudraksha', path: '/rudraksha/11-mukhi' },
-        { name: '12 Mukhi Rudraksha', path: '/rudraksha/12-mukhi' },
-        { name: '13 Mukhi Rudraksha', path: '/rudraksha/13-mukhi' },
-        { name: '14 Mukhi Rudraksha', path: '/rudraksha/14-mukhi' },
+        { name: '1 Mukhi Rudraksha', path: '/products?category=1-mukhi' },
+        { name: '2 Mukhi Rudraksha', path: '/products?category=2-mukhi' },
+        { name: '3 Mukhi Rudraksha', path: '/products?category=3-mukhi' },
+        { name: '4 Mukhi Rudraksha', path: '/products?category=4-mukhi' },
+        { name: '5 Mukhi Rudraksha', path: '/products?category=5-mukhi' },
+        { name: '6 Mukhi Rudraksha', path: '/products?category=6-mukhi' },
+        { name: '7 Mukhi Rudraksha', path: '/products?category=7-mukhi' },
+        { name: '8 Mukhi Rudraksha', path: '/products?category=8-mukhi' },
+        { name: '9 Mukhi Rudraksha', path: '/products?category=9-mukhi' },
+        { name: '10 Mukhi Rudraksha', path: '/products?category=10-mukhi' },
+        { name: '11 Mukhi Rudraksha', path: '/products?category=11-mukhi' },
+        { name: '12 Mukhi Rudraksha', path: '/products?category=12-mukhi' },
+        { name: '13 Mukhi Rudraksha', path: '/products?category=13-mukhi' },
+        { name: '14 Mukhi Rudraksha', path: '/products?category=14-mukhi' },
     ];
 
+    // Split rudraksha items into two columns
+    const rudrakshaFirstColumn = rudrakshaItems.slice(0, 7);
+    const rudrakshaSecondColumn = rudrakshaItems.slice(7);
+
     const accessoriesItems = [
-        { name: 'Rudraksha Malas', path: '/accessories/malas' },
-        { name: 'Rudraksha Bracelets', path: '/accessories/bracelets' },
-        { name: 'Rudraksha Pendants', path: '/accessories/pendants' },
-        { name: 'Rudraksha Rings', path: '/accessories/rings' },
-        { name: 'Silver Accessories', path: '/accessories/silver' },
-        { name: 'Gold Accessories', path: '/accessories/gold' },
-        { name: 'Prayer Beads', path: '/accessories/prayer-beads' },
+        { name: 'Jap Malas', path: '/products?category=jap-malas' },
+        { name: 'Siddhi Mala', path: '/products?category=siddhi-mala' },
     ];
 
     const profileItems = isLoggedIn
         ? [
-            { name: 'Dashboard', path: '/dashboard', icon: '📊' },
-            { name: 'Track Order', path: '/orders', icon: '📦' },
+            { name: 'Dashboard', path: '/dashboard/user', icon: '📊' },
+            { name: 'Track Order', path: '/order-track', icon: '📦' },
             { name: 'Wishlist', path: '/wishlist', icon: '❤️' },
             { name: 'Logout', path: '/logout', icon: '🚪', action: () => setIsLoggedIn(false) }
         ]
@@ -151,14 +249,14 @@ export default function Header() {
         { name: 'Home', path: '/', icon: '🏠' },
         {
             name: 'Rudraksha',
-            path: '/products',
+            path: '/products?main-category=rudraksha',
             hasDropdown: true,
             dropdownItems: rudrakshaItems,
             icon: '📿'
         },
         {
             name: 'Accessories',
-            path: '/products',
+            path: '/products?main-category=rudraksha_accessories',
             hasDropdown: true,
             dropdownItems: accessoriesItems,
             icon: '💎'
@@ -167,16 +265,39 @@ export default function Header() {
         { name: 'Contact', path: '/contactus', icon: '📞' },
     ];
 
-    // Close mobile menu when route changes
-    // useEffect(() => {
-    //     const handleRouteChange = () => {
-    //         setIsMenuOpen(false);
-    //         setActiveDropdown(null);
-    //     };
+    // Handle dropdown toggle - only opens on chevron click
+    const handleDropdownToggle = (itemName: string, e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setActiveDropdown(activeDropdown === itemName ? null : itemName);
+    };
 
-    //     // This would typically be with next/router events, but we'll simulate it
-    //     // For actual implementation, use router.events
-    // }, []);
+    // Handle menu item click - navigates for main item, toggles dropdown for chevron
+    const handleMenuItemClick = (item: any, e: React.MouseEvent) => {
+        // Check if the click was specifically on the chevron SVG or its path
+        const target = e.target as HTMLElement;
+        const isChevronClick = 
+            target.tagName === 'svg' || 
+            target.tagName === 'path' ||
+            target.closest('svg') !== null;
+        
+        if (item.hasDropdown && isChevronClick) {
+            // Click on the chevron - toggle dropdown
+            handleDropdownToggle(item.name, e);
+        } else if (item.hasDropdown && !isChevronClick) {
+            // Click on the main menu item - navigate to the main category
+            e.preventDefault();
+            router.push(item.path);
+            setActiveDropdown(null);
+        }
+    };
+
+    // Handle main menu item click (for navigation)
+    const handleMainItemClick = (item: any) => {
+        if (!item.hasDropdown) {
+            router.push(item.path);
+        }
+    };
 
     return (
         <>
@@ -187,10 +308,9 @@ export default function Header() {
                 } ${isMenuOpen ? 'bg-white' : ''}`}
             >
                 {/* Top announcement bar */}
-               <div className={`bg-gradient-to-r from-amber-900 via-amber-700 to-amber-600 text-white transform transition-transform duration-300 origin-top ${
-    isScrolled || isMenuOpen ? 'scale-y-100 opacity-100' : 'scale-y-100 opacity-100'
-}`}>
-
+                <div className={`bg-gradient-to-r from-amber-900 via-amber-700 to-amber-600 text-white transform transition-transform duration-300 origin-top ${
+                    isScrolled || isMenuOpen ? 'scale-y-100 opacity-100' : 'scale-y-100 opacity-100'
+                }`}>
                     <div className="container mx-auto px-4 h-12 flex items-center justify-center">
                         <div className="flex items-center space-x-3 text-sm font-medium flex-wrap justify-center">
                             <span className="flex items-center space-x-1 whitespace-nowrap">
@@ -210,7 +330,6 @@ export default function Header() {
                 <div className="container mx-auto px-4">
                     <div className="flex items-center justify-between h-20 sm:h-24 transition-all duration-300">
 
-                        
                         {/* Logo */}
                         <Link 
                             href="/" 
@@ -225,7 +344,7 @@ export default function Header() {
                                     src="https://www.pashupatinathrudraksh.com/storage/app/public/photos/2/PR_Logo.png"
                                     alt="Pashupatinath Rudraksh Logo"
                                     fill
-                                    sizes="(max-width: 640px) 48px, (max-width: 768px) 64px, 80px"
+                                    sizes="(max-inline-size: 640px) 48px, (max-inline-size: 768px) 64px, 80px"
                                     className="object-contain drop-shadow-lg group-hover:scale-105 transition-transform duration-300"
                                     priority
                                 />
@@ -248,19 +367,19 @@ export default function Header() {
                                 <div key={item.name} className="relative group">
                                     {item.hasDropdown ? (
                                         <div className="relative">
+                                            {/* Main menu item as button for better control */}
                                             <button
+                                                onClick={(e) => handleMenuItemClick(item, e)}
                                                 className="flex items-center space-x-1 px-3 xl:px-4 py-2 text-gray-700 hover:text-amber-700 transition-all duration-200 font-medium rounded-lg hover:bg-amber-50 group whitespace-nowrap"
-                                               
                                                 aria-expanded={activeDropdown === item.name}
                                                 aria-haspopup="true"
                                             >
-                                               <Link  key={item.name} href={item.path}> <span className="text-sm">{item.icon}</span>
-                                                <span className="text-sm">{item.name}</span> </Link>
+                                                <span className="text-sm">{item.icon}</span>
+                                                <span className="text-sm">{item.name}</span>
                                                 <svg 
                                                     className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform duration-200 ${
                                                         activeDropdown === item.name ? 'rotate-180' : ''
                                                     }`}
-                                                     onClick={() => setActiveDropdown(activeDropdown === item.name ? null : item.name)}
                                                     fill="none" 
                                                     stroke="currentColor" 
                                                     viewBox="0 0 24 24"
@@ -269,27 +388,67 @@ export default function Header() {
                                                 </svg>
                                             </button>
                                             
-                                            {/* Dropdown with animation */}
-                                            <div className={`absolute top-full left-0 mt-2 w-64 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-amber-100 overflow-hidden transition-all duration-300 origin-top ${
+                                            {/* Dropdown with two columns for Rudraksha */}
+                                            <div className={`absolute top-full left-0 mt-2 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-amber-100 overflow-hidden transition-all duration-300 origin-top ${
                                                 activeDropdown === item.name ? 'scale-100 opacity-100 visible' : 'scale-95 opacity-0 invisible'
-                                            }`}>
-                                                <div className="py-2">
-                                                    {item.dropdownItems?.map((dropdownItem, index) => (
-                                                        <Link
-                                                            key={dropdownItem.name}
-                                                            href={dropdownItem.path}
-                                                            className="flex items-center px-4 py-3 text-gray-700 hover:text-amber-700 hover:bg-amber-50 transition-all duration-200 border-b border-amber-50 last:border-b-0 group"
-                                                            style={{ 
-                                                                transitionDelay: activeDropdown === item.name ? `${index * 30}ms` : '0ms',
-                                                                animationDelay: activeDropdown === item.name ? `${index * 30}ms` : '0ms'
-                                                            }}
-                                                            onClick={() => setActiveDropdown(null)}
-                                                        >
-                                                            <span className="font-medium text-sm group-hover:translate-x-1 transition-transform duration-200">
-                                                                {dropdownItem.name}
-                                                            </span>
-                                                        </Link>
-                                                    ))}
+                                            } ${item.name === 'Rudraksha' ? 'w-96' : 'w-64'}`}>
+                                                <div className={`${item.name === 'Rudraksha' ? 'p-4' : 'py-2'}`}>
+                                                    {item.name === 'Rudraksha' ? (
+                                                        // Two-column layout for Rudraksha
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            <div className="space-y-1">
+                                                                {rudrakshaFirstColumn.map((dropdownItem, index) => (
+                                                                    <Link
+                                                                        key={dropdownItem.name}
+                                                                        href={dropdownItem.path}
+                                                                        className="flex items-center px-3 py-2 text-gray-700 hover:text-amber-700 hover:bg-amber-50 transition-all duration-200 rounded-lg text-sm group"
+                                                                        style={{ 
+                                                                            transitionDelay: activeDropdown === item.name ? `${index * 20}ms` : '0ms'
+                                                                        }}
+                                                                        onClick={() => setActiveDropdown(null)}
+                                                                    >
+                                                                        <span className="font-medium group-hover:translate-x-1 transition-transform duration-200 truncate">
+                                                                            {dropdownItem.name}
+                                                                        </span>
+                                                                    </Link>
+                                                                ))}
+                                                            </div>
+                                                            <div className="space-y-1">
+                                                                {rudrakshaSecondColumn.map((dropdownItem, index) => (
+                                                                    <Link
+                                                                        key={dropdownItem.name}
+                                                                        href={dropdownItem.path}
+                                                                        className="flex items-center px-3 py-2 text-gray-700 hover:text-amber-700 hover:bg-amber-50 transition-all duration-200 rounded-lg text-sm group"
+                                                                        style={{ 
+                                                                            transitionDelay: activeDropdown === item.name ? `${index * 20}ms` : '0ms'
+                                                                        }}
+                                                                        onClick={() => setActiveDropdown(null)}
+                                                                    >
+                                                                        <span className="font-medium group-hover:translate-x-1 transition-transform duration-200 truncate">
+                                                                            {dropdownItem.name}
+                                                                        </span>
+                                                                    </Link>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        // Single column for other dropdowns
+                                                        item.dropdownItems?.map((dropdownItem, index) => (
+                                                            <Link
+                                                                key={dropdownItem.name}
+                                                                href={dropdownItem.path}
+                                                                className="flex items-center px-4 py-3 text-gray-700 hover:text-amber-700 hover:bg-amber-50 transition-all duration-200 border-b border-amber-50 last:border-b-0 group"
+                                                                style={{ 
+                                                                    transitionDelay: activeDropdown === item.name ? `${index * 30}ms` : '0ms'
+                                                                }}
+                                                                onClick={() => setActiveDropdown(null)}
+                                                            >
+                                                                <span className="font-medium text-sm group-hover:translate-x-1 transition-transform duration-200">
+                                                                    {dropdownItem.name}
+                                                                </span>
+                                                            </Link>
+                                                        ))
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
@@ -297,6 +456,7 @@ export default function Header() {
                                         <Link
                                             href={item.path}
                                             className="flex items-center space-x-1 px-3 xl:px-4 py-2 text-gray-700 hover:text-amber-700 transition-all duration-200 font-medium rounded-lg hover:bg-amber-50 group whitespace-nowrap"
+                                            onClick={() => handleMainItemClick(item)}
                                         >
                                             <span className="text-sm">{item.icon}</span>
                                             <span className="text-sm">{item.name}</span>
@@ -353,7 +513,7 @@ export default function Header() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                                     </svg>
                                     <span className="absolute -top-1 -right-1 bg-amber-500 text-white rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-xs font-bold shadow-lg transform group-hover:scale-110 transition-transform">
-                                        3
+                                        {wishlistCount || 0}
                                     </span>
                                 </div>
                             </Link>
@@ -369,7 +529,7 @@ export default function Header() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                                     </svg>
                                     <span className="absolute -top-1 -right-1 bg-green-500 text-white rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-xs font-bold shadow-lg transform group-hover:scale-110 transition-transform">
-                                        5
+                                        {cartCount || 0}
                                     </span>
                                 </div>
                             </Link>
@@ -397,14 +557,14 @@ export default function Header() {
                                     <div className="p-3 sm:p-4 border-b border-amber-100 bg-gradient-to-r from-amber-50 to-amber-25">
                                         <div className="flex items-center space-x-2 sm:space-x-3">
                                             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-amber-500 to-amber-600 rounded-full flex items-center justify-center text-white font-semibold text-sm sm:text-base">
-                                                {isLoggedIn ? 'U' : '👤'}
+                                                {user?.name ? user.name.charAt(0).toUpperCase() : (isLoggedIn ? 'U' : '👤')}
                                             </div>
                                             <div className="min-w-0">
                                                 <p className="font-semibold text-amber-900 text-sm sm:text-base truncate">
-                                                    {isLoggedIn ? 'Welcome Back!' : 'Hello, Guest'}
+                                                    {user?.name ? `Hi, ${user.name}` : (isLoggedIn ? 'Welcome Back!' : 'Hello, Guest')}
                                                 </p>
                                                 <p className="text-xs sm:text-sm text-amber-600 truncate">
-                                                    {isLoggedIn ? 'User Account' : 'Sign in to your account'}
+                                                    {user?.email ? user.email : (isLoggedIn ? 'User Account' : 'Sign in to your account')}
                                                 </p>
                                             </div>
                                         </div>
@@ -416,7 +576,21 @@ export default function Header() {
                                                 href={item.path}
                                                 className="flex items-center space-x-2 sm:space-x-3 px-3 sm:px-4 py-2 sm:py-3 text-gray-700 hover:text-amber-700 hover:bg-amber-50 transition-all duration-200 group"
                                                 style={{ transitionDelay: profileDropdownOpen ? `${index * 30}ms` : '0ms' }}
-                                                onClick={(e) => {
+                                                onClick={async (e) => {
+                                                    if (item.name === 'Logout') {
+                                                        e.preventDefault();
+                                                        try {
+                                                            await logoutUser();
+                                                        } catch {
+                                                            // ignore
+                                                        }
+                                                        clearUser();
+                                                        setUserState(null);
+                                                        setIsLoggedIn(false);
+                                                        router.push('/');
+                                                        setProfileDropdownOpen(false);
+                                                        return;
+                                                    }
                                                     if (item.action) {
                                                         e.preventDefault();
                                                         item.action();
@@ -434,10 +608,11 @@ export default function Header() {
                                 </div>
                             </div>
 
-                            {/* Mobile Menu Toggle */}
+                            {/* Mobile Menu Toggle - FIXED */}
                             <button
+                                ref={menuToggleRef}
                                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                                className="lg:hidden p-2 sm:p-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 ml-1"
+                                className="lg:hidden p-2 sm:p-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 ml-1 relative z-60"
                                 aria-label="Toggle menu"
                                 aria-expanded={isMenuOpen}
                             >
@@ -453,9 +628,7 @@ export default function Header() {
                     </div>
 
                     {/* Mobile Search - Visible when not scrolled and menu not open */}
-                    <div className={`md:hidden transition-all duration-300 overflow-hidden ${
-                        isScrolled || isMenuOpen ? 'max-h-0' : 'max-h-16 mb-2'
-                    }`}>
+                    <div className="md:hidden transition-all duration-300 overflow-hidden" >
                         <form onSubmit={handleSearch} className="flex space-x-2">
                             <div className="flex-1 relative">
                                 <input
@@ -477,18 +650,18 @@ export default function Header() {
                     </div>
                 </div>
 
-                {/* Mobile Menu Overlay */}
+                {/* Mobile Menu Overlay - FIXED: Lower z-index */}
                 {isMenuOpen && (
                     <div 
-                        className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-40 mt-[calc(100%+1px)]"
+                        className="lg:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-50 mt-[calc(100%+1px)]"
                         onClick={() => setIsMenuOpen(false)}
                     />
                 )}
 
-                {/* Mobile Menu */}
+                {/* Mobile Menu - FIXED: Higher z-index than overlay but lower than toggle */}
                 <div 
                     ref={mobileMenuRef}
-                    className={`lg:hidden absolute inset-x-0 top-full bg-white/95 backdrop-blur-md border-t border-amber-100 transition-all duration-300 overflow-hidden z-50 ${
+                    className={`lg:hidden absolute inset-x-0 top-full bg-white/95 backdrop-blur-md border-t border-amber-100 transition-all duration-300 overflow-hidden z-55 ${
                         isMenuOpen ? 'max-h-[80vh] opacity-100' : 'max-h-0 opacity-0'
                     }`}
                 >
@@ -565,8 +738,6 @@ export default function Header() {
                     </div>
                 </div>
             </header>
-            
-           
         </>
     );
 }

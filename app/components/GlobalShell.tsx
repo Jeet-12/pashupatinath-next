@@ -3,6 +3,7 @@ import React from "react";
 import { usePathname } from "next/navigation";
 import Header from "../components/header";
 import Footer from "../components/footer";
+import CartDrawer from "../components/CartDrawer";
 
 interface Props {
   children: React.ReactNode;
@@ -16,6 +17,7 @@ export default function GlobalShell({ children }: Props) {
     <>
       {!hideGlobal && <Header />}
       {children}
+      <CartDrawer />
       {!hideGlobal && <Footer />}
     </>
   );

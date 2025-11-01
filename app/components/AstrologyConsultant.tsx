@@ -3,11 +3,6 @@
 import { useState } from 'react';
 import { createRazorpayOrder, verifyAndStoreConsultation } from '../libs/payment-api';
 
-declare global {
-  interface Window {
-    Razorpay: any;
-  }
-}
 
 export default function RudrakshaConsultation() {
   const [activeTab, setActiveTab] = useState('free');
@@ -31,6 +26,7 @@ export default function RudrakshaConsultation() {
 
   const initializeRazorpay = () => {
     return new Promise((resolve) => {
+      // Use direct property check, relying on the script loading it.
       if (window.Razorpay) {
         resolve(true);
         return;
@@ -133,7 +129,7 @@ export default function RudrakshaConsultation() {
 
               // Build message (excluding email & mobile)
               const message =
-                `Hello, I have booked a consultation.  
+                `Hello, I have booked a consultation. 
                 Here are my details:
 
                 Name: ${details.name}
@@ -172,7 +168,8 @@ export default function RudrakshaConsultation() {
         }
       };
 
-      const paymentObject = new window.Razorpay(options);
+      // FIX: Use 'as any' assertion to satisfy TypeScript's global type check
+      const paymentObject = new (window.Razorpay as any)(options);
 
       paymentObject.on('payment.failed', function (response: any) {
         console.error('Payment failed:', response.error);

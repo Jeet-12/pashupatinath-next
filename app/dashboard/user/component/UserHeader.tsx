@@ -54,10 +54,7 @@ const UserHeader = ({ onToggleSidebar, isMobile, sidebarOpen: _sidebarOpen }: Us
                         <div className="w-8 h-8 relative rounded-full overflow-hidden">
                             {/* <Image src="https://i.pravatar.cc/40" alt="Admin" fill className="object-cover" /> */}
                         </div>
-                        <div className="hidden md:block">
-                            <p className="text-sm font-medium">User Admin</p>
-                            <p className="text-xs text-gray-500">Administrator</p>
-                        </div>
+                       
                     </div>
                 </div>
             </div>

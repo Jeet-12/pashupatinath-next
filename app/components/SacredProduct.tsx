@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { useState, useRef } from 'react';
+import { singleAddToCart, addToWishlistApiWithNotify } from '../libs/api';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Autoplay } from 'swiper/modules';
 import { useRouter } from 'next/navigation';
@@ -31,8 +32,6 @@ export default function SacredCollection({ products = [], categories = [] }: Sac
   const [_isScrolling, _setIsScrolling] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-
-  //console.log(products);
 
   const filteredCategories = categories.filter(cat => 
     cat.main_category === "rudraksha_accessories"
@@ -98,39 +97,55 @@ export default function SacredCollection({ products = [], categories = [] }: Sac
   ];
 
   const defaultCategories = [
-    "All",
-    "Jap Malas",
-    "Ganesh",
-    "Siddhi Mala",
-    "1 Mukhi",
-    "2 Mukhi",
-    "Rudraksha"
+    { title: "All", slug: "all" },
+    { title: "Jap Malas", slug: "jap-malas" },
+    { title: "Ganesh", slug: "ganesh" },
+    { title: "Siddhi Mala", slug: "siddhi-mala" },
+    { title: "1 Mukhi", slug: "1-mukhi" },
+    { title: "2 Mukhi", slug: "2-mukhi" },
+    { title: "Rudraksha", slug: "rudraksha" }
   ];
 
   const productList = products.length > 0 ? products : defaultProducts;
   
+  // Create category list with proper slugs
   const categoryList = [
-    { title: "All" },
-    ...brandCategories.map(cat => ({ title: cat.title })),
-    { title: "Rudraksha" }
+    { title: "All", slug: "all" },
+    ...brandCategories.map(cat => ({ 
+      title: cat.title, 
+      slug: cat.slug || cat.title.toLowerCase().replace(/\s+/g, '-') 
+    })),
+    { title: "Rudraksha", slug: "rudraksha" }
   ];
 
   const fallbackCategoryList = 
     categories.length > 0
-      ? [{ title: "All" }, ...categories.map(cat => ({ title: cat.title })), { title: "Rudraksha" }]
-      : defaultCategories.map((cat) => ({ title: cat }));
+      ? [
+          { title: "All", slug: "all" }, 
+          ...categories.map(cat => ({ 
+            title: cat.title, 
+            slug: cat.slug || cat.title.toLowerCase().replace(/\s+/g, '-') 
+          })), 
+          { title: "Rudraksha", slug: "rudraksha" }
+        ]
+      : defaultCategories;
 
   const finalCategoryList = categoryList.length > 1 ? categoryList : fallbackCategoryList;
-
-  // Function to calculate discount percentage
-  // const calculateDiscountPercentage = (originalPrice: number, currentPrice: number): number => {
-  //   if (!originalPrice || originalPrice <= currentPrice) return 0;
-  //   return Math.round(((originalPrice - currentPrice) / originalPrice) * 100);
-  // };
 
   // Function to format price with Indian Rupee symbol
   const formatPrice = (price: number): string => {
     return `₹${price.toFixed(2)}`;
+  };
+
+  // Function to get image URL with proper fallback
+  const getImageUrl = (image: string | undefined): string => {
+    if (!image) return "/placeholder-category.jpg";
+    
+    if (image.startsWith("http")) {
+      return image;
+    }
+    
+    return `https://www.pashupatinathrudraksh.com${image.startsWith("/") ? "" : "/"}${image}`;
   };
 
   // Format product data with proper pricing
@@ -158,54 +173,61 @@ export default function SacredCollection({ products = [], categories = [] }: Sac
                          .replace(/[^a-z0-9]+/g, '-')
                          .replace(/(^-|-$)+/g, '');
 
-  // Parse prices from API (string or number safe)
-const apiPrice = typeof product.price === "string"
-  ? parseFloat(product.price.replace(/[^\d.]/g, ""))
-  : Number(product.price) || 0;
+    // Parse prices from API (string or number safe)
+    const apiPrice = typeof product.price === "string"
+      ? parseFloat(product.price.replace(/[^\d.]/g, ""))
+      : Number(product.price) || 0;
 
-// If backend already sends final price (sometimes called selling_price / discounted_price),
-// prefer it, otherwise calculate from discount
-let discountedPrice = apiPrice;
-if (product.finalPrice) {
-  discountedPrice = typeof product.finalPrice === "string"
-    ? parseFloat(product.finalPrice.replace(/[^\d.]/g, ""))
-    : Number(product.finalPrice) || apiPrice;
-} else if (product.discount && product.discount > 0) {
-  discountedPrice = apiPrice - (apiPrice * product.discount) / 100;
-}
+    // If backend already sends final price (sometimes called selling_price / discounted_price),
+    // prefer it, otherwise calculate from discount
+    let discountedPrice = apiPrice;
+    if (product.finalPrice) {
+      discountedPrice = typeof product.finalPrice === "string"
+        ? parseFloat(product.finalPrice.replace(/[^\d.]/g, ""))
+        : Number(product.finalPrice) || apiPrice;
+    } else if (product.discount && product.discount > 0) {
+      discountedPrice = apiPrice - (apiPrice * product.discount) / 100;
+    }
 
-// Calculate discount % only if discount actually exists
-const discountPercentage =
-  apiPrice > 0 && discountedPrice < apiPrice
-    ? Math.round(((apiPrice - discountedPrice) / apiPrice) * 100)
-    : 0;
+    // Calculate discount % only if discount actually exists
+    const discountPercentage =
+      apiPrice > 0 && discountedPrice < apiPrice
+        ? Math.round(((apiPrice - discountedPrice) / apiPrice) * 100)
+        : 0;
 
-
-    // Calculate discount percentage
-
-
-  return {
-  id: product.id,
-  name: (product.title || product.name || "").length > 20
-    ? (product.title || product.name || "").substring(0, 18) + "..."
-    : (product.title || product.name || ""),
-  image: productImage,
-  price: discountedPrice,          
-  originalPrice: apiPrice,   
-  discountPercentage,
-  category: product.cat_title || product.category,
-  slug: productSlug,
-};
-
+    return {
+      id: product.id,
+      name: (product.title || product.name || "").length > 20
+        ? (product.title || product.name || "").substring(0, 18) + "..."
+        : (product.title || product.name || ""),
+      image: productImage,
+      price: discountedPrice,          
+      originalPrice: apiPrice,   
+      discountPercentage,
+      category: product.cat_title || product.category,
+      slug: productSlug,
+    };
   });
 
   const filteredProducts = selectedCategory === "All"
     ? formattedProducts
     : formattedProducts.filter((product) => product.category === selectedCategory);
 
-  const addToCart = (product: any) => {
-    setCart([...cart, product]);
-    alert(`${product.name} added to cart!`);
+  const addToCart = async (product: any) => {
+    // Optimistic UI update
+    setCart(prev => [...prev, product]);
+    try {
+      const resp = await singleAddToCart({ slug: product.slug, quantity: 1, total_price: product.price });
+        if (!resp.success) {
+          // Optionally revert UI or notify
+          // For now, just alert
+          // alert(resp.message || 'Failed to add to cart');
+        } else {
+          try { window.dispatchEvent(new CustomEvent('countsUpdated')); } catch {}
+        }
+    } catch {
+      // ignore
+    }
   };
 
   const toggleWishlist = (productId: number) => {
@@ -213,13 +235,38 @@ const discountPercentage =
       if (prev.includes(productId)) {
         return prev.filter(id => id !== productId);
       } else {
+        // fire backend call and notify
+        (async () => {
+          try {
+            await addToWishlistApiWithNotify({ product_id: productId });
+          } catch {
+            // ignore
+          }
+        })();
         return [...prev, productId];
       }
     });
   };
 
+  // Updated function to handle category click with slug
   const handleCategoryClick = (categoryTitle: string) => {
-    router.push(`/products?title=${categoryTitle}`);
+    // Find the category in finalCategoryList to get the slug
+    const category = finalCategoryList.find(cat => cat.title === categoryTitle);
+    const categorySlug = category?.slug || categoryTitle.toLowerCase().replace(/\s+/g, '-');
+   if (categoryTitle === "Rudraksha") {
+    router.push(`/products?main-category=${categorySlug}`);
+   }else {
+      router.push(`/products?category=${categorySlug}`);
+   }
+    // Navigate to products page with category slug
+  
+  };
+
+  // Function to handle collection click
+  const handleCollectionClick = (collectionSlug: string) => {
+    
+    
+    router.push(`/products?category=${collectionSlug}`);
   };
 
   const handleProductClick = (productSlug: string) => {
@@ -228,19 +275,19 @@ const discountPercentage =
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50">
-      {/* Premium Brand Slider Section */}
+      {/* Divine Collections Section - Using Your Design */}
       <section className="relative py-16 bg-gradient-to-r from-amber-100 via-orange-50 to-amber-100">
         <div className="absolute inset-0 bg-[url('/api/placeholder/1920/400')] bg-cover bg-center opacity-5"></div>
         <div className="container mx-auto px-4 relative">
           <div className="text-center mb-8">
             <span className="inline-block px-4 py-1 bg-amber-500 text-white text-sm font-semibold rounded-full mb-3">
-              Rudraksha
+              Collections
             </span>
             <h2 className="text-4xl md:text-5xl font-bold text-[#5F3623] mb-4">
               Explore Divine Collections
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Discover handcrafted spiritual products that bring peace, positivity and divine energy to your life
+              Discover our carefully curated spiritual collections designed to enhance your spiritual journey
             </p>
           </div>
 
@@ -257,7 +304,7 @@ const discountPercentage =
               }}
               loop={true}
               breakpoints={{
-                320: { slidesPerView: 2, spaceBetween: 15 },
+                320: { slidesPerView: 1, spaceBetween: 15 },
                 480: { slidesPerView: 2, spaceBetween: 20 },
                 768: { slidesPerView: 3, spaceBetween: 25 },
                 1024: { slidesPerView: 4, spaceBetween: 30 },
@@ -270,19 +317,19 @@ const discountPercentage =
                   <div className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 overflow-hidden border-2 border-transparent hover:border-amber-300 mx-2 my-4 p-2">
                     <div
                       className="relative h-52 rounded-xl overflow-hidden cursor-pointer"
-                      onClick={() => handleCategoryClick(cat.title)}
+                      onClick={() => handleCollectionClick(cat.slug || cat.title.toLowerCase().replace(/\s+/g, '-'))}
                     >
                       <div className="relative w-full h-40 bg-gradient-to-br from-amber-50 to-orange-100">
                         <div className="absolute inset-0 flex items-center justify-center p-4">
                           <Image
-                            src={cat.photo || "/placeholder-category.jpg"}
+                            src={getImageUrl(cat.photo)}
                             alt={cat.title}
                             width={100}
                             height={100}
                             className="object-contain drop-shadow-lg group-hover:scale-110 transition-transform duration-500"
                             onError={(e) => {
-                              const target = e.target as HTMLElement;
-                              (target as any).style.display = "none";
+                              const target = e.target as HTMLImageElement;
+                              target.style.display = 'none';
                             }}
                           />
                         </div>
@@ -401,13 +448,13 @@ const discountPercentage =
                 >
                   {product.image ? (
                     <Image
-                      src={product.image}
+                      src={getImageUrl(product.image)}
                       alt={product.name}
                       fill
                       className="object-cover group-hover:scale-110 transition-transform duration-500"
                       onError={(e) => {
-                        const target = e.target as HTMLElement;
-                        (target as any).style.display = "none";
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
                       }}
                     />
                   ) : (
@@ -560,13 +607,13 @@ const discountPercentage =
         .scrollbar-hide::-webkit-scrollbar {
           display: none;
         }
-        @media (max-width: 475px) {
+        @media (max-inline-size: 475px) {
           .grid {
             grid-template-columns: repeat(2, 1fr) !important;
           }
         }
         .min-w-max {
-          min-width: max-content;
+          min-inline-size: max-content;
         }
       `}</style>
     </div>
