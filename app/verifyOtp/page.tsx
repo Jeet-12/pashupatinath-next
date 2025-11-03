@@ -71,7 +71,7 @@ function OTPVerificationPageInner() {
     const enteredOtp = otp.join("");
 
     if (!sessionToken) {
-      alert("No active session. Please try again.");
+      // alert("No active session. Please try again.");
       router.push(type === "login" ? "/login" : "/register");
       return;
     }
@@ -95,14 +95,14 @@ function OTPVerificationPageInner() {
         console.error("OTP verification failed:", error);
       }
     } else {
-      alert("Please enter a complete 6-digit OTP");
+      // alert("Please enter a complete 6-digit OTP");
     }
   };
 
   // Resend OTP
   const handleResend = async () => {
     if (!sessionToken) {
-      alert("No active session. Please try again.");
+      // alert("No active session. Please try again.");
       router.push(type === "login" ? "/login" : "/register");
       return;
     }

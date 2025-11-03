@@ -53,7 +53,7 @@ export default function RudrakshaConsultation() {
     const missingFields = requiredFields.filter(field => !formData[field as keyof typeof formData]);
 
     if (missingFields.length > 0) {
-      alert(`Please fill all required fields: ${missingFields.join(', ')}`);
+      // alert(`Please fill all required fields: ${missingFields.join(', ')}`);
       return;
     }
 
@@ -64,7 +64,7 @@ export default function RudrakshaConsultation() {
       const razorpayLoaded = await initializeRazorpay();
 
       if (!razorpayLoaded) {
-        alert('Razorpay SDK failed to load. Please check your internet connection.');
+        // alert('Razorpay SDK failed to load. Please check your internet connection.');
         setLoading(false);
         return;
       }
@@ -76,7 +76,7 @@ export default function RudrakshaConsultation() {
       });
 
       if (!orderData.success) {
-        alert(`Order creation failed: ${orderData.message}`);
+        // alert(`Order creation failed: ${orderData.message}`);
         setLoading(false);
         return;
       }
@@ -84,7 +84,7 @@ export default function RudrakshaConsultation() {
       const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
 
       if (!razorpayKey) {
-        alert('Payment configuration error. Please contact support.');
+        // alert('Payment configuration error. Please contact support.');
         setLoading(false);
         return;
       }
@@ -141,11 +141,11 @@ export default function RudrakshaConsultation() {
               window.location.href = whatsappUrl;
 
             } else {
-              alert(`Payment successful but verification failed: ${verificationResult.message}`);
+              // alert(`Payment successful but verification failed: ${verificationResult.message}`);
             }
           } catch (error) {
             console.error('Error after payment:', error);
-            alert(`Payment successful but there was an error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            // alert(`Payment successful but there was an error: ${error instanceof Error ? error.message : 'Unknown error'}`);
           } finally {
             setLoading(false);
           }
@@ -173,7 +173,7 @@ export default function RudrakshaConsultation() {
 
       paymentObject.on('payment.failed', function (response: any) {
         console.error('Payment failed:', response.error);
-        alert(`Payment failed: ${response.error.description}. Please try again.`);
+        // alert(`Payment failed: ${response.error.description}. Please try again.`);
         setLoading(false);
       });
 
@@ -181,7 +181,7 @@ export default function RudrakshaConsultation() {
 
     } catch (error) {
       console.error('Payment initialization error:', error);
-      alert(`Failed to initiate payment: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      // alert(`Failed to initiate payment: ${error instanceof Error ? error.message : 'Unknown error'}`);
       setLoading(false);
     }
   };
@@ -193,7 +193,7 @@ export default function RudrakshaConsultation() {
       await handlePayment();
     } else {
       // For free consultation
-      alert('Consultation booked successfully! We will contact you soon.');
+      // alert('Consultation booked successfully! We will contact you soon.');
     }
   };
 

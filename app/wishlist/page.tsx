@@ -87,7 +87,7 @@ export default function WishlistPage() {
     setWishlistItems([]);
     localStorage.removeItem('rudraksha_wishlist');
     
-    alert('All items have been moved to your cart!');
+    // alert('All items have been moved to your cart!');
   };
 
   const moveToCart = (item: WishlistItem) => {
@@ -114,7 +114,7 @@ export default function WishlistPage() {
     localStorage.setItem('rudraksha_cart', JSON.stringify(cartItems));
     removeItem(item.id);
     
-    alert(`${item.name} has been moved to your cart!`);
+    // alert(`${item.name} has been moved to your cart!`);
   };
 
   const clearWishlist = () => {

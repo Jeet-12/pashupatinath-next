@@ -148,7 +148,7 @@ export default function Header() {
             try {
                 // show a simple message and redirect to login
                 const detail = (e as CustomEvent)?.detail?.message || 'Session expired. Please login again.';
-                alert(detail);
+                // alert(detail);
             } catch {}
             try {
                 clearUser();

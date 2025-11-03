@@ -19,7 +19,7 @@ import {
   MapPin,
   Send,
   CheckCircle,
-  AlertCircle,
+  // alertCircle,
   FileText,
   Heart
 } from 'lucide-react';

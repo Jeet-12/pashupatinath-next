@@ -164,14 +164,14 @@ export default function UserCouponsPage() {
   const copyToClipboard = (code: string) => {
     navigator.clipboard.writeText(code);
     // You can add a toast notification here
-    alert(`Coupon code ${code} copied to clipboard!`);
+    // alert(`Coupon code ${code} copied to clipboard!`);
   };
 
   // Share referral link
   const shareReferral = () => {
     const referralLink = 'https://pashupatinathrudraksh.com/ref/JohnDoe123';
     navigator.clipboard.writeText(referralLink);
-    alert('Referral link copied to clipboard! Share it with your friends.');
+    // alert('Referral link copied to clipboard! Share it with your friends.');
   };
 
   return (

@@ -13,7 +13,7 @@ interface VerifyPaymentRequest {
 export async function POST(request: NextRequest) {
   try {
     const body: VerifyPaymentRequest = await request.json();
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, order_id, order_data } = body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, order_id } = body;
 
     console.log('🔄 Verifying payment and completing order:', {
       paymentId: razorpay_payment_id,

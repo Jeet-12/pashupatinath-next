@@ -16,7 +16,7 @@ import {
   Mail, 
   Globe,
   CheckCircle,
-  AlertCircle,
+  // alertCircle,
   Info,
   CreditCard,
   ArrowRight

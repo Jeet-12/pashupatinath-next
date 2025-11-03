@@ -8,7 +8,7 @@ import {
   ChevronRight, 
   Ruler,
   Circle,
-  AlertCircle,
+  // alertCircle,
   Info,
   Download,
   Printer,
@@ -112,7 +112,7 @@ const SizeGuide: NextPage = () => {
 
   const downloadGuide = () => {
     // In real implementation, this would download a PDF
-    alert('Downloading Size Guide PDF...');
+    // alert('Downloading Size Guide PDF...');
   };
 
   return (

@@ -52,7 +52,7 @@ const PrivacyPolicy: NextPage = () => {
 
   const downloadPolicy = () => {
     // In a real application, this would download the PDF version
-    alert('Downloading Privacy Policy PDF...');
+    // alert('Downloading Privacy Policy PDF...');
   };
 
   return (

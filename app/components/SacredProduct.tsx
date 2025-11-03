@@ -220,8 +220,8 @@ export default function SacredCollection({ products = [], categories = [] }: Sac
       const resp = await singleAddToCart({ slug: product.slug, quantity: 1, total_price: product.price });
         if (!resp.success) {
           // Optionally revert UI or notify
-          // For now, just alert
-          // alert(resp.message || 'Failed to add to cart');
+          // For now, just // alert
+          // // alert(resp.message || 'Failed to add to cart');
         } else {
           try { window.dispatchEvent(new CustomEvent('countsUpdated')); } catch {}
         }

@@ -4,12 +4,17 @@ import { getCart, removeFromCart, updateCartQuantity } from "../libs/api";
 import Image from "next/image";
 
 type CartItem = {
-  id?: number;
-  name?: string;
-  price?: number;
-  quantity?: number;
-  image?: string;
-  slug?: string;
+  id: number;
+  name: string;
+  price: number;
+  quantity: number;
+  image: string;
+  slug: string;
+  product_id: number;
+  discount?: number;
+  amount?: string;
+  cap?: any;
+  thread?: any;
 };
 
 export default function CartDrawer() {
@@ -20,7 +25,6 @@ export default function CartDrawer() {
   const [removingItem, setRemovingItem] = useState<number | null>(null);
   const [updatingItem, setUpdatingItem] = useState<number | null>(null);
 
-  // Function to get proper image URL
   const getImageUrl = (image: string | undefined): string => {
     if (!image) return "/placeholder-product.jpg";
     
@@ -40,37 +44,55 @@ export default function CartDrawer() {
     setLoading(true);
     try {
       const res = await getCart();
+      console.log("Cart API Response:", res); // Debug log
+      
       if (res && (res.success || (res as any).status === true)) {
-        const data = (res.data || res) as any;
-        const cartItems = Array.isArray(data.cart_items) ? data.cart_items : (Array.isArray(data) ? data : []);
+        const data = res.data || res;
         
-        // Map server format to UI-friendly shape with proper image handling
+        // Handle the cart items array from your API response
+        const cartItems = Array.isArray(data.cart_items) ? data.cart_items : [];
+        
+        console.log("Cart Items:", cartItems); // Debug log
+        
+        // Map server format to UI-friendly shape
         const mapped = cartItems.map((ci: any) => {
-          // Extract image from various possible fields
-          let imageUrl = '';
-          if (ci.image) imageUrl = ci.image;
-          else if (ci.thumb) imageUrl = ci.thumb;
-          else if (ci.product?.image) imageUrl = ci.product.image;
-          else if (ci.product?.photo) imageUrl = ci.product.photo;
-          else if (ci.product?.images?.[0]) imageUrl = ci.product.images[0];
-          else if (ci.product?.photos?.[0]) imageUrl = ci.product.photos[0];
-
+          // Use product_images field from your API response
+          const imageUrl = ci.product_images || ci.image || ci.thumb || '';
+          
+          // Calculate price per item (amount / quantity)
+          const itemPrice = ci.price || (ci.amount ? parseFloat(ci.amount) / (ci.quantity || 1) : 0);
+          
           return {
-            id: ci.id ?? ci.product_id ?? ci.cart_item_id,
-            name: ci.name ?? ci.product_name ?? ci.title ?? ci.product?.name,
-            price: Number(ci.price ?? ci.product_price ?? ci.total_price ?? 0),
-            quantity: Number(ci.quantity ?? ci.qty ?? 1),
+            id: ci.id, // Use the cart item ID
+            name: ci.product_name || ci.name,
+            price: itemPrice,
+            quantity: Number(ci.quantity || 1),
             image: getImageUrl(imageUrl),
-            slug: ci.slug ?? ci.product?.slug,
+            slug: ci.slug,
+            product_id: ci.product_id,
+            discount: ci.discount,
+            amount: ci.amount,
+            cap: ci.cap,
+            thread: ci.thread
           };
         });
 
         setItems(mapped);
-        if (typeof data.subtotal !== 'undefined') setSubtotal(Number(data.subtotal));
-        else if (mapped.length) setSubtotal(mapped.reduce((s:any,i:any)=>s + (i.price||0) * (i.quantity||1), 0));
+        
+        // Set subtotal from API response or calculate from items
+        if (data.subtotal !== undefined && data.subtotal !== null) {
+          setSubtotal(Number(data.subtotal));
+        } else if (mapped.length > 0) {
+          const calculatedSubtotal = mapped.reduce((total: number, item: CartItem) => 
+            total + (item.price || 0) * (item.quantity || 1), 0
+          );
+          setSubtotal(calculatedSubtotal);
+        } else {
+          setSubtotal(0);
+        }
       }
-    } catch {
-      // ignore
+    } catch (error) {
+      console.error("Error fetching cart:", error);
     } finally {
       setLoading(false);
     }
@@ -83,22 +105,26 @@ export default function CartDrawer() {
       if (result.success) {
         // Remove item from local state immediately
         setItems(prev => prev.filter(item => item.id !== itemId));
+        
         // Update subtotal
         if (result.data?.subtotal !== undefined) {
           setSubtotal(result.data.subtotal);
         } else {
           // Recalculate subtotal locally
           const newItems = items.filter(item => item.id !== itemId);
-          const newSubtotal = newItems.reduce((total, item) => total + (item.price || 0) * (item.quantity || 1), 0);
+          const newSubtotal = newItems.reduce((total, item) => 
+            total + (item.price || 0) * (item.quantity || 1), 0
+          );
           setSubtotal(newSubtotal);
         }
-        // The cart count update will be handled by the event listener
-      } else {
-        alert(result.message || 'Failed to remove item from cart');
+        
+        // Trigger cart count update
+        try { 
+          window.dispatchEvent(new CustomEvent('countsUpdated')); 
+        } catch {}
       }
     } catch (error) {
       console.error('Error removing item:', error);
-      alert('Failed to remove item from cart');
     } finally {
       setRemovingItem(null);
     }
@@ -128,13 +154,12 @@ export default function CartDrawer() {
         }
         
         // Trigger cart count update
-        try { window.dispatchEvent(new CustomEvent('countsUpdated')); } catch {}
-      } else {
-        alert(result.message || 'Failed to update quantity');
+        try { 
+          window.dispatchEvent(new CustomEvent('countsUpdated')); 
+        } catch {}
       }
     } catch (error) {
       console.error('Error updating quantity:', error);
-      alert('Failed to update quantity');
     } finally {
       setUpdatingItem(null);
     }
@@ -156,7 +181,6 @@ export default function CartDrawer() {
 
   useEffect(() => {
     const onCountsUpdated = () => {
-      // Open drawer and refresh cart when counts update from an add-to-cart
       fetchCart();
       setOpen(true);
     };
@@ -169,6 +193,7 @@ export default function CartDrawer() {
     try {
       window.addEventListener('countsUpdated', onCountsUpdated as EventListener);
       window.addEventListener('openCartDrawer', onOpenEvent as EventListener);
+      
       // Also listen to storage so cross-tab updates can fetch
       window.addEventListener('storage', (e) => {
         if (e.key === 'rudraksha_cart' || e.key === 'auth_invalid_at') {
@@ -176,6 +201,9 @@ export default function CartDrawer() {
         }
       });
     } catch {}
+
+    // Fetch cart on initial load
+    fetchCart();
 
     return () => {
       try {
@@ -197,6 +225,15 @@ export default function CartDrawer() {
 
   const calculateTotalItems = () => {
     return items.reduce((total, item) => total + (item.quantity || 1), 0);
+  };
+
+  // Format price with Indian Rupee symbol
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0,
+    }).format(price);
   };
 
   return (
@@ -264,10 +301,10 @@ export default function CartDrawer() {
             ) : (
               <div className="space-y-4">
                 {items.map((item) => (
-                  <div key={item.id || item.slug} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow group relative">
+                  <div key={item.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow group relative">
                     {/* Remove Button - Top Right */}
                     <button
-                      onClick={() => removeItem(item.id!)}
+                      onClick={() => removeItem(item.id)}
                       disabled={removingItem === item.id}
                       className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed z-10 shadow-md"
                       title="Remove item"
@@ -287,14 +324,13 @@ export default function CartDrawer() {
                         {item.image ? (
                           <Image 
                             src={getImageUrl(item.image)} 
-                            alt={item.name || 'product'} 
+                            alt={item.name} 
                             width={80} 
                             height={80} 
                             className="object-cover w-full h-full"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
                               target.style.display = 'none';
-                              // Show fallback icon when image fails to load
                               const parent = target.parentElement;
                               if (parent) {
                                 const fallback = document.createElement('div');
@@ -323,15 +359,22 @@ export default function CartDrawer() {
                           {item.name}
                         </h4>
                         
+                        {/* Discount Badge */}
+                        {item.discount && item.discount > 0 && (
+                          <div className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded mb-2">
+                            {item.discount}% OFF
+                          </div>
+                        )}
+                        
                         {/* Price */}
                         <div className="flex items-center justify-between mb-3">
                           <span className="text-lg font-bold text-[#5F3623]">
-                            ₹{(item.price || 0).toLocaleString()}
+                            {formatPrice(item.price)}
                           </span>
                           
                           {/* Mobile Remove Button - Always visible on mobile */}
                           <button
-                            onClick={() => removeItem(item.id!)}
+                            onClick={() => removeItem(item.id)}
                             disabled={removingItem === item.id}
                             className="lg:hidden text-red-500 hover:text-red-700 p-1 rounded transition-colors disabled:opacity-50"
                             title="Remove item"
@@ -352,7 +395,7 @@ export default function CartDrawer() {
                             <span className="text-sm text-gray-600 font-medium">Quantity:</span>
                             <div className="flex items-center border border-gray-300 rounded-lg">
                               <button
-                                onClick={() => decrementQuantity(item.id!)}
+                                onClick={() => decrementQuantity(item.id)}
                                 disabled={updatingItem === item.id || (item.quantity || 1) <= 1}
                                 className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-l-md"
                               >
@@ -370,7 +413,7 @@ export default function CartDrawer() {
                               </span>
                               
                               <button
-                                onClick={() => incrementQuantity(item.id!)}
+                                onClick={() => incrementQuantity(item.id)}
                                 disabled={updatingItem === item.id}
                                 className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors rounded-r-md"
                               >
@@ -384,7 +427,7 @@ export default function CartDrawer() {
                           {/* Item Total */}
                           <div className="text-right">
                             <p className="text-sm font-semibold text-gray-900">
-                              ₹{((item.price || 0) * (item.quantity || 1)).toLocaleString()}
+                              {formatPrice((item.price || 0) * (item.quantity || 1))}
                             </p>
                             <p className="text-xs text-gray-500">Total</p>
                           </div>
@@ -404,7 +447,7 @@ export default function CartDrawer() {
               <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-200">
                 <span className="text-lg font-semibold text-gray-900">Subtotal</span>
                 <span className="text-2xl font-bold text-[#5F3623]">
-                  ₹{subtotal?.toLocaleString() || '0'}
+                  {subtotal !== null ? formatPrice(subtotal) : '₹0'}
                 </span>
               </div>
 

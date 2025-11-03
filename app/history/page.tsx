@@ -125,7 +125,7 @@ export default function HistoryPage() {
         <div className="container mx-auto px-4 max-w-6xl relative z-10">
           <div className="text-center mb-16">
             <div className="inline-block bg-red-100 text-red-800 px-6 py-2 rounded-full text-sm font-semibold mb-4">
-              Urgent Alert
+              Urgent // alert
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-[#5F3623] mb-4">
               The Sacred Crisis We Address

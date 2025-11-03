@@ -168,35 +168,35 @@ export default function BlogDetailPage() {
   };
 
   // Share functions
-  const shareOnFacebook = () => {
-    const url = window.location.href;
-    const title = post?.title || '';
-    window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(title)}`, '_blank');
-  };
+  // const shareOnFacebook = () => {
+  //   const url = window.location.href;
+  //   const title = post?.title || '';
+  //   window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(title)}`, '_blank');
+  // };
 
-  const shareOnTwitter = () => {
-    const url = window.location.href;
-    const title = post?.title || '';
-    window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`, '_blank');
-  };
+  // const shareOnTwitter = () => {
+  //   const url = window.location.href;
+  //   const title = post?.title || '';
+  //   window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(url)}`, '_blank');
+  // };
 
-  const shareOnLinkedIn = () => {
-    const url = window.location.href;
-    window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
-  };
+  // const shareOnLinkedIn = () => {
+  //   const url = window.location.href;
+  //   window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
+  // };
 
-  const shareOnWhatsApp = () => {
-    const url = window.location.href;
-    const title = post?.title || '';
-    window.open(`https://wa.me/?text=${encodeURIComponent(title + ' ' + url)}`, '_blank');
-  };
+  // const shareOnWhatsApp = () => {
+  //   const url = window.location.href;
+  //   const title = post?.title || '';
+  //   window.open(`https://wa.me/?text=${encodeURIComponent(title + ' ' + url)}`, '_blank');
+  // };
 
-  const shareOnPinterest = () => {
-    const url = window.location.href;
-    const title = post?.title || '';
-    const media = post?.photo ? getImageUrl(post.photo) : '';
-    window.open(`https://pinterest.com/pin/create/button/?url=${encodeURIComponent(url)}&description=${encodeURIComponent(title)}&media=${encodeURIComponent(media)}`, '_blank');
-  };
+  // const shareOnPinterest = () => {
+  //   const url = window.location.href;
+  //   const title = post?.title || '';
+  //   const media = post?.photo ? getImageUrl(post.photo) : '';
+  //   window.open(`https://pinterest.com/pin/create/button/?url=${encodeURIComponent(url)}&description=${encodeURIComponent(title)}&media=${encodeURIComponent(media)}`, '_blank');
+  // };
 
   // Generate complete HTML content including all elements
   const generateCompleteHtmlContent = () => {

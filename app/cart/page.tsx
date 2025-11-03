@@ -110,11 +110,11 @@ export default function CartPage() {
         setCartItems(prev => prev.filter(item => item.id !== id));
         // The cart count update will be handled by the event listener
       } else {
-        alert(result.message || 'Failed to remove item from cart');
+        // // alert(result.message || 'Failed to remove item from cart');
       }
     } catch (error) {
       console.error('Error removing item:', error);
-      alert('Failed to remove item from cart');
+      // alert('Failed to remove item from cart');
     } finally {
       setRemovingItem(null);
     }
@@ -132,11 +132,11 @@ export default function CartPage() {
         setCartItems([]);
         // The cart count update will be handled by the event listener
       } else {
-        alert(result.message || 'Failed to clear cart');
+        // alert(result.message || 'Failed to clear cart');
       }
     } catch (error) {
       console.error('Error clearing cart:', error);
-      alert('Failed to clear cart');
+      // alert('Failed to clear cart');
     } finally {
       setClearingCart(false);
     }
@@ -152,7 +152,7 @@ export default function CartPage() {
 
   const proceedToCheckout = () => {
     if (cartItems.length === 0) {
-      alert('Your cart is empty. Please add items to proceed.');
+      // alert('Your cart is empty. Please add items to proceed.');
       return;
     }
 

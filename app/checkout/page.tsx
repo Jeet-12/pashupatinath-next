@@ -5,14 +5,6 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { createOrder, getUserAddresses, createAddress, getCart, applyCoupon, removeCoupon, validateCoupon, getAvailableCoupons } from '../libs/api';
 
-
-type OrderData = {
-  address_id: number;
-  payment_method: 'razorpay' | 'cod'; 
-  coupon_code: string;
-};
-
-
 interface RazorpayOptions {
   key: string;
   amount: number;
@@ -27,11 +19,10 @@ interface RazorpayOptions {
     email: string;
     contact: string;
   };
- notes: {
+  notes: {
     address: string;
     order_type: string;
     internal_order_id: string;
-    // ------------------------
   };
   theme: {
     color: string;
@@ -58,6 +49,7 @@ interface RazorpayResponse {
   razorpay_order_id: string;
   razorpay_signature: string;
 }
+
 interface AddressesResponseObject {
   data?: Address[];
 }
@@ -76,31 +68,6 @@ declare global {
   }
 }
 
-// API Response Types
-interface RazorpayOrderResponse {
-  success: boolean;
-  message: string;
-  data: {
-    id: string;
-    amount: number;
-    currency: string;
-    receipt: string;
-    status: string;
-  };
-}
-
-interface VerifyPaymentResponse {
-  success: boolean;
-  message: string;
-  data?: {
-    signatureValid: boolean;
-    paymentId: string;
-    orderId: string;
-    verifiedAt: string;
-  };
-}
-
-// App Types
 type CartItem = {
   id: number;
   name: string;
@@ -110,6 +77,11 @@ type CartItem = {
   image: string;
   category: string;
   slug?: string;
+  product_id?: number;
+  discount?: number;
+  amount?: string;
+  cap?: any;
+  thread?: any;
 };
 
 type Address = {
@@ -188,23 +160,6 @@ const CheckoutPage = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
   const [countdown, setCountdown] = useState(15);
-
-useEffect(() => {
-  if (orderSuccess) {
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          router.push('/');
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }
-}, [orderSuccess, router]);
   
   // Coupon states
   const [couponCode, setCouponCode] = useState('');
@@ -215,6 +170,23 @@ useEffect(() => {
   const [availableCoupons, setAvailableCoupons] = useState<Coupon[]>([]);
   const [showAvailableCoupons, setShowAvailableCoupons] = useState(false);
 
+  useEffect(() => {
+    if (orderSuccess) {
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            router.push('/');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+      return () => clearInterval(timer);
+    }
+  }, [orderSuccess, router]);
+  
   // Check screen size and load Razorpay
   useEffect(() => {
     const checkScreenSize = () => {
@@ -237,7 +209,22 @@ useEffect(() => {
     loadAvailableCoupons();
   }, []);
 
-  // FIXED: Improved Razorpay Initialization with TypeScript
+  // Enhanced image URL handler
+  const getImageUrl = (image: string | undefined): string => {
+    if (!image) return "/placeholder-product.jpg";
+    
+    if (image.startsWith("http")) {
+      return image;
+    }
+    
+    // Handle relative paths
+    if (image.startsWith("/")) {
+      return `https://www.pashupatinathrudraksh.com${image}`;
+    }
+    
+    return `https://www.pashupatinathrudraksh.com/${image}`;
+  };
+
   const initializeRazorpay = (): Promise<boolean> => {
     return new Promise((resolve) => {
       // Check if Razorpay is already loaded
@@ -288,34 +275,67 @@ useEffect(() => {
   const loadCartData = async () => {
     try {
       const cartResponse = await getCart();
+      console.log("Cart API Response:", cartResponse);
+      
       if (cartResponse.success && cartResponse.data) {
         const cartData = cartResponse.data;
         let items: CartItem[] = [];
 
-        if (Array.isArray(cartData)) {
-          items = cartData.map((item: any) => ({
-            id: item.id || item.product_id,
-            name: item.name || item.product_name,
-            price: Number(item.price || item.product_price),
-            originalPrice: Number(item.originalPrice || item.price || item.product_price),
-            quantity: Number(item.quantity || 1),
-            image: item.image || item.product_image,
-            category: item.category || 'Rudraksha',
-            slug: item.slug || item.product_slug
-          }));
-        } else if (cartData.cart_items && Array.isArray(cartData.cart_items)) {
-          items = cartData.cart_items.map((item: any) => ({
-            id: item.id || item.product_id,
-            name: item.name || item.product_name,
-            price: Number(item.price || item.product_price),
-            originalPrice: Number(item.originalPrice || item.price || item.product_price),
-            quantity: Number(item.quantity || 1),
-            image: item.image || item.product_image,
-            category: item.category || 'Rudraksha',
-            slug: item.slug || item.product_slug
-          }));
+        // Handle the cart items array from your API response
+        if (Array.isArray(cartData.cart_items)) {
+          items = cartData.cart_items.map((item: any) => {
+            console.log("Processing cart item:", item);
+            
+            // Extract image from various possible fields with priority
+            let imageUrl = '';
+            if (item.product_images) imageUrl = item.product_images;
+            else if (item.image) imageUrl = item.image;
+            else if (item.thumb) imageUrl = item.thumb;
+            else if (item.product?.image) imageUrl = item.product.image;
+            else if (item.product?.photo) imageUrl = item.product.photo;
+            else if (item.product?.images?.[0]) imageUrl = item.product.images[0];
+            else if (item.product?.photos?.[0]) imageUrl = item.product.photos[0];
+
+            // Calculate price per item (amount / quantity)
+            const itemPrice = item.price || (item.amount ? parseFloat(item.amount) / (item.quantity || 1) : 0);
+            const originalPrice = itemPrice;
+
+            return {
+              id: item.id,
+              name: item.product_name || item.name || 'Product',
+              price: itemPrice,
+              originalPrice: originalPrice,
+              quantity: Number(item.quantity || 1),
+              image: getImageUrl(imageUrl),
+              category: 'Rudraksha',
+              slug: item.slug || item.product_slug,
+              product_id: item.product_id,
+              discount: item.discount,
+              amount: item.amount,
+              cap: item.cap,
+              thread: item.thread
+            };
+          });
+        } else if (Array.isArray(cartData)) {
+          // Fallback for different response structure
+          items = cartData.map((item: any) => {
+            let imageUrl = item.product_images || item.image || '';
+            const itemPrice = item.price || (item.amount ? parseFloat(item.amount) / (item.quantity || 1) : 0);
+            
+            return {
+              id: item.id || item.product_id,
+              name: item.product_name || item.name,
+              price: itemPrice,
+              originalPrice: itemPrice,
+              quantity: Number(item.quantity || 1),
+              image: getImageUrl(imageUrl),
+              category: 'Rudraksha',
+              slug: item.slug || item.product_slug
+            };
+          });
         }
 
+        console.log("Processed cart items:", items);
         setCartItems(items);
       }
     } catch (error) {
@@ -345,9 +365,9 @@ useEffect(() => {
   const loadAvailableCoupons = async () => {
     try {
       const couponsResponse = await getAvailableCoupons();
-     if (couponsResponse.success && couponsResponse.data) {
-  setAvailableCoupons(couponsResponse.data as any); 
-}
+      if (couponsResponse.success && couponsResponse.data) {
+        setAvailableCoupons(couponsResponse.data as any);
+      }
     } catch (error) {
       console.error('Error loading available coupons:', error);
     }
@@ -380,14 +400,14 @@ useEffect(() => {
       discountAmount = parseFloat(appliedCoupon.value);
     }
 
-    return Math.min(discountAmount, subtotal); // Don't exceed subtotal
+    return Math.min(discountAmount, subtotal);
   };
 
   const couponDiscount = calculateCouponDiscount();
   
   // Payment-specific charges/discounts
-  const onlineDiscount = selectedPayment === 'online' ? subtotal * 0.05 : 0; // 5% discount for online
-  const codCharges = selectedPayment === 'cod' ? 50 : 0; // ₹50 charges for COD
+  const onlineDiscount = selectedPayment === 'online' ? subtotal * 0.05 : 0;
+  const codCharges = selectedPayment === 'cod' ? 50 : 0;
   
   const total = Math.max(0, subtotal - onlineDiscount - couponDiscount + shippingFee + codCharges);
 
@@ -628,493 +648,508 @@ useEffect(() => {
     }, 100);
   };
 
-// FIXED: Create Razorpay order using Laravel backend
-const createRazorpayOrder = async (): Promise<{ razorpay_order_id: string; internal_order_id: number }> => {
-  try {
-    if (!selectedAddress) {
-      throw new Error('Please select a delivery address');
-    }
+  // Create Razorpay order using Laravel backend
+  const createRazorpayOrder = async (): Promise<{ razorpay_order_id: string; internal_order_id: number }> => {
+    try {
+      if (!selectedAddress) {
+        throw new Error('Please select a delivery address');
+      }
 
-    console.log('🔄 Creating integrated Razorpay order via Laravel...');
+      console.log('🔄 Creating integrated Razorpay order via Laravel...');
 
-    const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/payments/create-razorpay-order`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-      },
-      body: JSON.stringify({
-        address_id: selectedAddress.id,
-        coupon_code: appliedCoupon?.code || '',
-        referral_code: '', 
-        token:localStorage.getItem('auth_token'),
-      }),
-    });
+      const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/payments/create-razorpay-order`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+        },
+        body: JSON.stringify({
+          address_id: selectedAddress.id,
+          coupon_code: appliedCoupon?.code || '',
+          referral_code: '', 
+          token: localStorage.getItem('auth_token'),
+        }),
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-    }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+      }
 
-    const result = await response.json();
+      const result = await response.json();
 
-    if (!result.success || !result.data?.razorpay_order_id) {
-      throw new Error(result.message || 'Failed to create Razorpay order');
-    }
+      if (!result.success || !result.data?.razorpay_order_id) {
+        throw new Error(result.message || 'Failed to create Razorpay order');
+      }
 
-    console.log('✅ Integrated Razorpay order created:', {
-      razorpayOrderId: result.data.razorpay_order_id,
-      internalOrderId: result.data.internal_order_id
-    });
+      console.log('✅ Integrated Razorpay order created:', {
+        razorpayOrderId: result.data.razorpay_order_id,
+        internalOrderId: result.data.internal_order_id
+      });
 
-    return {
-      razorpay_order_id: result.data.razorpay_order_id,
-      internal_order_id: result.data.internal_order_id
-    };
-
-  } catch (error: any) {
-    console.error('❌ Integrated Razorpay order creation error:', error);
-    throw new Error(error.message || 'Failed to create payment order. Please try again.');
-  }
-};
-
-// FIXED: Enhanced Payment Verification with Order Completion via Laravel
-const verifyPaymentAndCompleteOrder = async (
-  paymentResponse: RazorpayResponse, 
-  internalOrderId: number
-): Promise<{ success: boolean; order?: any; message: string }> => {
-  try {
-    console.log('🔄 Verifying payment and completing order via Laravel...');
-    
-    const verifyResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/payments/callback`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
-      },
-      body: JSON.stringify({
-        razorpay_payment_id: paymentResponse.razorpay_payment_id,
-        razorpay_order_id: paymentResponse.razorpay_order_id,
-        razorpay_signature: paymentResponse.razorpay_signature,
-        order_id: internalOrderId
-      }),
-    });
-
-    if (!verifyResponse.ok) {
-      const errorData = await verifyResponse.json();
-      throw new Error(errorData.message || 'Verification request failed');
-    }
-
-    const result = await verifyResponse.json();
-    console.log('🔐 Payment verification and order completion result:', result);
-    
-    if (result.success) {
       return {
-        success: true,
-        order: result.data,
-        message: result.message
+        razorpay_order_id: result.data.razorpay_order_id,
+        internal_order_id: result.data.internal_order_id
       };
-    } else {
+
+    } catch (error: any) {
+      console.error('❌ Integrated Razorpay order creation error:', error);
+      throw new Error(error.message || 'Failed to create payment order. Please try again.');
+    }
+  };
+
+  // Enhanced Payment Verification with Order Completion via Laravel
+  const verifyPaymentAndCompleteOrder = async (
+    paymentResponse: RazorpayResponse, 
+    internalOrderId: number
+  ): Promise<{ success: boolean; order?: any; message: string }> => {
+    try {
+      console.log('🔄 Verifying payment and completing order via Laravel...');
+      
+      const verifyResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/payments/callback`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
+        },
+        body: JSON.stringify({
+          razorpay_payment_id: paymentResponse.razorpay_payment_id,
+          razorpay_order_id: paymentResponse.razorpay_order_id,
+          razorpay_signature: paymentResponse.razorpay_signature,
+          order_id: internalOrderId
+        }),
+      });
+
+      if (!verifyResponse.ok) {
+        const errorData = await verifyResponse.json();
+        throw new Error(errorData.message || 'Verification request failed');
+      }
+
+      const result = await verifyResponse.json();
+      console.log('🔐 Payment verification and order completion result:', result);
+      
+      if (result.success) {
+        return {
+          success: true,
+          order: result.data,
+          message: result.message
+        };
+      } else {
+        return {
+          success: false,
+          message: result.message || 'Payment verification failed'
+        };
+      }
+    } catch (error: any) {
+      console.error('❌ Payment verification error:', error);
       return {
         success: false,
-        message: result.message || 'Payment verification failed'
+        message: error.message || 'Payment verification failed. Please contact support.'
       };
     }
-  } catch (error: any) {
-    console.error('❌ Payment verification error:', error);
-    return {
-      success: false,
-      message: error.message || 'Payment verification failed. Please contact support.'
-    };
-  }
-};
+  };
 
-// FIXED: Main Razorpay Payment Processing
-const processRazorpayPayment = async () => {
-  try {
-    setIsLoading(true);
-    setError('');
+  // Main Razorpay Payment Processing
+  const processRazorpayPayment = async () => {
+    try {
+      setIsLoading(true);
+      setError('');
 
-    console.log('Starting Razorpay payment process...');
+      console.log('Starting Razorpay payment process...');
 
-    // Ensure Razorpay is loaded
-    if (!razorpayLoaded) {
-      console.log('Razorpay not loaded, initializing...');
-      const loaded = await initializeRazorpay();
-      if (!loaded) {
-        setError('Payment gateway failed to load. Please refresh the page and try again.');
+      // Ensure Razorpay is loaded
+      if (!razorpayLoaded) {
+        console.log('Razorpay not loaded, initializing...');
+        const loaded = await initializeRazorpay();
+        if (!loaded) {
+          setError('Payment gateway failed to load. Please refresh the page and try again.');
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      // Check if Razorpay is available
+      if (!window.Razorpay) {
+        setError('Payment service is not available. Please try again later.');
         setIsLoading(false);
+        return;
+      }
+
+      console.log('Creating integrated Razorpay order via Laravel...');
+
+      // Create integrated Razorpay order (this also creates the order in database)
+      const { razorpay_order_id, internal_order_id } = await createRazorpayOrder();
+      
+      if (!razorpay_order_id || !internal_order_id) {
+        setError('Failed to initialize payment. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log('Opening Razorpay checkout with order ID:', razorpay_order_id);
+
+      const options: RazorpayOptions = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
+        amount: Math.round(total * 100),
+        currency: 'INR',
+        name: 'Pashupatinath Rudraksha',
+        description: 'Order Payment',
+        image: '/logo.png',
+        order_id: razorpay_order_id,
+        handler: async function (response: RazorpayResponse) {
+          try {
+            console.log('Payment successful response:', response);
+            
+            // Verify payment signature AND complete order via Laravel
+            console.log('Verifying payment signature and completing order via Laravel...');
+            const verificationResult = await verifyPaymentAndCompleteOrder(response, internal_order_id);
+            
+            if (!verificationResult.success) {
+              setError(verificationResult.message || 'Payment verification failed. Please contact support.');
+              setIsLoading(false);
+              return;
+            }
+
+            console.log('Payment verified and order completed successfully:', verificationResult.order);
+
+            // Show success message
+            setIsLoading(false);
+            setOrderSuccess(true);
+            setOrderId(verificationResult.order?.order_number || 'N/A');
+            
+          } catch (error) {
+            console.error('Payment verification and order completion error:', error);
+            setError('Failed to complete order. Please contact support with your payment ID.');
+            setIsLoading(false);
+          }
+        },
+        prefill: {
+          name: selectedAddress ? `${selectedAddress.first_name} ${selectedAddress.last_name}`.trim() : '',
+          email: selectedAddress?.email || '',
+          contact: selectedAddress?.phone || '',
+        },
+        notes: {
+          address: selectedAddress ? `${selectedAddress.address_line_1}, ${selectedAddress.city}, ${selectedAddress.state}, ${selectedAddress.postal_code}` : '',
+          order_type: 'product_purchase',
+          internal_order_id: internal_order_id.toString()
+        },
+        theme: {
+          color: '#F59E0B',
+        },
+        modal: {
+          ondismiss: function() {
+            setIsLoading(false);
+            setError('Payment was cancelled. You can try again.');
+            console.log('Payment modal dismissed by user');
+          },
+          escape: true,
+          confirm_close: true
+        },
+        retry: {
+          enabled: true,
+          max_count: 3
+        },
+        timeout: 900,
+        remember_customer: true,
+        readonly: {
+          contact: true,
+          email: true
+        }
+      };
+
+      // Create and open Razorpay instance
+      const paymentObject = new window.Razorpay(options);
+      
+      // Add event listeners for better error handling
+      paymentObject.on('payment.failed', function (response: any) {
+        console.error('Payment failed:', response.error);
+        setError(`Payment failed: ${response.error.description || 'Please try again'}`);
+        setIsLoading(false);
+      });
+
+      // Open the Razorpay checkout
+      console.log('Opening Razorpay checkout...');
+      paymentObject.open();
+      
+    } catch (error: any) {
+      console.error('Razorpay payment error:', error);
+      setError(error.message || 'Failed to initialize payment. Please try again.');
+      setIsLoading(false);
+    }
+  };
+
+  const handlePlaceOrder = async () => {
+    if (!selectedAddress) {
+      setError('Please select a delivery address');
+      return;
+    }
+
+    if (cartItems.length === 0) {
+      setError('Your cart is empty');
+      return;
+    }
+
+    // Validate coupon if applied
+    if (appliedCoupon) {
+      const validation = await validateCoupon(appliedCoupon.code, subtotal);
+      if (!validation.success) {
+        setError('Applied coupon is no longer valid. Please remove it and try again.');
         return;
       }
     }
 
-    // Check if Razorpay is available
-    if (!window.Razorpay) {
-      setError('Payment service is not available. Please try again later.');
-      setIsLoading(false);
-      return;
-    }
+    setIsLoading(true);
+    setError('');
 
-    console.log('Creating integrated Razorpay order via Laravel...');
+    try {
+      // Properly type the payment_method to match CreateOrderData
+      const orderData = {
+        address_id: selectedAddress.id,
+        payment_method: selectedPayment === 'online' ? 'razorpay' as const : 'cod' as const,
+        coupon_code: appliedCoupon?.code || '',
+      };
 
-    // Create integrated Razorpay order (this also creates the order in database)
-    const { razorpay_order_id, internal_order_id } = await createRazorpayOrder();
-    
-    if (!razorpay_order_id || !internal_order_id) {
-      setError('Failed to initialize payment. Please try again.');
-      setIsLoading(false);
-      return;
-    }
+      console.log(selectedPayment);
 
-    console.log('Opening Razorpay checkout with order ID:', razorpay_order_id);
+      if (selectedPayment === 'online') {
+        // Process online payment with Razorpay
+        await processRazorpayPayment();
+      } else {
+        // Process COD order directly
+        const response = await createOrder(orderData);
 
-    const options: RazorpayOptions = {
-      key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
-      amount: Math.round(total * 100), // Amount in paise
-      currency: 'INR',
-      name: 'Pashupatinath Rudraksha',
-      description: 'Order Payment',
-      image: '/logo.png',
-      order_id: razorpay_order_id,
-      handler: async function (response: RazorpayResponse) {
-        try {
-          console.log('Payment successful response:', response);
-          
-          // Verify payment signature AND complete order via Laravel
-          console.log('Verifying payment signature and completing order via Laravel...');
-          const verificationResult = await verifyPaymentAndCompleteOrder(response, internal_order_id);
-          
-          if (!verificationResult.success) {
-            setError(verificationResult.message || 'Payment verification failed. Please contact support.');
-            setIsLoading(false);
-            return;
-          }
-
-          console.log('Payment verified and order completed successfully:', verificationResult.order);
-
-          // Show success message
+        if (response.success && response.data) {
           setIsLoading(false);
           setOrderSuccess(true);
-          setOrderId(verificationResult.order?.order_number || 'N/A');
-          
-        } catch (error) {
-          console.error('Payment verification and order completion error:', error);
-          setError('Failed to complete order. Please contact support with your payment ID.');
+          setOrderId(response.data.order_number);
+        } else {
+          setError(response.message || 'Failed to create order');
           setIsLoading(false);
         }
-      },
-      prefill: {
-        name: selectedAddress ? `${selectedAddress.first_name} ${selectedAddress.last_name}`.trim() : '',
-        email: selectedAddress?.email || '',
-        contact: selectedAddress?.phone || '',
-      },
-      notes: {
-        address: selectedAddress ? `${selectedAddress.address_line_1}, ${selectedAddress.city}, ${selectedAddress.state}, ${selectedAddress.postal_code}` : '',
-        order_type: 'product_purchase',
-        internal_order_id: internal_order_id.toString()
-      },
-      theme: {
-        color: '#F59E0B',
-      },
-      modal: {
-        ondismiss: function() {
-          setIsLoading(false);
-          setError('Payment was cancelled. You can try again.');
-          console.log('Payment modal dismissed by user');
-        },
-        escape: true,
-        confirm_close: true
-      },
-      retry: {
-        enabled: true,
-        max_count: 3
-      },
-      timeout: 900, // 15 minutes
-      remember_customer: true,
-      readonly: {
-        contact: true,
-        email: true
       }
-    };
-
-    // Create and open Razorpay instance
-    const paymentObject = new window.Razorpay(options);
-    
-    // Add event listeners for better error handling
-    paymentObject.on('payment.failed', function (response: any) {
-      console.error('Payment failed:', response.error);
-      setError(`Payment failed: ${response.error.description || 'Please try again'}`);
+    } catch (error: any) {
+      console.error('Order error:', error);
+      setError(error.message || 'Failed to place order. Please try again.');
       setIsLoading(false);
-    });
-
-    // Open the Razorpay checkout
-    console.log('Opening Razorpay checkout...');
-    paymentObject.open();
-    
-  } catch (error: any) {
-    console.error('Razorpay payment error:', error);
-    setError(error.message || 'Failed to initialize payment. Please try again.');
-    setIsLoading(false);
-  }
-};
-
-  const handlePlaceOrder = async () => {
-  if (!selectedAddress) {
-    setError('Please select a delivery address');
-    return;
-  }
-
-  if (cartItems.length === 0) {
-    setError('Your cart is empty');
-    return;
-  }
-
-  // Validate coupon if applied
-  if (appliedCoupon) {
-    const validation = await validateCoupon(appliedCoupon.code, subtotal);
-    if (!validation.success) {
-      setError('Applied coupon is no longer valid. Please remove it and try again.');
-      return;
     }
-  }
-
-  setIsLoading(true);
-  setError('');
-
-  try {
-    // FIX: Properly type the payment_method to match CreateOrderData
-    const orderData = {
-      address_id: selectedAddress.id,
-      payment_method: selectedPayment === 'online' ? 'razorpay' as const : 'cod' as const,
-      coupon_code: appliedCoupon?.code || '',
-    };
-
-    console.log(selectedPayment);
-
-    if (selectedPayment === 'online') {
-      // Process online payment with Razorpay
-      await processRazorpayPayment();
-    } else {
-      // Process COD order directly
-      const response = await createOrder(orderData);
-
-      if (response.success && response.data) {
-        setIsLoading(false);
-        setOrderSuccess(true);
-        setOrderId(response.data.order_number);
-      } else {
-        setError(response.message || 'Failed to create order');
-        setIsLoading(false);
-      }
-    }
-  } catch (error: any) {
-    console.error('Order error:', error);
-    setError(error.message || 'Failed to place order. Please try again.');
-    setIsLoading(false);
-  }
-};
+  };
 
   if (orderSuccess) {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-3xl shadow-2xl p-6 md:p-8 max-w-lg w-full transform hover:scale-105 transition-all duration-500">
-        {/* Success Animation */}
-        <div className="text-center mb-6">
-          <div className="relative inline-block">
-            <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg animate-bounce">
-              <svg className="w-10 h-10 md:w-12 md:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <div className="absolute -top-2 -right-2">
-              <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center animate-pulse">
-                <span className="text-white text-sm font-bold">🎉</span>
-              </div>
-            </div>
-          </div>
-          
-          <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-3">
-            Order Confirmed!
-          </h2>
-          <p className="text-gray-600 text-lg leading-relaxed">
-            Thank you for your purchase. Your order is being processed.
-          </p>
-        </div>
-
-        {/* Order Summary Card */}
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 mb-6 border border-green-200 shadow-sm">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Order Summary</h3>
-              <p className="text-green-600 text-sm">#{orderId}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600">Placed on</p>
-              <p className="text-gray-900 font-medium">{new Date().toLocaleDateString()}</p>
-            </div>
-          </div>
-
-          {/* Order Items */}
-          <div className="space-y-3 mb-4">
-            <h4 className="font-semibold text-gray-900 mb-2">Items ({cartItems.length})</h4>
-            {cartItems.slice(0, 3).map((item, index) => (
-              <div key={item.id} className="flex items-center justify-between bg-white rounded-lg p-3 shadow-sm">
-                <div className="flex items-center space-x-3">
-                  <div className="relative w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
-                    <Image
-                      src={item.image || '/images/placeholder-product.jpg'}
-                      alt={item.name}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900 text-sm line-clamp-1">{item.name}</p>
-                    <p className="text-gray-500 text-xs">Qty: {item.quantity}</p>
-                  </div>
-                </div>
-                <p className="font-semibold text-green-600">₹{(item.price * item.quantity).toLocaleString()}</p>
-              </div>
-            ))}
-            {cartItems.length > 3 && (
-              <div className="text-center">
-                <p className="text-gray-500 text-sm">+{cartItems.length - 3} more items</p>
-              </div>
-            )}
-          </div>
-
-          {/* Price Breakdown */}
-          <div className="border-t border-green-200 pt-4 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Subtotal</span>
-              <span className="text-gray-900">₹{subtotal.toLocaleString()}</span>
-            </div>
-            {couponDiscount > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Coupon Discount</span>
-                <span className="text-green-600">-₹{couponDiscount.toLocaleString()}</span>
-              </div>
-            )}
-            {onlineDiscount > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Online Payment Discount</span>
-                <span className="text-green-600">-₹{onlineDiscount.toLocaleString()}</span>
-              </div>
-            )}
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">Shipping</span>
-              <span className="text-gray-900">{shippingFee === 0 ? 'FREE' : `₹${shippingFee}`}</span>
-            </div>
-            {codCharges > 0 && (
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600">COD Charges</span>
-                <span className="text-red-600">+₹{codCharges}</span>
-              </div>
-            )}
-            <div className="flex justify-between text-lg font-bold pt-2 border-t border-green-200">
-              <span className="text-gray-900">Total Amount</span>
-              <span className="text-green-600">₹{total.toLocaleString()}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Delivery Information */}
-        {selectedAddress && (
-          <div className="bg-blue-50 rounded-2xl p-5 mb-6 border border-blue-200">
-            <div className="flex items-start space-x-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl shadow-2xl p-6 md:p-8 max-w-lg w-full transform hover:scale-105 transition-all duration-500">
+          {/* Success Animation */}
+          <div className="text-center mb-6">
+            <div className="relative inline-block">
+              <div className="w-20 h-20 md:w-24 md:h-24 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg animate-bounce">
+                <svg className="w-10 h-10 md:w-12 md:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <div className="flex-1">
-                <h4 className="font-semibold text-gray-900 mb-2">Delivery Address</h4>
-                <p className="text-gray-700 font-medium">{selectedAddress.first_name} {selectedAddress.last_name}</p>
-                <p className="text-gray-600 text-sm">
-                  {selectedAddress.address_line_1}
-                  {selectedAddress.address_line_2 && `, ${selectedAddress.address_line_2}`}
-                </p>
-                <p className="text-gray-600 text-sm">
-                  {selectedAddress.city}, {selectedAddress.state} - {selectedAddress.postal_code}
-                </p>
-                <p className="text-gray-600 text-sm">📱 {selectedAddress.phone}</p>
+              <div className="absolute -top-2 -right-2">
+                <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center animate-pulse">
+                  <span className="text-white text-sm font-bold">🎉</span>
+                </div>
+              </div>
+            </div>
+            
+            <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-3">
+              Order Confirmed!
+            </h2>
+            <p className="text-gray-600 text-lg leading-relaxed">
+              Thank you for your purchase. Your order is being processed.
+            </p>
+          </div>
+
+          {/* Order Summary Card */}
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 mb-6 border border-green-200 shadow-sm">
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Order Summary</h3>
+                <p className="text-green-600 text-sm">#{orderId}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-gray-600">Placed on</p>
+                <p className="text-gray-900 font-medium">{new Date().toLocaleDateString()}</p>
+              </div>
+            </div>
+
+            {/* Order Items */}
+            <div className="space-y-3 mb-4">
+              <h4 className="font-semibold text-gray-900 mb-2">Items ({cartItems.length})</h4>
+              {cartItems.slice(0, 3).map((item, index) => (
+                <div key={item.id} className="flex items-center justify-between bg-white rounded-lg p-3 shadow-sm">
+                  <div className="flex items-center space-x-3">
+                    <div className="relative w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
+                      <Image
+                        src={getImageUrl(item.image)}
+                        alt={item.name}
+                        fill
+                        className="object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const parent = target.parentElement;
+                          if (parent) {
+                            const fallback = document.createElement('div');
+                            fallback.className = 'w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center';
+                            fallback.innerHTML = `
+                              <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            `;
+                            parent.appendChild(fallback);
+                          }
+                        }}
+                      />
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900 text-sm line-clamp-1">{item.name}</p>
+                      <p className="text-gray-500 text-xs">Qty: {item.quantity}</p>
+                    </div>
+                  </div>
+                  <p className="font-semibold text-green-600">₹{(item.price * item.quantity).toLocaleString()}</p>
+                </div>
+              ))}
+              {cartItems.length > 3 && (
+                <div className="text-center">
+                  <p className="text-gray-500 text-sm">+{cartItems.length - 3} more items</p>
+                </div>
+              )}
+            </div>
+
+            {/* Price Breakdown */}
+            <div className="border-t border-green-200 pt-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Subtotal</span>
+                <span className="text-gray-900">₹{subtotal.toLocaleString()}</span>
+              </div>
+              {couponDiscount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Coupon Discount</span>
+                  <span className="text-green-600">-₹{couponDiscount.toLocaleString()}</span>
+                </div>
+              )}
+              {onlineDiscount > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Online Payment Discount</span>
+                  <span className="text-green-600">-₹{onlineDiscount.toLocaleString()}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Shipping</span>
+                <span className="text-gray-900">{shippingFee === 0 ? 'FREE' : `₹${shippingFee}`}</span>
+              </div>
+              {codCharges > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">COD Charges</span>
+                  <span className="text-red-600">+₹{codCharges}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-lg font-bold pt-2 border-t border-green-200">
+                <span className="text-gray-900">Total Amount</span>
+                <span className="text-green-600">₹{total.toLocaleString()}</span>
               </div>
             </div>
           </div>
-        )}
 
-        {/* Next Steps */}
-        <div className="bg-purple-50 rounded-2xl p-5 mb-6 border border-purple-200">
-          <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-            <svg className="w-5 h-5 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            What's Next?
-          </h4>
-          <div className="space-y-2 text-sm text-gray-600">
-            <p>✅ Order confirmation email sent</p>
-            <p>🔄 Order processing started</p>
-            <p>📦 Expected dispatch within 24 hours</p>
-            <p>🚚 Delivery in 3-5 business days</p>
-          </div>
-        </div>
-
-        {/* Auto Redirect Timer */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center space-x-2 bg-orange-50 px-4 py-2 rounded-full border border-orange-200">
-            <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
-              <span className="text-white text-xs font-bold">⏱</span>
+          {/* Delivery Information */}
+          {selectedAddress && (
+            <div className="bg-blue-50 rounded-2xl p-5 mb-6 border border-blue-200">
+              <div className="flex items-start space-x-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold text-gray-900 mb-2">Delivery Address</h4>
+                  <p className="text-gray-700 font-medium">{selectedAddress.first_name} {selectedAddress.last_name}</p>
+                  <p className="text-gray-600 text-sm">
+                    {selectedAddress.address_line_1}
+                    {selectedAddress.address_line_2 && `, ${selectedAddress.address_line_2}`}
+                  </p>
+                  <p className="text-gray-600 text-sm">
+                    {selectedAddress.city}, {selectedAddress.state} - {selectedAddress.postal_code}
+                  </p>
+                  <p className="text-gray-600 text-sm">📱 {selectedAddress.phone}</p>
+                </div>
+              </div>
             </div>
-            <span className="text-orange-700 text-sm font-medium">
-              Redirecting to home in <span className="font-bold">{15}</span> seconds
-            </span>
+          )}
+
+          {/* Next Steps */}
+          <div className="bg-purple-50 rounded-2xl p-5 mb-6 border border-purple-200">
+            <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+              <svg className="w-5 h-5 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              What's Next?
+            </h4>
+            <div className="space-y-2 text-sm text-gray-600">
+              <p>✅ Order confirmation email sent</p>
+              <p>🔄 Order processing started</p>
+              <p>📦 Expected dispatch within 24 hours</p>
+              <p>🚚 Delivery in 3-5 business days</p>
+            </div>
           </div>
-        </div>
 
-        {/* Action Buttons */}
-        <div className="space-y-3">
-          <button
-            onClick={() => router.push('/dashboard/user/orders')}
-            className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 rounded-2xl font-bold hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center space-x-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <span>View Order Details</span>
-          </button>
-          
-          <button
-            onClick={() => router.push('/')}
-            className="w-full border-2 border-gray-300 text-gray-700 py-4 rounded-2xl font-bold hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 flex items-center justify-center space-x-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-            </svg>
-            <span>Continue Shopping</span>
-          </button>
+          {/* Auto Redirect Timer */}
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center space-x-2 bg-orange-50 px-4 py-2 rounded-full border border-orange-200">
+              <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">⏱</span>
+              </div>
+              <span className="text-orange-700 text-sm font-medium">
+                Redirecting to home in <span className="font-bold">{countdown}</span> seconds
+              </span>
+            </div>
+          </div>
 
-          <button
-            onClick={() => window.print()}
-            className="w-full border-2 border-blue-300 text-blue-600 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-all duration-300 flex items-center justify-center space-x-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-            </svg>
-            <span>Print Receipt</span>
-          </button>
-        </div>
+          {/* Action Buttons */}
+          <div className="space-y-3">
+            <button
+              onClick={() => router.push('/dashboard/user/orders')}
+              className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 rounded-2xl font-bold hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center space-x-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <span>View Order Details</span>
+            </button>
+            
+            <button
+              onClick={() => router.push('/')}
+              className="w-full border-2 border-gray-300 text-gray-700 py-4 rounded-2xl font-bold hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 flex items-center justify-center space-x-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              <span>Continue Shopping</span>
+            </button>
 
-        {/* Support Info */}
-        <div className="text-center mt-6 pt-4 border-t border-gray-200">
-          <p className="text-gray-500 text-sm">
-            Need help? <a href="/contact" className="text-green-600 hover:text-green-700 font-medium">Contact Support</a>
-          </p>
+            <button
+              onClick={() => window.print()}
+              className="w-full border-2 border-blue-300 text-blue-600 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-all duration-300 flex items-center justify-center space-x-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+              <span>Print Receipt</span>
+            </button>
+          </div>
+
+          {/* Support Info */}
+          <div className="text-center mt-6 pt-4 border-t border-gray-200">
+            <p className="text-gray-500 text-sm">
+              Need help? <a href="/contact" className="text-green-600 hover:text-green-700 font-medium">Contact Support</a>
+            </p>
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-amber-50 to-orange-50 py-4 md:py-8">
@@ -1605,12 +1640,27 @@ const processRazorpayPayment = async () => {
                 <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
                   {cartItems.map((item) => (
                     <div key={item.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                      <div className="relative w-12 h-12 md:w-16 md:h-16 flex-shrink-0">
+                      <div className="relative w-12 h-12 md:w-16 md:h-16 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
                         <Image
-                          src={item.image || '/images/placeholder-product.jpg'}
+                          src={getImageUrl(item.image)}
                           alt={item.name}
                           fill
-                          className="object-cover rounded-lg"
+                          className="object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              const fallback = document.createElement('div');
+                              fallback.className = 'w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center';
+                              fallback.innerHTML = `
+                                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                              `;
+                              parent.appendChild(fallback);
+                            }
+                          }}
                         />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1620,6 +1670,12 @@ const processRazorpayPayment = async () => {
                           <span className="text-sm font-bold text-amber-600">₹{item.price.toLocaleString()}</span>
                           <span className="text-sm text-gray-500">Qty: {item.quantity}</span>
                         </div>
+                        {/* Show discount if available */}
+                        {item.discount && item.discount > 0 && (
+                          <div className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded mt-1">
+                            {item.discount}% OFF
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

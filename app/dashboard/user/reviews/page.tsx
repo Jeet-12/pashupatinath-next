@@ -197,10 +197,10 @@ export default function UserReviewsPage() {
           closeModals();
           fetchReviews(); // Refresh statistics
         } else {
-          alert(response.message || 'Failed to delete review');
+          // alert(response.message || 'Failed to delete review');
         }
       } catch (err: any) {
-        alert(err.message || 'Failed to delete review');
+        // alert(err.message || 'Failed to delete review');
       }
     }
   };
@@ -218,10 +218,10 @@ export default function UserReviewsPage() {
         closeModals();
         fetchReviews(); // Re-fetch to ensure statistics are fresh
       } else {
-        alert(response.message || 'Failed to update review');
+        // alert(response.message || 'Failed to update review');
       }
     } catch (err: any) {
-      alert(err.message || 'Failed to update review');
+      // alert(err.message || 'Failed to update review');
     } finally {
       setSubmitting(false);
     }
@@ -237,10 +237,10 @@ export default function UserReviewsPage() {
         closeModals();
         fetchReviews(); // Refresh statistics
       } else {
-        alert(response.message || 'Failed to create review');
+        // alert(response.message || 'Failed to create review');
       }
     } catch (err: any) {
-      alert(err.message || 'Failed to create review');
+      // alert(err.message || 'Failed to create review');
     } finally {
       setSubmitting(false);
     }
@@ -278,10 +278,10 @@ export default function UserReviewsPage() {
             } : null);
         }
       } else {
-        alert(response.message || 'Failed to delete image');
+        // alert(response.message || 'Failed to delete image');
       }
     } catch (err: any) {
-      alert(err.message || 'Failed to delete image');
+      // alert(err.message || 'Failed to delete image');
     }
   };
 
