@@ -679,7 +679,7 @@ const getImageUrl = (image: string | undefined, baseUrl: string = 'https://www.p
 const calculateAverageRating = (reviews: Review[]): number => {
   if (!reviews || reviews.length === 0) return 5;
   
-  const total = reviews.reduce((sum, review) => sum + (review.rate || review.rating || 0), 0);
+  const total = reviews.reduce((sum, review) => sum + (review.rating || 0), 0);
   return Math.round((total / reviews.length) * 10) / 10;
 };
 
@@ -1399,11 +1399,11 @@ const EnhancedReviewsSection = ({
           >
             <div className="flex items-start justify-between mb-6">
               <div>
-                <h4 className="font-black text-gray-900 text-2xl mb-3">
+                {/* <h4 className="font-black text-gray-900 text-2xl mb-3">
                   {review.review || `Review by ${review.user_info?.name || 'Anonymous'}`}
-                </h4>
+                </h4> */}
                 <div className="flex items-center space-x-5">
-                  <ReviewStars rating={review.rate || review.rating || 5} size="lg" />
+                  <ReviewStars rating={review.rating || 5} size="lg" />
                   <span className="text-gray-600 font-semibold text-lg">
                     by {review.user_info?.name || 'Anonymous'}
                   </span>
@@ -1415,13 +1415,13 @@ const EnhancedReviewsSection = ({
                 </div>
               </div>
               <span className="text-gray-500 text-sm bg-gray-100 px-3 py-1 rounded-full">
-                {review.created_at ? new Date(review.created_at).toLocaleDateString() : 'Recently'}
+                {/* {review.created_at ? new Date(review.created_at).toLocaleDateString() : 'Recently'} */}
               </span>
             </div>
             
-            {review.review && (
+            {/* {review.review && (
               <p className="text-gray-700 text-lg mb-4 leading-relaxed">{review.review}</p>
-            )}
+            )} */}
             
             <div className="flex items-center justify-between mt-6">
               <button className="text-amber-600 hover:text-amber-700 font-semibold text-lg flex items-center space-x-3">

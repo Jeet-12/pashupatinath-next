@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { createOrder, getUserAddresses, createAddress, getCart, applyCoupon, removeCoupon, validateCoupon, getAvailableCoupons } from '../libs/api';
@@ -157,7 +157,7 @@ const CheckoutPage = () => {
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderId, setOrderId] = useState<string>('');
   const [error, setError] = useState<string>('');
-  const [isMobile, setIsMobile] = useState(false);
+  // const [isMobile, setIsMobile] = useState(false);
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
   const [countdown, setCountdown] = useState(15);
   
@@ -190,7 +190,7 @@ const CheckoutPage = () => {
   // Check screen size and load Razorpay
   useEffect(() => {
     const checkScreenSize = () => {
-      setIsMobile(window.innerWidth < 768);
+      // setIsMobile(window.innerWidth < 768);
     };
 
     checkScreenSize();
@@ -200,13 +200,6 @@ const CheckoutPage = () => {
     initializeRazorpay();
     
     return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
-
-  // Load cart, addresses, and available coupons on component mount
-  useEffect(() => {
-    loadCartData();
-    loadAddresses();
-    loadAvailableCoupons();
   }, []);
 
   // Enhanced image URL handler
@@ -225,9 +218,115 @@ const CheckoutPage = () => {
     return `https://www.pashupatinathrudraksh.com/${image}`;
   };
 
+  // Memoized load functions to prevent useEffect dependency issues
+  const loadCartData = useCallback(async () => {
+    try {
+      const cartResponse = await getCart();
+      console.log("Cart API Response:", cartResponse);
+      
+      if (cartResponse.success && cartResponse.data) {
+        const cartData = cartResponse.data;
+        let items: CartItem[] = [];
+
+        // Handle the cart items array from your API response
+        if (Array.isArray(cartData.cart_items)) {
+          items = cartData.cart_items.map((item: any) => {
+            console.log("Processing cart item:", item);
+            
+            let imageUrl = '';
+            if (item.product_images) imageUrl = item.product_images;
+            else if (item.image) imageUrl = item.image;
+            else if (item.thumb) imageUrl = item.thumb;
+            else if (item.product?.image) imageUrl = item.product.image;
+            else if (item.product?.photo) imageUrl = item.product.photo;
+            else if (item.product?.images?.[0]) imageUrl = item.product.images[0];
+            else if (item.product?.photos?.[0]) imageUrl = item.product.photos[0];
+
+            // Calculate price per item (amount / quantity)
+            const itemPrice = item.price || (item.amount ? parseFloat(item.amount) / (item.quantity || 1) : 0);
+            const originalPrice = itemPrice;
+
+            return {
+              id: item.id,
+              name: item.product_name || item.name || 'Product',
+              price: itemPrice,
+              originalPrice: originalPrice,
+              quantity: Number(item.quantity || 1),
+              image: getImageUrl(imageUrl),
+              category: 'Rudraksha',
+              slug: item.slug || item.product_slug,
+              product_id: item.product_id,
+              discount: item.discount,
+              amount: item.amount,
+              cap: item.cap,
+              thread: item.thread
+            };
+          });
+        } else if (Array.isArray(cartData)) {
+          // Fallback for different response structure
+          items = cartData.map((item: any) => {
+            const imageUrl = item.product_images || item.image || '';
+            const itemPrice = item.price || (item.amount ? parseFloat(item.amount) / (item.quantity || 1) : 0);
+            
+            return {
+              id: item.id || item.product_id,
+              name: item.product_name || item.name,
+              price: itemPrice,
+              originalPrice: itemPrice,
+              quantity: Number(item.quantity || 1),
+              image: getImageUrl(imageUrl),
+              category: 'Rudraksha',
+              slug: item.slug || item.product_slug
+            };
+          });
+        }
+
+        console.log("Processed cart items:", items);
+        setCartItems(items);
+      }
+    } catch (err) {
+      console.error('Error loading cart:', err);
+      setError('Failed to load cart items');
+    }
+  }, []);
+
+  const loadAddresses = useCallback(async () => {
+    try {
+      const addressesResponse = await getUserAddresses();
+      if (addressesResponse.success && addressesResponse.data) {
+        const addressesData = Array.isArray(addressesResponse.data) 
+          ? addressesResponse.data 
+          : (addressesResponse.data as AddressesResponseObject).data || []; 
+        
+        setAddresses(addressesData);
+        const defaultAddress = addressesData.find((addr: Address) => addr.is_default);
+        setSelectedAddress(defaultAddress || addressesData[0] || null);
+      }
+    } catch (err) {
+      console.error('Error loading addresses:', err);
+      setError('Failed to load addresses');
+    }
+  }, []);
+
+  const loadAvailableCoupons = useCallback(async () => {
+    try {
+      const couponsResponse = await getAvailableCoupons();
+      if (couponsResponse.success && couponsResponse.data) {
+        setAvailableCoupons(couponsResponse.data as any);
+      }
+    } catch (err) {
+      console.error('Error loading available coupons:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCartData();
+    loadAddresses();
+    loadAvailableCoupons();
+  }, [loadCartData, loadAddresses, loadAvailableCoupons]);
+
   const initializeRazorpay = (): Promise<boolean> => {
     return new Promise((resolve) => {
-      // Check if Razorpay is already loaded
       if (window.Razorpay) {
         console.log('Razorpay already loaded');
         setRazorpayLoaded(true);
@@ -235,7 +334,6 @@ const CheckoutPage = () => {
         return;
       }
 
-      // Check if script is already added
       const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
       if (existingScript) {
         console.log('Razorpay script already exists, waiting for load...');
@@ -270,107 +368,6 @@ const CheckoutPage = () => {
       
       document.body.appendChild(script);
     });
-  };
-
-  const loadCartData = async () => {
-    try {
-      const cartResponse = await getCart();
-      console.log("Cart API Response:", cartResponse);
-      
-      if (cartResponse.success && cartResponse.data) {
-        const cartData = cartResponse.data;
-        let items: CartItem[] = [];
-
-        // Handle the cart items array from your API response
-        if (Array.isArray(cartData.cart_items)) {
-          items = cartData.cart_items.map((item: any) => {
-            console.log("Processing cart item:", item);
-            
-            // Extract image from various possible fields with priority
-            let imageUrl = '';
-            if (item.product_images) imageUrl = item.product_images;
-            else if (item.image) imageUrl = item.image;
-            else if (item.thumb) imageUrl = item.thumb;
-            else if (item.product?.image) imageUrl = item.product.image;
-            else if (item.product?.photo) imageUrl = item.product.photo;
-            else if (item.product?.images?.[0]) imageUrl = item.product.images[0];
-            else if (item.product?.photos?.[0]) imageUrl = item.product.photos[0];
-
-            // Calculate price per item (amount / quantity)
-            const itemPrice = item.price || (item.amount ? parseFloat(item.amount) / (item.quantity || 1) : 0);
-            const originalPrice = itemPrice;
-
-            return {
-              id: item.id,
-              name: item.product_name || item.name || 'Product',
-              price: itemPrice,
-              originalPrice: originalPrice,
-              quantity: Number(item.quantity || 1),
-              image: getImageUrl(imageUrl),
-              category: 'Rudraksha',
-              slug: item.slug || item.product_slug,
-              product_id: item.product_id,
-              discount: item.discount,
-              amount: item.amount,
-              cap: item.cap,
-              thread: item.thread
-            };
-          });
-        } else if (Array.isArray(cartData)) {
-          // Fallback for different response structure
-          items = cartData.map((item: any) => {
-            let imageUrl = item.product_images || item.image || '';
-            const itemPrice = item.price || (item.amount ? parseFloat(item.amount) / (item.quantity || 1) : 0);
-            
-            return {
-              id: item.id || item.product_id,
-              name: item.product_name || item.name,
-              price: itemPrice,
-              originalPrice: itemPrice,
-              quantity: Number(item.quantity || 1),
-              image: getImageUrl(imageUrl),
-              category: 'Rudraksha',
-              slug: item.slug || item.product_slug
-            };
-          });
-        }
-
-        console.log("Processed cart items:", items);
-        setCartItems(items);
-      }
-    } catch (error) {
-      console.error('Error loading cart:', error);
-      setError('Failed to load cart items');
-    }
-  };
-
-  const loadAddresses = async () => {
-    try {
-      const addressesResponse = await getUserAddresses();
-      if (addressesResponse.success && addressesResponse.data) {
-        const addressesData = Array.isArray(addressesResponse.data) 
-          ? addressesResponse.data 
-          : (addressesResponse.data as AddressesResponseObject).data || []; 
-        
-        setAddresses(addressesData);
-        const defaultAddress = addressesData.find((addr: Address) => addr.is_default);
-        setSelectedAddress(defaultAddress || addressesData[0] || null);
-      }
-    } catch (error) {
-      console.error('Error loading addresses:', error);
-      setError('Failed to load addresses');
-    }
-  };
-
-  const loadAvailableCoupons = async () => {
-    try {
-      const couponsResponse = await getAvailableCoupons();
-      if (couponsResponse.success && couponsResponse.data) {
-        setAvailableCoupons(couponsResponse.data as any);
-      }
-    } catch (error) {
-      console.error('Error loading available coupons:', error);
-    }
   };
 
   // Helper function to get full name from address
@@ -471,7 +468,7 @@ const CheckoutPage = () => {
       } else {
         setError(response.message || 'Failed to save address');
       }
-    } catch (error) {
+    } catch (err) {
       setError('Failed to save address');
     }
   };
@@ -541,7 +538,7 @@ const CheckoutPage = () => {
       }));
       setAddresses(updatedAddresses);
       setSelectedAddress(updatedAddresses.find(addr => addr.id === addressId) || null);
-    } catch (error) {
+    } catch (err) {
       setError('Failed to set default address');
     }
   };
@@ -553,7 +550,7 @@ const CheckoutPage = () => {
       if (selectedAddress?.id === addressId) {
         setSelectedAddress(updatedAddresses[0] || null);
       }
-    } catch (error) {
+    } catch (err) {
       setError('Failed to delete address');
     }
   };
@@ -605,8 +602,8 @@ const CheckoutPage = () => {
       } else {
         setCouponError(response.message || 'Invalid coupon code');
       }
-    } catch (error) {
-      console.error('Coupon application error:', error);
+    } catch (err) {
+      console.error('Coupon application error:', err);
       setCouponError('Failed to apply coupon. Please try again.');
     } finally {
       setIsApplyingCoupon(false);
@@ -628,7 +625,7 @@ const CheckoutPage = () => {
       } else {
         setCouponError('Failed to remove coupon');
       }
-    } catch (error) {
+    } catch (err) {
       setCouponError('Failed to remove coupon');
     }
   };
@@ -692,9 +689,9 @@ const CheckoutPage = () => {
         internal_order_id: result.data.internal_order_id
       };
 
-    } catch (error: any) {
-      console.error('❌ Integrated Razorpay order creation error:', error);
-      throw new Error(error.message || 'Failed to create payment order. Please try again.');
+    } catch (err: any) {
+      console.error('❌ Integrated Razorpay order creation error:', err);
+      throw new Error(err.message || 'Failed to create payment order. Please try again.');
     }
   };
 
@@ -740,11 +737,11 @@ const CheckoutPage = () => {
           message: result.message || 'Payment verification failed'
         };
       }
-    } catch (error: any) {
-      console.error('❌ Payment verification error:', error);
+    } catch (err: any) {
+      console.error('❌ Payment verification error:', err);
       return {
         success: false,
-        message: error.message || 'Payment verification failed. Please contact support.'
+        message: err.message || 'Payment verification failed. Please contact support.'
       };
     }
   };
@@ -817,8 +814,8 @@ const CheckoutPage = () => {
             setOrderSuccess(true);
             setOrderId(verificationResult.order?.order_number || 'N/A');
             
-          } catch (error) {
-            console.error('Payment verification and order completion error:', error);
+          } catch (err) {
+            console.error('Payment verification and order completion error:', err);
             setError('Failed to complete order. Please contact support with your payment ID.');
             setIsLoading(false);
           }
@@ -871,9 +868,9 @@ const CheckoutPage = () => {
       console.log('Opening Razorpay checkout...');
       paymentObject.open();
       
-    } catch (error: any) {
-      console.error('Razorpay payment error:', error);
-      setError(error.message || 'Failed to initialize payment. Please try again.');
+    } catch (err: any) {
+      console.error('Razorpay payment error:', err);
+      setError(err.message || 'Failed to initialize payment. Please try again.');
       setIsLoading(false);
     }
   };
@@ -927,9 +924,9 @@ const CheckoutPage = () => {
           setIsLoading(false);
         }
       }
-    } catch (error: any) {
-      console.error('Order error:', error);
-      setError(error.message || 'Failed to place order. Please try again.');
+    } catch (err: any) {
+      console.error('Order error:', err);
+      setError(err.message || 'Failed to place order. Please try again.');
       setIsLoading(false);
     }
   };
@@ -977,7 +974,7 @@ const CheckoutPage = () => {
             {/* Order Items */}
             <div className="space-y-3 mb-4">
               <h4 className="font-semibold text-gray-900 mb-2">Items ({cartItems.length})</h4>
-              {cartItems.slice(0, 3).map((item, index) => (
+              {cartItems.slice(0, 3).map((item) => (
                 <div key={item.id} className="flex items-center justify-between bg-white rounded-lg p-3 shadow-sm">
                   <div className="flex items-center space-x-3">
                     <div className="relative w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">

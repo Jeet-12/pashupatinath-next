@@ -16,9 +16,9 @@ import {
   Mail, 
   Globe,
   CheckCircle,
-  // alertCircle,
+  AlertCircle,
   Info,
-  CreditCard,
+  // CreditCard,
   ArrowRight
 } from 'lucide-react';
 

@@ -147,7 +147,7 @@ export default function Header() {
         const onAuthInvalid = (e: Event) => {
             try {
                 // show a simple message and redirect to login
-                const detail = (e as CustomEvent)?.detail?.message || 'Session expired. Please login again.';
+                const _detail = (e as CustomEvent)?.detail?.message || 'Session expired. Please login again.';
                 // alert(detail);
             } catch {}
             try {
