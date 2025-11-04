@@ -551,7 +551,7 @@ export default function Header() {
                                 </button>
 
                                 {/* Profile Dropdown */}
-                                <div className={`absolute right-0 top-full mt-2 w-56 sm:w-64 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-amber-100 overflow-hidden transition-all duration-300 origin-top-right ${
+                                <div className={`absolute right-0 top-full mt-2 w-56 sm:w-64 bg-white/95 backdrop-blur-md rounded-xl shadow-2xl border border-amber-100 overflow-hidden transition-all duration-300 origin-top-right z-10 ${
                                     profileDropdownOpen ? 'scale-100 opacity-100 visible' : 'scale-95 opacity-0 invisible'
                                 }`}>
                                     <div className="p-3 sm:p-4 border-b border-amber-100 bg-gradient-to-r from-amber-50 to-amber-25">
@@ -720,7 +720,7 @@ export default function Header() {
                         ))}
                         
                         {/* Mobile Profile Links */}
-                        <div className="pt-4 border-t border-amber-100 mt-4">
+                        <div className="pt-4 border-t border-amber-100 mt-4 z-10" style={{zIndex:1}}>
                             <div className="grid grid-cols-2 gap-2">
                                 {profileItems.slice(0, 2).map((item) => (
                                     <Link
