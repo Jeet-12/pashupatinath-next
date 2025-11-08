@@ -627,59 +627,58 @@ export const clearCart = async (): Promise<ApiResponse> => {
   }
 };
 export const updateCartQuantity = async (cartItemId: number, quantity: number): Promise<ApiResponse> => {
-  try {
-    const sessionToken = getSessionPayloadToken();
-    
-    if (!sessionToken) {
-      return {
-        success: false,
-        message: 'Authentication required'
-      };
-    }
+  try {
+    const sessionToken = getSessionPayloadToken();
+    
+    if (!sessionToken) {
+      return {
+        success: false,
+        message: 'Authentication required'
+      };
+    }
 
-    const response = await fetch(`${API_BASE_URL}/cart/update-quantity/${cartItemId}`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${sessionToken}`,
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ 
-        quantity: quantity,
-        session_token: sessionToken 
-      })
-    });
+    const response = await fetch(`${API_BASE_URL}/cart/update-quantity/${cartItemId}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({ 
+        quantity: quantity,
+        session_token: sessionToken 
+      })
+    });
 
-    const result = await response.json();
+    const result = await response.json();
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        clearAuthToken();
-        clearSessionToken();
-        clearUser();
-        window.dispatchEvent(new CustomEvent('authInvalid'));
-      }
-      
-      return {
-        success: false,
-        message: result.message || 'Failed to update cart quantity'
-      };
-    }
+    if (!response.ok) {
+      if (response.status === 401) {
+        clearAuthToken();
+        clearSessionToken();
+        clearUser();
+        window.dispatchEvent(new CustomEvent('authInvalid'));
+      }
+      
+      return {
+        success: false,
+        message: result.message || 'Failed to update cart quantity'
+      };
+    }
 
-    // Notify about cart update if successful
-    if (result.success) {
-      notifyCountsUpdated();
-      try { syncCartToLocalStorage(result); } catch {}
-    }
+    // Notify about cart update if successful
+    if (result.success) {
+      notifyCountsUpdated();
+      try { syncCartToLocalStorage(result.data); } catch {}
+    }
 
-    return result;
-  } catch (error) {
-    console.error('Error updating cart quantity:', error);
-    return {
-      success: false,
-      message: error instanceof Error ? error.message : 'Failed to update cart quantity'
-    };
-  }
+    return result;
+  } catch (error) {
+    console.error('Error updating cart quantity:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to update cart quantity'
+    };
+  }
 };
 
 // Notify other parts of the app that counts updated

@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getCart, removeFromCart, clearCart } from '../libs/api';
+import { getCart, removeFromCart, clearCart, updateCartQuantity } from '../libs/api';
 
 type CartItem = {
   id: number;
@@ -15,6 +15,8 @@ type CartItem = {
   image: string;
   category: string;
   maxQuantity: number;
+  slug: string; // Added slug for API calls
+  product_id: number; // Added product_id
 };
 
 export default function CartPage() {
@@ -24,6 +26,7 @@ export default function CartPage() {
   const [removingItem, setRemovingItem] = useState<number | null>(null);
   const [clearingCart, setClearingCart] = useState(false);
   const [showOfferBadge, setShowOfferBadge] = useState(true);
+  const [updatingItems, setUpdatingItems] = useState<number[]>([]); // Track items being updated
 
   // Load cart items on component mount
   useEffect(() => {
@@ -80,7 +83,9 @@ export default function CartPage() {
             quantity: Number(ci.quantity || 1),
             image: imageUrl,
             category: ci.product?.category || ci.category || '',
-            maxQuantity: Number(ci.product?.stock || ci.maxQuantity || 10)
+            maxQuantity: Number(ci.product?.stock || ci.maxQuantity || 10),
+            slug: ci.slug || ci.product?.slug || '',
+            product_id: ci.product_id || ci.product?.id || ci.id
           };
         });
         setCartItems(items);
@@ -105,16 +110,85 @@ export default function CartPage() {
     }
   }, [cartItems, loading]);
 
-  const updateQuantity = (id: number, newQuantity: number) => {
+  const updateQuantity = async (id: number, newQuantity: number) => {
     if (newQuantity < 1) return;
     
+    const item = cartItems.find(item => item.id === id);
+    if (!item) return;
+
+    // Check if quantity exceeds max available
+    if (newQuantity > item.maxQuantity) {
+      alert(`Only ${item.maxQuantity} items available in stock`);
+      return;
+    }
+
+    // Update local state immediately for better UX
     setCartItems(prev => 
       prev.map(item => 
         item.id === id 
-          ? { ...item, quantity: Math.min(newQuantity, item.maxQuantity) }
+          ? { ...item, quantity: newQuantity }
           : item
       )
     );
+
+    // Add to updating items
+    setUpdatingItems(prev => [...prev, id]);
+
+    try {
+      // Call API to update quantity on server
+      const result = await updateCartQuantity(id, newQuantity);
+      
+      if (!result.success) {
+        // Revert local state if API call fails
+        setCartItems(prev => 
+          prev.map(item => 
+            item.id === id 
+              ? { ...item, quantity: item.quantity } // Keep original quantity
+              : item
+          )
+        );
+        alert(result.message || 'Failed to update quantity');
+      } else {
+        // Update with server data if needed
+        if (result.data && result.data.cart_items) {
+          await loadCartItems(); // Reload cart to get updated data
+        }
+        
+        // Trigger cart count update
+        try { 
+          window.dispatchEvent(new CustomEvent('countsUpdated')); 
+        } catch {}
+      }
+    } catch (error) {
+      console.error('Error updating quantity:', error);
+      // Revert local state on error
+      setCartItems(prev => 
+        prev.map(item => 
+          item.id === id 
+            ? { ...item, quantity: item.quantity } // Keep original quantity
+            : item
+        )
+      );
+      alert('Failed to update quantity. Please try again.');
+    } finally {
+      // Remove from updating items
+      setUpdatingItems(prev => prev.filter(itemId => itemId !== id));
+    }
+  };
+
+  // Optimized quantity update functions
+  const incrementQuantity = async (id: number) => {
+    const item = cartItems.find(item => item.id === id);
+    if (item) {
+      await updateQuantity(id, item.quantity + 1);
+    }
+  };
+
+  const decrementQuantity = async (id: number) => {
+    const item = cartItems.find(item => item.id === id);
+    if (item && item.quantity > 1) {
+      await updateQuantity(id, item.quantity - 1);
+    }
   };
 
   const removeItem = async (id: number) => {
@@ -123,9 +197,16 @@ export default function CartPage() {
       const result = await removeFromCart(id);
       if (result.success) {
         setCartItems(prev => prev.filter(item => item.id !== id));
+        // Trigger cart count update
+        try { 
+          window.dispatchEvent(new CustomEvent('countsUpdated')); 
+        } catch {}
+      } else {
+        alert(result.message || 'Failed to remove item');
       }
     } catch (error) {
       console.error('Error removing item:', error);
+      alert('Failed to remove item. Please try again.');
     } finally {
       setRemovingItem(null);
     }
@@ -141,9 +222,16 @@ export default function CartPage() {
       const result = await clearCart();
       if (result.success) {
         setCartItems([]);
+        // Trigger cart count update
+        try { 
+          window.dispatchEvent(new CustomEvent('countsUpdated')); 
+        } catch {}
+      } else {
+        alert(result.message || 'Failed to clear cart');
       }
     } catch (error) {
       console.error('Error clearing cart:', error);
+      alert('Failed to clear cart. Please try again.');
     } finally {
       setClearingCart(false);
     }
@@ -174,11 +262,6 @@ export default function CartPage() {
 
   const continueShopping = () => {
     router.push('/products');
-  };
-
-  const viewOffers = () => {
-    // Implement offers logic here
-    alert('Available offers will be shown here!');
   };
 
   if (loading) {
@@ -317,25 +400,39 @@ export default function CartPage() {
                       {/* Quantity Controls */}
                       <div className="flex items-center gap-2 md:gap-3">
                         <button
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          disabled={item.quantity <= 1}
+                          onClick={() => decrementQuantity(item.id)}
+                          disabled={item.quantity <= 1 || updatingItems.includes(item.id)}
                           className="w-6 h-6 md:w-8 md:h-8 rounded-full border border-amber-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-amber-50"
                         >
-                          <svg className="w-3 h-3 md:w-4 md:h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
-                          </svg>
+                          {updatingItems.includes(item.id) ? (
+                            <div className="animate-spin rounded-full h-3 w-3 md:h-4 md:w-4 border-b-2 border-amber-600"></div>
+                          ) : (
+                            <svg className="w-3 h-3 md:w-4 md:h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                            </svg>
+                          )}
                         </button>
                         
-                        <span className="w-8 md:w-12 text-center font-semibold text-amber-900 text-sm md:text-base">{item.quantity}</span>
+                        <span className="w-8 md:w-12 text-center font-semibold text-amber-900 text-sm md:text-base">
+                          {updatingItems.includes(item.id) ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-amber-600 mx-auto"></div>
+                          ) : (
+                            item.quantity
+                          )}
+                        </span>
                         
                         <button
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          disabled={item.quantity >= item.maxQuantity}
+                          onClick={() => incrementQuantity(item.id)}
+                          disabled={item.quantity >= item.maxQuantity || updatingItems.includes(item.id)}
                           className="w-6 h-6 md:w-8 md:h-8 rounded-full border border-amber-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-amber-50"
                         >
-                          <svg className="w-3 h-3 md:w-4 md:h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                          </svg>
+                          {updatingItems.includes(item.id) ? (
+                            <div className="animate-spin rounded-full h-3 w-3 md:h-4 md:w-4 border-b-2 border-amber-600"></div>
+                          ) : (
+                            <svg className="w-3 h-3 md:w-4 md:h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                          )}
                         </button>
                       </div>
 
@@ -352,7 +449,7 @@ export default function CartPage() {
                       {/* Remove Button */}
                       <button
                         onClick={() => removeItem(item.id)}
-                        disabled={removingItem === item.id}
+                        disabled={removingItem === item.id || updatingItems.includes(item.id)}
                         className="p-1 md:p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Remove item"
                       >
