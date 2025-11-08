@@ -1,27 +1,27 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   getUserProfile, 
   getUserOrders, 
-  fetchWishlist,
   getCart,
   UserProfile,
   UserStats,
   Order,
-  Product
+  getUser
 } from '../../libs/api';
 
 export default function UserDashboard() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Real user data from API
+  // Real user data from API and localStorage
   const [userData, setUserData] = useState<UserProfile | null>(null);
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
-  const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [orderStats, setOrderStats] = useState({
     totalOrders: 0,
@@ -29,9 +29,19 @@ export default function UserDashboard() {
     completedOrders: 0
   });
 
+  // Get user data from localStorage
+  const [localUser, setLocalUser] = useState<any>(null);
+
   // Fetch all dashboard data
   useEffect(() => {
     fetchDashboardData();
+  }, []);
+
+  // Get user from localStorage on component mount
+  useEffect(() => {
+    const userFromStorage = getUser();
+    setLocalUser(userFromStorage);
+    console.log('User from localStorage:', userFromStorage);
   }, []);
 
   const fetchDashboardData = async () => {
@@ -39,11 +49,34 @@ export default function UserDashboard() {
       setIsLoading(true);
       setError(null);
 
-      // Fetch user profile and stats
+      // Get user from localStorage first for immediate display
+      const localUserData = getUser();
+      if (localUserData) {
+        setLocalUser(localUserData);
+      }
+
+      // Fetch user profile and stats from API
       const profileResponse = await getUserProfile();
       if (profileResponse.success && profileResponse.data) {
         setUserData(profileResponse.data.profile);
         setUserStats(profileResponse.data.stats);
+      } else {
+        // If API fails, use localStorage data
+        if (localUserData) {
+          const fallbackProfile: UserProfile = {
+            id: localUserData.id || 0,
+            name: localUserData.name || 'User',
+            email: localUserData.email || '',
+            mobile: localUserData.mobile || '',
+            date_of_birth: localUserData.date_of_birth || '',
+            gender: localUserData.gender || '',
+            avatar: localUserData.avatar || '',
+            email_verified_at: localUserData.email_verified_at || '',
+            created_at: localUserData.created_at || new Date().toISOString(),
+            updated_at: localUserData.updated_at || new Date().toISOString()
+          };
+          setUserData(fallbackProfile);
+        }
       }
 
       // Fetch recent orders (first page with 4 items)
@@ -73,12 +106,6 @@ export default function UserDashboard() {
         });
       }
 
-      // Fetch wishlist
-      const wishlistResponse = await fetchWishlist();
-      if (wishlistResponse.success && wishlistResponse.data) {
-        setWishlistItems(wishlistResponse.data || []);
-      }
-
       // Fetch cart items
       const cartResponse = await getCart();
       if (cartResponse.success && cartResponse.data) {
@@ -99,6 +126,51 @@ export default function UserDashboard() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Navigation handlers
+  const navigateToOrders = () => {
+    router.push('/dashboard/user/orders');
+  };
+
+  const navigateToCart = () => {
+    router.push('/cart');
+  };
+
+  const navigateToProfile = () => {
+    router.push('/dashboard/user/profile');
+  };
+
+  const navigateToProducts = () => {
+    router.push('/products');
+  };
+
+  // Get user display name - prioritize localStorage for immediate display
+  const getUserDisplayName = () => {
+    if (localUser?.name) return localUser.name;
+    if (userData?.name) return userData.name;
+    return 'User';
+  };
+
+  // Get user email - prioritize localStorage for immediate display
+  const getUserEmail = () => {
+    if (localUser?.email) return localUser.email;
+    if (userData?.email) return userData.email;
+    return '';
+  };
+
+  // Get user avatar
+  const getUserAvatar = () => {
+    if (localUser?.avatar) return localUser.avatar;
+    if (userData?.avatar) return userData.avatar;
+    return null;
+  };
+
+  // Get member since date
+  const getMemberSince = () => {
+    if (userStats?.member_since) return userStats.member_since;
+    if (localUser?.created_at) return localUser.created_at;
+    return new Date().toISOString();
   };
 
   // Format currency
@@ -141,15 +213,94 @@ export default function UserDashboard() {
     return cartItems.reduce((total, item) => total + (item.quantity || 1), 0);
   };
 
+  // User info card component
+  const UserInfoCard = () => (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+      <div className="flex items-center space-x-4">
+        {/* User Avatar */}
+        <div className="relative">
+          {getUserAvatar() ? (
+            <img 
+              src={getUserAvatar()} 
+              alt={getUserDisplayName()}
+              className="w-16 h-16 rounded-full object-cover border-2 border-amber-200"
+            />
+          ) : (
+            <div className="w-16 h-16 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
+              {getUserDisplayName().charAt(0).toUpperCase()}
+            </div>
+          )}
+          <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+            <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+          </div>
+        </div>
+
+        {/* User Details */}
+        <div className="flex-1">
+          <h2 className="text-xl font-bold text-gray-900">{getUserDisplayName()}</h2>
+          <p className="text-gray-600">{getUserEmail()}</p>
+          <div className="flex flex-wrap gap-4 mt-2">
+            <div className="flex items-center text-sm text-gray-500">
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              Member since {formatDate(getMemberSince())}
+            </div>
+            {localUser?.mobile && (
+              <div className="flex items-center text-sm text-gray-500">
+                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+                {localUser.mobile}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="flex space-x-2">
+          <button 
+            onClick={navigateToProfile}
+            className="flex items-center space-x-1 bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 transition-colors text-sm"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <span>Edit Profile</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Additional User Info */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-200">
+        <div className="text-center">
+          <div className="text-2xl font-bold text-amber-600">{orderStats.totalOrders}</div>
+          <div className="text-sm text-gray-600">Total Orders</div>
+        </div>
+        <div className="text-center">
+          <div className="text-2xl font-bold text-purple-600">{getCartItemsCount()}</div>
+          <div className="text-sm text-gray-600">Cart Items</div>
+        </div>
+      </div>
+    </div>
+  );
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="container mx-auto px-4 py-8">
           <div className="animate-pulse">
-            {/* Header Skeleton */}
-            <div className="mb-8">
-              <div className="h-8 bg-gray-200 rounded w-64 mb-2"></div>
-              <div className="h-4 bg-gray-200 rounded w-96"></div>
+            {/* User Info Card Skeleton */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+              <div className="flex items-center space-x-4">
+                <div className="w-16 h-16 bg-gray-200 rounded-full"></div>
+                <div className="flex-1">
+                  <div className="h-6 bg-gray-200 rounded w-48 mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded w-64"></div>
+                </div>
+              </div>
             </div>
 
             {/* Stats Skeleton */}
@@ -186,12 +337,6 @@ export default function UserDashboard() {
                     ))}
                   </div>
                 </div>
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <div className="h-6 bg-gray-200 rounded w-32 mb-4"></div>
-                  {[...Array(2)].map((_, i) => (
-                    <div key={i} className="h-16 bg-gray-200 rounded mb-3"></div>
-                  ))}
-                </div>
               </div>
             </div>
           </div>
@@ -225,18 +370,21 @@ export default function UserDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
+        {/* User Info Card */}
+        <UserInfoCard />
+
         {/* Dashboard Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
-            Welcome back, {userData?.name || 'User'}!
+            Welcome back, {getUserDisplayName()}!
           </h1>
           <p className="text-gray-600 mt-2">
-            {userStats ? `Member since ${formatDate(userStats.member_since)}` : 'Here\'s what\'s happening with your account today.'}
+            {userStats ? `Member since ${formatDate(userStats.member_since)}` : `Here's what's happening with your account today.`}
           </p>
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {/* Total Orders */}
           <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
             <div className="flex items-center">
@@ -263,21 +411,6 @@ export default function UserDashboard() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Pending Orders</p>
                 <p className="text-2xl font-bold text-gray-900">{orderStats.pendingOrders}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Wishlist */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-            <div className="flex items-center">
-              <div className="bg-green-100 p-3 rounded-lg">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Wishlist</p>
-                <p className="text-2xl font-bold text-gray-900">{wishlistItems.length ?? 0}</p>
               </div>
             </div>
           </div>
@@ -316,7 +449,7 @@ export default function UserDashboard() {
                             {order.products_details?.[0]?.product_name || `Order #${order.order_number}`}
                           </h3>
                           <p className="text-sm text-gray-600">
-                            Order #{order.order_number} • {formatDate(order.order_date)}
+                            Order #{order.order_number}
                             {order.products_details && order.products_details.length > 1 && 
                               ` + ${order.products_details.length - 1} more items`}
                           </p>
@@ -337,19 +470,27 @@ export default function UserDashboard() {
                     </svg>
                     <p className="text-gray-500">No orders yet</p>
                     <p className="text-sm text-gray-400 mt-1">Start shopping to see your orders here</p>
+                    <button 
+                      onClick={navigateToProducts}
+                      className="mt-4 bg-gradient-to-r from-[#5F3623] to-[#f5821f] text-white py-2 px-6 rounded-lg font-medium hover:opacity-90 transition-opacity"
+                    >
+                      Start Shopping
+                    </button>
                   </div>
                 )}
-                <button 
-                  onClick={() => window.location.href = '/dashboard/user/orders'}
-                  className="w-full mt-6 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors"
-                >
-                  View All Orders
-                </button>
+                {recentOrders.length > 0 && (
+                  <button 
+                    onClick={navigateToOrders}
+                    className="w-full mt-6 bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors"
+                  >
+                    View All Orders
+                  </button>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Right Column - Quick Actions & Wishlist */}
+          {/* Right Column - Quick Actions & Cart */}
           <div className="space-y-6">
             {/* Quick Actions */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
@@ -359,8 +500,8 @@ export default function UserDashboard() {
               <div className="p-6">
                 <div className="grid grid-cols-2 gap-4">
                   <button 
-                    onClick={() => window.location.href = '/dashboard/user/orders'}
-                    className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors relative"
+                    onClick={navigateToOrders}
+                    className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     <svg className="w-8 h-8 text-gray-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
@@ -369,22 +510,7 @@ export default function UserDashboard() {
                   </button>
                   
                   <button 
-                    onClick={() => window.location.href = '/wishlist'}
-                    className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors relative"
-                  >
-                    <svg className="w-8 h-8 text-gray-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                    <span className="text-sm font-medium text-gray-700">Wishlist</span>
-                    {wishlistItems.length > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                        {wishlistItems.length}
-                      </span>
-                    )}
-                  </button>
-                  
-                  <button 
-                    onClick={() => window.location.href = '/cart'}
+                    onClick={navigateToCart}
                     className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors relative"
                   >
                     <svg className="w-8 h-8 text-gray-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -399,7 +525,7 @@ export default function UserDashboard() {
                   </button>
                   
                   <button 
-                    onClick={() => window.location.href = '/dashboard/user/profile'}
+                    onClick={navigateToProfile}
                     className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     <svg className="w-8 h-8 text-gray-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -407,62 +533,39 @@ export default function UserDashboard() {
                     </svg>
                     <span className="text-sm font-medium text-gray-700">Profile</span>
                   </button>
+
+                  <button 
+                    onClick={navigateToProducts}
+                    className="flex flex-col items-center justify-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <svg className="w-8 h-8 text-gray-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <span className="text-sm font-medium text-gray-700">Shop</span>
+                  </button>
                 </div>
               </div>
             </div>
 
-            {/* Wishlist */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-              <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-xl font-semibold text-gray-900">My Wishlist</h2>
+            {/* Continue Shopping */}
+            <div className="bg-gradient-to-r from-[#5F3623] to-[#f5821f] rounded-lg shadow-sm p-6 text-center">
+              <div className="text-white mb-4">
+                <svg className="w-12 h-12 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <h3 className="text-xl font-bold mb-2">Continue Shopping</h3>
+                <p className="text-amber-100">Discover our sacred collection of spiritual products</p>
               </div>
-              <div className="p-6">
-                {wishlistItems.length > 0 ? (
-                  <div className="space-y-4">
-                    {wishlistItems.slice(0, 3).map((item) => (
-                      <div key={item.id} className="flex items-center space-x-4 p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
-                          {item.photo ? (
-                            <img 
-                              src={item.photo} 
-                              alt={item.title}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <span className="text-xs text-gray-500">Image</span>
-                          )}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-sm font-medium text-gray-900 line-clamp-1">{item.title}</h3>
-                          <p className="text-sm text-gray-600">{formatCurrency(item.price)}</p>
-                        </div>
-                        <button className="text-red-500 hover:text-red-700 transition-colors">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                    <p className="text-gray-500 text-sm">Your wishlist is empty</p>
-                  </div>
-                )}
-                <button 
-                  onClick={() => window.location.href = '/wishlist'}
-                  className="w-full mt-4 bg-gradient-to-r from-[#5F3623] to-[#f5821f] text-white py-2 px-4 rounded-lg font-medium hover:opacity-90 transition-opacity"
-                >
-                  View All Wishlist Items
-                </button>
-              </div>
+              <button 
+                onClick={navigateToProducts}
+                className="w-full bg-white text-[#5F3623] py-3 px-4 rounded-lg font-bold hover:bg-gray-100 transition-colors"
+              >
+                Browse Products
+              </button>
             </div>
 
             {/* Cart Summary */}
-            {cartItems.length > 0 && (
+            {/* {cartItems.length > 0 && (
               <div className="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <h2 className="text-xl font-semibold text-gray-900">Cart Summary</h2>
@@ -499,19 +602,19 @@ export default function UserDashboard() {
                     )}
                   </div>
                   <button 
-                    onClick={() => window.location.href = '/cart'}
+                    onClick={navigateToCart}
                     className="w-full mt-4 bg-gradient-to-r from-[#5F3623] to-[#f5821f] text-white py-2 px-4 rounded-lg font-medium hover:opacity-90 transition-opacity"
                   >
                     View Cart ({getCartItemsCount()} items)
                   </button>
                 </div>
               </div>
-            )}
+            )} */}
           </div>
         </div>
 
         {/* Recent Activity */}
-        <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200">
+        {/* <div className="mt-8 bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-900">Recent Activity</h2>
           </div>
@@ -542,21 +645,27 @@ export default function UserDashboard() {
                     <div>
                       <p className="text-sm text-gray-900">
                         Order #{order.order_number} is {order.status.toLowerCase()}
-                      </p>
-                      <p className="text-xs text-gray-500">
+                      </p> */}
+                      {/* <p className="text-xs text-gray-500">
                         {formatDate(order.order_date)}
-                      </p>
-                    </div>
+                      </p> */}
+                    {/* </div>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="text-center py-4">
                 <p className="text-gray-500">No recent activity</p>
+                <button 
+                  onClick={navigateToProducts}
+                  className="mt-3 bg-gradient-to-r from-[#5F3623] to-[#f5821f] text-white py-2 px-4 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity"
+                >
+                  Start Shopping
+                </button>
               </div>
             )}
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

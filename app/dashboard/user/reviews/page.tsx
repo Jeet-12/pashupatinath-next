@@ -305,25 +305,25 @@ export default function UserReviewsPage() {
     );
   }
 
-  if (error && reviews.length === 0) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
-        <div className="text-center">
-          <div className="bg-red-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl text-red-600">⚠️</span>
-          </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Failed to load reviews</h3>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <button 
-            onClick={fetchReviews}
-            className="px-6 py-3 bg-gradient-to-r from-[#5F3623] to-[#f5821f] text-white rounded-lg hover:opacity-90 transition-opacity"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // if (error && reviews.length === 0) {
+  //   return (
+  //     <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+  //       <div className="text-center">
+  //         <div className="bg-red-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+  //           <span className="text-2xl text-red-600">⚠️</span>
+  //         </div>
+  //         <h3 className="text-xl font-semibold text-gray-900 mb-2">Failed to load reviews</h3>
+  //         <p className="text-gray-600 mb-6">{error}</p>
+  //         <button 
+  //           onClick={fetchReviews}
+  //           className="px-6 py-3 bg-gradient-to-r from-[#5F3623] to-[#f5821f] text-white rounded-lg hover:opacity-90 transition-opacity"
+  //         >
+  //           Try Again
+  //         </button>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -417,7 +417,7 @@ export default function UserReviewsPage() {
               <select
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F3623] focus:border-transparent"
+                className="px-4 py-2 border text-black border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F3623] focus:border-transparent"
               >
                 <option value="all">All Reviews</option>
                 <option value="active">Published</option>
@@ -428,7 +428,7 @@ export default function UserReviewsPage() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F3623] focus:border-transparent"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F3623] focus:border-transparent text-black"
               >
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>

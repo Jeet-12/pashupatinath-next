@@ -305,14 +305,14 @@ export default function UserProfilePage() {
               <h1 className="text-3xl font-bold text-gray-900">My Profile</h1>
               <p className="text-gray-600 mt-2">Manage your account settings and preferences</p>
             </div>
-            <div className="mt-4 md:mt-0 flex items-center space-x-3">
+            {/* <div className="mt-4 md:mt-0 flex items-center space-x-3">
               <span className="bg-gradient-to-r from-[#5F3623] to-[#f5821f] text-white px-4 py-2 rounded-full text-sm font-medium">
                 {stats.membershipTier}
               </span>
               <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
                 {stats.loyaltyPoints} Points
               </span>
-            </div>
+            </div> */}
           </div>
         </div>
 
@@ -563,8 +563,6 @@ export default function UserProfilePage() {
                     </div>
                   </div>
                 )}
-
-                {/* Other tabs remain similar but would need to be connected to actual API endpoints */}
               </div>
             </div>
           </div>

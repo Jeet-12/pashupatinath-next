@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { getUser, clearUser, logoutUser, getCart, getWishlistCount } from '../libs/api';
+import { getUser, clearUser, logoutUser, getCart } from '../libs/api';
 
 export default function Header() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -17,7 +17,6 @@ export default function Header() {
     const [searchFocused, setSearchFocused] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [cartCount, setCartCount] = useState<number>(0);
-    const [wishlistCount, setWishlistCount] = useState<number>(0);
 
     const router = useRouter();
 
@@ -91,10 +90,10 @@ export default function Header() {
         }
     }, []);
 
-    // Fetch cart and wishlist counts (on mount and when login changes)
+    // Fetch cart count (on mount and when login changes)
     useEffect(() => {
         let mounted = true;
-        const fetchCounts = async () => {
+        const fetchCartCount = async () => {
             try {
                 const cartRes = await getCart();
                 if (!mounted) return;
@@ -108,30 +107,16 @@ export default function Header() {
             } catch {
                 // ignore
             }
-
-            try {
-                const wishRes = await getWishlistCount();
-                if (!mounted) return;
-                let w = 0;
-                if (wishRes?.data) {
-                    if (typeof wishRes.data === 'number') w = wishRes.data;
-                    else if (wishRes.data.count) w = Number(wishRes.data.count) || 0;
-                    else if (wishRes.data.total) w = Number(wishRes.data.total) || 0;
-                }
-                setWishlistCount(w);
-            } catch {
-                // ignore
-            }
         };
 
-        fetchCounts();
+        fetchCartCount();
 
         const onStorage = (e: StorageEvent) => {
             if (e.key && ['auth_token', 'registration_session_token', 'user'].includes(e.key)) {
-                fetchCounts();
+                fetchCartCount();
             }
         };
-        const onCountsUpdated = () => fetchCounts();
+        const onCountsUpdated = () => fetchCartCount();
         window.addEventListener('storage', onStorage);
         window.addEventListener('countsUpdated', onCountsUpdated as EventListener);
 
@@ -207,6 +192,59 @@ export default function Header() {
         }
     };
 
+    // Handle logout with complete cache clearing
+    const handleLogout = async (e: React.MouseEvent) => {
+        e.preventDefault();
+        try {
+            // Call API logout
+            await logoutUser();
+        } catch (error) {
+            console.error('Logout API error:', error);
+        } finally {
+            // Clear all user data from localStorage
+            clearUser();
+            
+            // Clear all related localStorage items
+            const itemsToRemove = [
+                'user',
+                'auth_token',
+                'session_token',
+                'registration_session_token',
+                'session_payload_token',
+                'cart_count',
+                'wishlist_count',
+                'user_profile'
+            ];
+            
+            itemsToRemove.forEach(item => {
+                try {
+                    localStorage.removeItem(item);
+                    sessionStorage.removeItem(item);
+                } catch (e) {
+                    console.warn(`Could not remove ${item} from storage:`, e);
+                }
+            });
+
+            // Clear all cookies
+            document.cookie.split(";").forEach(function(c) {
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+            });
+
+            // Reset state
+            setUserState(null);
+            setIsLoggedIn(false);
+            setCartCount(0);
+            setProfileDropdownOpen(false);
+            
+            // Dispatch event for other components to react
+            window.dispatchEvent(new Event('authInvalid'));
+            window.dispatchEvent(new Event('userLoggedOut'));
+            
+            // Redirect to home page
+            router.push('/');
+        }
+    };
+
     const rudrakshaItems = [
         { name: '1 Mukhi Rudraksha', path: '/products?category=1-mukhi' },
         { name: '2 Mukhi Rudraksha', path: '/products?category=2-mukhi' },
@@ -237,8 +275,8 @@ export default function Header() {
         ? [
             { name: 'Dashboard', path: '/dashboard/user', icon: '📊' },
             { name: 'Track Order', path: '/order-track', icon: '📦' },
-            { name: 'Wishlist', path: '/wishlist', icon: '❤️' },
-            { name: 'Logout', path: '/logout', icon: '🚪', action: () => setIsLoggedIn(false) }
+            { name: 'My Orders', path: '/dashboard/user/orders', icon: '📋' },
+            { name: 'Logout', path: '/logout', icon: '🚪', action: handleLogout }
         ]
         : [
             { name: 'Login', path: '/login', icon: '🔐' },
@@ -502,22 +540,6 @@ export default function Header() {
                         {/* Action Icons */}
                         <div className="flex items-center space-x-1 sm:space-x-2 lg:space-x-3">
                             
-                            {/* Wishlist */}
-                            <Link 
-                                href="/wishlist" 
-                                className="relative p-2 rounded-xl hover:bg-amber-50 transition-all duration-200 group"
-                                aria-label="Wishlist"
-                            >
-                                <div className="relative">
-                                    <svg className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600 group-hover:text-amber-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                    </svg>
-                                    <span className="absolute -top-1 -right-1 bg-amber-500 text-white rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center text-xs font-bold shadow-lg transform group-hover:scale-110 transition-transform">
-                                        {wishlistCount || 0}
-                                    </span>
-                                </div>
-                            </Link>
-
                             {/* Cart */}
                             <Link 
                                 href="/cart" 
@@ -579,22 +601,13 @@ export default function Header() {
                                                 onClick={async (e) => {
                                                     if (item.name === 'Logout') {
                                                         e.preventDefault();
-                                                        try {
-                                                            await logoutUser();
-                                                        } catch {
-                                                            // ignore
-                                                        }
-                                                        clearUser();
-                                                        setUserState(null);
-                                                        setIsLoggedIn(false);
-                                                        router.push('/');
-                                                        setProfileDropdownOpen(false);
+                                                        await handleLogout(e);
                                                         return;
                                                     }
-                                                    if (item.action) {
-                                                        e.preventDefault();
-                                                        item.action();
-                                                    }
+                                                    // if (item.action) {
+                                                    //     e.preventDefault();
+                                                    //     item.action();
+                                                    // }
                                                     setProfileDropdownOpen(false);
                                                 }}
                                             >

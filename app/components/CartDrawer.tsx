@@ -404,7 +404,7 @@ export default function CartDrawer() {
                                 </svg>
                               </button>
                               
-                              <span className="w-8 h-8 flex items-center justify-center text-sm font-medium bg-white">
+                              <span className="w-8 h-8 flex items-center justify-center text-sm font-medium bg-white text-black">
                                 {updatingItem === item.id ? (
                                   <div className="animate-spin rounded-full w-4 h-4 border-b-2 border-[#5F3623]"></div>
                                 ) : (
@@ -440,7 +440,6 @@ export default function CartDrawer() {
             )}
           </div>
 
-          {/* Footer with Summary and Buttons */}
           {items.length > 0 && (
             <div className="border-t border-gray-200 bg-gray-50 p-6">
               {/* Subtotal */}

@@ -1061,7 +1061,144 @@ export const storeMessage = async (formData: any): Promise<ApiResponse> => {
   return await apiCall('/contact-messages', 'POST', formData);
 };
 
-// Order API helpers
+// Add this simple function to your api.ts
+export const downloadInvoiceSimple = (orderId: number): void => {
+  try {
+    const sessionToken = getSessionPayloadToken();
+    
+    if (!sessionToken) {
+      alert('Please login to download invoice');
+      return;
+    }
+
+    // Create the download URL with token
+    const downloadUrl = `${API_BASE_URL}/orders/${orderId}/invoice/download?token=${encodeURIComponent(sessionToken)}`;
+    
+    // Open in new tab
+    window.open(downloadUrl, '_blank');
+    
+  } catch (error) {
+    console.error('Error downloading invoice:', error);
+    alert('Error downloading invoice');
+  }
+};
+
+export const downloadOrderInvoice = async (orderId: number): Promise<ApiResponse> => {
+  try {
+    const sessionToken = getSessionPayloadToken();
+    
+    if (!sessionToken) {
+      return {
+        success: false,
+        message: 'Authentication required',
+        data: undefined
+      };
+    }
+
+    const response = await fetch(`${API_BASE_URL}/orders/${orderId}/invoice/download`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${sessionToken}`,
+        'Accept': 'application/pdf',
+      },
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        clearAuthToken();
+        clearSessionToken();
+        clearUser();
+        window.dispatchEvent(new CustomEvent('authInvalid'));
+      }
+      
+      const errorData = await response.json();
+      return {
+        success: false,
+        message: errorData.message || 'Failed to download invoice',
+        data: undefined
+      };
+    }
+
+    // Get the filename from Content-Disposition header or create one
+    const contentDisposition = response.headers.get('Content-Disposition');
+    let fileName = `Invoice-${orderId}.pdf`;
+    
+    if (contentDisposition) {
+      const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
+      if (fileNameMatch) {
+        fileName = fileNameMatch[1];
+      }
+    }
+
+    // Create blob and download
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+
+    return {
+      success: true,
+      message: 'Invoice downloaded successfully',
+      data: { fileName }
+    };
+
+  } catch (error) {
+    console.error('Error downloading invoice:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to download invoice',
+      data: undefined
+    };
+  }
+};
+
+
+export const generateInvoice = async (orderId: number): Promise<ApiResponse> => {
+  try {
+    const sessionToken = getSessionPayloadToken();
+    
+    if (!sessionToken) {
+      return {
+        success: false,
+        message: 'Authentication required',
+        data: undefined
+      };
+    }
+
+    const response = await fetch(`${API_BASE_URL}/orders/${orderId}/invoice`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${sessionToken}`,
+        'Accept': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      return {
+        success: false,
+        message: errorData.message || 'Failed to generate invoice',
+        data: undefined
+      };
+    }
+
+    const result = await response.json();
+    return result;
+
+  } catch (error) {
+    console.error('Error generating invoice:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to generate invoice',
+      data: undefined
+    };
+  }
+};
 
 export interface OrderItem {
   id: number;
@@ -1420,38 +1557,38 @@ export const cancelOrder = async (orderId: number): Promise<ApiResponse> => {
 };
 
 // Download order invoice
-export const downloadOrderInvoice = async (orderId: number): Promise<Blob> => {
-  try {
-    const sessionToken = getSessionPayloadToken();
+// export const downloadOrderInvoice = async (orderId: number): Promise<Blob> => {
+//   try {
+//     const sessionToken = getSessionPayloadToken();
     
-    if (!sessionToken) {
-      throw new Error('Authentication required');
-    }
+//     if (!sessionToken) {
+//       throw new Error('Authentication required');
+//     }
 
-    const response = await fetch(`${API_BASE_URL}/orders/${orderId}/invoice`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${sessionToken}`,
-      },
-    });
+//     const response = await fetch(`${API_BASE_URL}/orders/${orderId}/invoice`, {
+//       method: 'GET',
+//       headers: {
+//         'Authorization': `Bearer ${sessionToken}`,
+//       },
+//     });
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        clearAuthToken();
-        clearSessionToken();
-        clearUser();
-        window.dispatchEvent(new CustomEvent('authInvalid'));
-        throw new Error('Authentication failed');
-      }
-      throw new Error('Failed to download invoice');
-    }
+//     if (!response.ok) {
+//       if (response.status === 401) {
+//         clearAuthToken();
+//         clearSessionToken();
+//         clearUser();
+//         window.dispatchEvent(new CustomEvent('authInvalid'));
+//         throw new Error('Authentication failed');
+//       }
+//       throw new Error('Failed to download invoice');
+//     }
 
-    return await response.blob();
-  } catch (error) {
-    console.error('Error downloading invoice:', error);
-    throw error;
-  }
-};
+//     return await response.blob();
+//   } catch (error) {
+//     console.error('Error downloading invoice:', error);
+//     throw error;
+//   }
+// };
 
 // Get order statistics
 export const getOrderStatistics = async (): Promise<ApiResponse> => {

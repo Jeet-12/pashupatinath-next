@@ -19,7 +19,7 @@ const UserSidebar: React.FC<UserSidebarProps> = ({ isOpen, isMobile: _isMobile, 
         { id: 'orders', name: 'My Orders', icon: '📦', href: '/dashboard/user/orders' },
         { id: 'reviews', name: 'My Reviews', icon: '⭐', href: '/dashboard/user/reviews' },
         { id: 'comments', name: 'My Comments', icon: '💬', href: '/dashboard/user/comments' },
-        { id: 'coupons', name: 'My Coupons', icon: '🎫', href: '/dashboard/user/coupons' },
+        // { id: 'coupons', name: 'My Coupons', icon: '🎫', href: '/dashboard/user/coupons' },
         { id: 'address', name: 'Address Book', icon: '🏠', href: '/dashboard/user/address' },
         { id: 'profile', name: 'Profile Settings', icon: '👤', href: '/dashboard/user/profile' },
         // { id: 'wishlist', name: 'Wishlist', icon: '❤️', href: '/dashboard/wishlist' }
@@ -99,7 +99,7 @@ const UserSidebar: React.FC<UserSidebarProps> = ({ isOpen, isMobile: _isMobile, 
                                 )}
                                 
                                 {/* Notification badges */}
-                                {isOpen && (
+                                {/* {isOpen && (
                                     <>
                                         {item.id === 'orders' && (
                                             <span className="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">3</span>
@@ -111,7 +111,7 @@ const UserSidebar: React.FC<UserSidebarProps> = ({ isOpen, isMobile: _isMobile, 
                                             <span className="ml-auto bg-blue-500 text-white text-xs px-2 py-1 rounded-full">5</span>
                                         )}
                                     </>
-                                )}
+                                )} */}
                             </Link>
                         </li>
                     ))}

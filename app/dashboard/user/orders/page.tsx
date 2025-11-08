@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { getUserOrders, getOrderDetails, ApiResponse } from '../../../libs/api';
+import { getUserOrders, getOrderDetails, downloadInvoiceSimple, ApiResponse } from '../../../libs/api';
 
 type OrderItem = {
   name: string;
@@ -49,6 +49,20 @@ type UserData = {
   joinDate: string;
 };
 
+// Helper function to get first image from comma-separated string
+const getFirstImage = (imageString: string): string => {
+  if (!imageString) return '/api/placeholder/60/60';
+  
+  const images = imageString.split(',').map(img => img.trim());
+  const firstImage = images[0];
+  
+  if (firstImage.startsWith('/storage')) {
+    return `https://www.pashupatinathrudraksh.com${firstImage}`;
+  }
+  
+  return firstImage || '/api/placeholder/60/60';
+};
+
 export default function UserOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
@@ -76,38 +90,40 @@ export default function UserOrdersPage() {
       const response: ApiResponse = await getUserOrders(currentPage, 10);
       
       if (response.success && response.data) {
-        const ordersData = response.data.data || response.data; // Handle pagination structure
+        const ordersData = response.data.data || response.data; 
         
         const formattedOrders: Order[] = ordersData.map((order: any) => {
-          // Parse products from JSON string or use products_details
           let orderItems: OrderItem[] = [];
           
-          if (order.products_details && Array.isArray(order.products_details)) {
-            orderItems = order.products_details.map((item: any) => ({
-              name: item.product_name || 'Product',
-              quantity: item.quantity || 1,
-              price: `₹${(item.price || 0).toLocaleString()}`,
-              image: item.product_images || '/api/placeholder/60/60',
-              product_id: item.product_id,
-              cap: item.cap || { id: null, name: 'Normal Capping', price: 0 },
-              thread: item.thread || { id: null, name: 'Red Thread', price: 0 }
-            }));
-          } else if (order.products && typeof order.products === 'string') {
+          if (order.products && typeof order.products === 'string') {
             try {
               const products = JSON.parse(order.products);
               orderItems = products.map((item: any) => ({
                 name: item.product_name || 'Product',
                 quantity: item.quantity || 1,
                 price: `₹${(item.price || 0).toLocaleString()}`,
-                image: '/api/placeholder/60/60',
-                product_id: item.product_id
+                image: getFirstImage(item.image || ''),
+                product_id: item.product_id,
+                slug: item.slug,
+                cap: item.cap || { id: null, name: 'Normal Capping', price: 0 },
+                thread: item.thread || { id: null, name: 'Red Thread', price: 0 }
               }));
             } catch (e) {
               console.error('Error parsing products:', e);
             }
+          } else if (order.products_details && Array.isArray(order.products_details)) {
+            orderItems = order.products_details.map((item: any) => ({
+              name: item.product_name || 'Product',
+              quantity: item.quantity || 1,
+              price: `₹${(item.price || 0).toLocaleString()}`,
+              image: getFirstImage(item.product_images || item.image || ''),
+              product_id: item.product_id,
+              slug: item.slug,
+              cap: item.cap || { id: null, name: 'Normal Capping', price: 0 },
+              thread: item.thread || { id: null, name: 'Red Thread', price: 0 }
+            }));
           }
 
-          // Format address
           const address = [
             order.address1,
             order.address2,
@@ -152,10 +168,9 @@ export default function UserOrdersPage() {
     }
   };
 
-  // Fetch user data (you might want to get this from your auth context or API)
+  // Fetch user data
   const fetchUserData = async () => {
     try {
-      // This would typically come from your user context or profile API
       const userFromStorage = localStorage.getItem('user');
       if (userFromStorage) {
         const user = JSON.parse(userFromStorage);
@@ -184,12 +199,10 @@ export default function UserOrdersPage() {
   useEffect(() => {
     let result = orders;
 
-    // Status filter
     if (statusFilter !== 'all') {
       result = result.filter(order => order.status === statusFilter);
     }
 
-    // Sorting
     result = [...result].sort((a, b) => {
       const dateA = new Date(a.order_date || a.created_at || 0);
       const dateB = new Date(b.order_date || b.created_at || 0);
@@ -213,6 +226,11 @@ export default function UserOrdersPage() {
     setFilteredOrders(result);
   }, [statusFilter, sortBy, orders]);
 
+  // Simple download function
+  const downloadInvoice = (orderId: string) => {
+    downloadInvoiceSimple(parseInt(orderId));
+  };
+
   // Fetch detailed order information when modal opens
   const openOrderDetails = async (order: Order) => {
     try {
@@ -221,7 +239,6 @@ export default function UserOrdersPage() {
       if (response.success && response.data) {
         const detailedOrder = response.data;
         
-        // Update the order with detailed information
         const updatedOrder: Order = {
           ...order,
           products_details: detailedOrder.products_details,
@@ -231,12 +248,10 @@ export default function UserOrdersPage() {
         
         setSelectedOrder(updatedOrder);
       } else {
-        // Fallback to basic order info if detailed fetch fails
         setSelectedOrder(order);
       }
     } catch (err) {
       console.error('Error fetching order details:', err);
-      // Fallback to basic order info
       setSelectedOrder(order);
     }
     setIsModalOpen(true);
@@ -413,7 +428,7 @@ export default function UserOrdersPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F3623] focus:border-transparent"
+                className="px-4 py-2 text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F3623] focus:border-transparent"
               >
                 <option value="all">All Orders</option>
                 <option value="delivered">Delivered</option>
@@ -427,7 +442,7 @@ export default function UserOrdersPage() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F3623] focus:border-transparent"
+                className="px-4 py-2 text-black border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#5F3623] focus:border-transparent"
               >
                 <option value="newest">Newest First</option>
                 <option value="oldest">Oldest First</option>
@@ -474,12 +489,15 @@ export default function UserOrdersPage() {
                   <div className="space-y-3">
                     {order.items.map((item, index) => (
                       <div key={index} className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
+                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
                           {item.image && item.image !== '/api/placeholder/60/60' ? (
                             <img 
                               src={item.image} 
                               alt={item.name}
-                              className="w-12 h-12 rounded-lg object-cover"
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = '/api/placeholder/60/60';
+                              }}
                             />
                           ) : (
                             <span className="text-xs text-gray-500">IMG</span>
@@ -520,6 +538,18 @@ export default function UserOrdersPage() {
                       >
                         {statusInfo.action}
                       </button>
+                      
+                      {/* Simple Download Button */}
+                      <button
+                        onClick={() => downloadInvoice(order.id)}
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm flex items-center space-x-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>Invoice</span>
+                      </button>
+                      
                       {order.status.toLowerCase() === 'delivered' && (
                         <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm">
                           Buy Again
@@ -657,12 +687,15 @@ export default function UserOrdersPage() {
                   {selectedOrder.items.map((item, index) => (
                     <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                       <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
+                        <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
                           {item.image && item.image !== '/api/placeholder/60/60' ? (
                             <img 
                               src={item.image} 
                               alt={item.name}
-                              className="w-12 h-12 rounded-lg object-cover"
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.src = '/api/placeholder/60/60';
+                              }}
                             />
                           ) : (
                             <span className="text-xs text-gray-500">IMG</span>
@@ -707,8 +740,14 @@ export default function UserOrdersPage() {
 
             <div className="p-6 border-t border-gray-200 bg-gray-50">
               <div className="flex space-x-3">
-                <button className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors">
-                  Download Invoice
+                <button 
+                  onClick={() => downloadInvoice(selectedOrder.id)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-center space-x-2"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  <span>Download Invoice</span>
                 </button>
                 <button className="flex-1 px-4 py-2 bg-gradient-to-r from-[#5F3623] to-[#f5821f] text-white rounded-lg hover:opacity-90 transition-opacity">
                   Contact Support

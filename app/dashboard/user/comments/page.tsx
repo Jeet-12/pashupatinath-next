@@ -221,7 +221,7 @@ export default function CommentsPage() {
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50 py-8">
       <div className="max-w-6xl mx-auto px-4">
         {/* Header */}
-        <div className="text-center mb-12">
+        {/* <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-amber-900 mb-4">
             My Comments
           </h1>
@@ -248,7 +248,7 @@ export default function CommentsPage() {
               Refresh
             </button>
           </div>
-        </div>
+        </div> */}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
