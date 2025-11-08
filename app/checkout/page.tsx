@@ -193,7 +193,7 @@ const CheckoutPage = () => {
   // Calculate prices with coupon support
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const discount = cartItems.reduce((sum, item) => sum + ((item.originalPrice - item.price) * item.quantity), 0);
-  const shippingFee = subtotal >= 2000 ? 0 : 100;
+  const shippingFee =  0 ;
   
   // Calculate coupon discount
   const calculateCouponDiscount = () => {
