@@ -1142,6 +1142,7 @@ const CheckoutPage = () => {
                           disabled={!isApplicable }
                         >
                           {/* {isAlreadyApplied ? 'Applied' : 'Apply'} */}
+                          Apply
                         </button>
                       </div>
                     </div>
