@@ -3074,6 +3074,7 @@ export interface Coupon {
   code: string;
   type: 'fixed' | 'percent';
   discount_value: number;
+  value?: number;
   discount_amount: number;
   min_order_amount?: number;
   max_discount_amount?: number;
