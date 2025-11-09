@@ -202,7 +202,9 @@ export default function Header() {
             console.error('Logout API error:', error);
         } finally {
             // Clear all user data from localStorage
+            localStorage.clear();
             clearUser();
+
             
             // Clear all related localStorage items
             const itemsToRemove = [
@@ -224,6 +226,7 @@ export default function Header() {
                     console.warn(`Could not remove ${item} from storage:`, e);
                 }
             });
+            
 
             // Clear all cookies
             document.cookie.split(";").forEach(function(c) {
