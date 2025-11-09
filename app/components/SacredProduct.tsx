@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useState, useRef } from 'react';
-import { singleAddToCart, addToWishlistApiWithNotify } from '../libs/api';
+import { singleAddToCart, addToWishlistApiWithNotify, handleAuthError } from '../libs/api';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Autoplay } from 'swiper/modules';
 import { useRouter } from 'next/navigation';
@@ -218,15 +218,20 @@ export default function SacredCollection({ products = [], categories = [] }: Sac
     setCart(prev => [...prev, product]);
     try {
       const resp = await singleAddToCart({ slug: product.slug, quantity: 1, total_price: product.price });
-        if (!resp.success) {
-          // Optionally revert UI or notify
-          // For now, just // alert
-          // // alert(resp.message || 'Failed to add to cart');
-        } else {
-          try { window.dispatchEvent(new CustomEvent('countsUpdated')); } catch {}
+      if (!resp.success) {
+        // Handle auth errors silently
+        if (!handleAuthError(resp, window.location.pathname + window.location.search)) {
+          // Only show non-auth errors
+          console.error('Failed to add to cart:', resp.message);
         }
-    } catch {
-      // ignore
+      } else {
+        try { window.dispatchEvent(new CustomEvent('countsUpdated')); } catch {}
+      }
+    } catch (error) {
+      // Handle auth errors in catch block
+      if (!handleAuthError(error, window.location.pathname + window.location.search)) {
+        console.error('Failed to add to cart:', error);
+      }
     }
   };
 
@@ -239,8 +244,9 @@ export default function SacredCollection({ products = [], categories = [] }: Sac
         (async () => {
           try {
             await addToWishlistApiWithNotify({ product_id: productId });
-          } catch {
-            // ignore
+          } catch (error) {
+            // Handle auth errors silently
+            handleAuthError(error, window.location.pathname + window.location.search);
           }
         })();
         return [...prev, productId];
@@ -264,8 +270,6 @@ export default function SacredCollection({ products = [], categories = [] }: Sac
 
   // Function to handle collection click
   const handleCollectionClick = (collectionSlug: string) => {
-    
-    
     router.push(`/products?category=${collectionSlug}`);
   };
 

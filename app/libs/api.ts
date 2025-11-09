@@ -126,12 +126,47 @@ export const clearUser = (): void => {
   }
 };
 
-// Generic API call function
+
+export const handleAuthError = (error: any, currentPath?: string): boolean => {
+  if (typeof window === 'undefined') return false;
+  
+  const errorMsg = error?.message?.toString().toLowerCase() || '';
+  const isAuthError = 
+    errorMsg.includes('invalid token') ||
+    errorMsg.includes('token expired') ||
+    errorMsg.includes('unauthenticated') ||
+    errorMsg.includes('wrong number of segments') ||
+    errorMsg.includes('authentication required') ||
+    errorMsg.includes('authentication_failed');
+
+  if (isAuthError) {
+    // Clear all tokens
+    clearAuthToken();
+    clearSessionToken();
+    clearUser();
+    clearGuestToken();
+    
+    // Store current path for redirect back after login
+    const pathToStore = currentPath || window.location.pathname + window.location.search;
+    if (pathToStore && !pathToStore.includes('/login') && !pathToStore.includes('/register')) {
+      sessionStorage.setItem('login_redirect', pathToStore);
+    }
+    
+    // Redirect to login
+    window.location.href = `/login?redirect_to=${encodeURIComponent(pathToStore)}`;
+    return true;
+  }
+  
+  return false;
+};
+
+
 export const apiCall = async (endpoint: string, method: string = 'GET', data: any = null): Promise<ApiResponse> => {
   const url = `${API_BASE_URL}${endpoint}`;
   
   // Get appropriate token
   const sessionToken = getSessionPayloadToken();
+  console.log(`🌐 API Call: ${method} ${endpoint}`, { hasSessionToken: !!sessionToken });
   
   const options: RequestInit = {
     method,
@@ -148,6 +183,7 @@ export const apiCall = async (endpoint: string, method: string = 'GET', data: an
       requestData.session_token = sessionToken;
     }
     options.body = JSON.stringify(requestData);
+    console.log('📤 Request body:', requestData);
   }
 
   // Add session token to URL for GET requests
@@ -158,26 +194,32 @@ export const apiCall = async (endpoint: string, method: string = 'GET', data: an
   }
 
   try {
+    console.log(`🚀 Making API request to: ${finalUrl}`);
     const response = await fetch(finalUrl, options);
     const result = await response.json();
+    console.log(`📨 API response for ${endpoint}:`, result);
     
     // Store session token if provided in response (for guest users)
     if (result.session_token) {
       setGuestToken(result.session_token);
+      console.log('💾 Guest token stored:', result.session_token);
     }
     
     // Store auth token if provided
     if (result.data?.token) {
       setAuthToken(result.data.token);
+      console.log('💾 Auth token stored');
     }
     
     // Store user data if provided
     if (result.data?.user) {
       setUser(result.data.user);
+      console.log('💾 User data stored');
     }
 
     // Handle session expiration specifically
     if (response.status === 410 && result.message?.includes('session expired')) {
+      console.warn('⚠️ Session expired detected');
       clearSessionToken();
       throw new Error('REGISTRATION_SESSION_EXPIRED');
     }
@@ -191,26 +233,40 @@ export const apiCall = async (endpoint: string, method: string = 'GET', data: an
       'token expired',
       'expired token',
       'unauthenticated',
-      'invalid or expired token'
+      'invalid or expired token',
+      'wrong number of segments',
+      'authentication failed',
+      'session expired'
     ];
 
     if (response.status === 401 || invalidAuthIndicators.some(ind => lower.includes(ind))) {
+      console.warn('⚠️ Authentication error detected:', msg);
       // Clear client-side tokens and user so UI updates
       try {
         clearAuthToken();
         clearSessionToken();
         clearUser();
+        clearGuestToken();
       } catch {}
+
+      // Store current URL for redirect back after login
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/';
+      if (currentPath && !currentPath.includes('/login') && !currentPath.includes('/register')) {
+        sessionStorage.setItem('login_redirect', currentPath);
+      }
 
       // Notify same-tab listeners (header) and other windows
       try {
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('authInvalid', { detail: { message: result.message } }));
           try { localStorage.setItem('auth_invalid_at', String(Date.now())); } catch {}
+          
+          // Redirect to login page
+          window.location.href = `/register?redirect_to=${encodeURIComponent(currentPath)}`;
         }
       } catch {}
 
-      throw new Error(result.message || 'Authentication failed');
+      throw new Error('AUTHENTICATION_REQUIRED');
     }
     
     // Return the result even if success is false, but handle specific cases
@@ -229,18 +285,36 @@ export const apiCall = async (endpoint: string, method: string = 'GET', data: an
     
     return result;
   } catch (error) {
-    console.error(`API Error (${endpoint}):`, error);
+    console.error(`❌ API Error (${endpoint}):`, error);
     
     // Re-throw specific errors
     if (error instanceof Error) {
       if (error.message === 'REGISTRATION_SESSION_EXPIRED') {
         throw new Error('Your registration session has expired. Please start over.');
       }
+      if (error.message === 'AUTHENTICATION_REQUIRED') {
+        throw error; // Don't show this error to user, redirect already handled
+      }
       throw error;
     }
     
     throw new Error('An unexpected error occurred. Please try again.');
   }
+};
+
+// Add a function to debug session token
+export const debugSessionToken = (): void => {
+  if (typeof window === 'undefined') return;
+  
+  const sessionToken = getSessionToken();
+  const authToken = getAuthToken();
+  const guestToken = getGuestToken();
+  
+  console.log('🔍 Session Token Debug:');
+  console.log('📝 Session Token:', sessionToken);
+  console.log('🔑 Auth Token:', authToken);
+  console.log('👤 Guest Token:', guestToken);
+  console.log('💾 All localStorage:', { ...localStorage });
 };
 
 
@@ -253,8 +327,43 @@ export const checkEmail = async (email: string): Promise<ApiResponse> => {
 export const registerUser = async (userData: RegisterData): Promise<ApiResponse> => {
   // Clear any existing session token before new registration
   clearSessionToken();
-  return await apiCall('/user/register', 'POST', userData);
+  
+  try {
+    console.log('🔐 Registering user:', userData.email);
+    const result = await apiCall('/user/register', 'POST', userData);
+    console.log('📨 Registration API response:', result);
+    
+    // Store session token if provided in response (check all possible locations)
+    let sessionToken = null;
+    
+    if (result.session_token) {
+      sessionToken = result.session_token;
+      console.log('✅ Session token from response.session_token:', sessionToken);
+    } else if (result.data?.session_token) {
+      sessionToken = result.data.session_token;
+      console.log('✅ Session token from response.data.session_token:', sessionToken);
+    } else if (result.token) {
+      sessionToken = result.token;
+      console.log('✅ Session token from response.token:', sessionToken);
+    } else if (result.data?.token) {
+      sessionToken = result.data.token;
+      console.log('✅ Session token from response.data.token:', sessionToken);
+    }
+    
+    if (sessionToken) {
+      setSessionToken(sessionToken);
+      console.log('💾 Session token stored in localStorage');
+    } else {
+      console.warn('⚠️ No session token found in registration response');
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('❌ Registration error:', error);
+    throw error;
+  }
 };
+
 
 // Verify OTP
 export const verifyOTP = async (otpData: VerifyOTPData): Promise<AuthResponse> => {
@@ -328,7 +437,43 @@ export const logoutUser = async (): Promise<ApiResponse> => {
 };
 
 export const loginUser = async (credentials: { email: string; redirect_to?: string }): Promise<ApiResponse> => {
-  return await apiCall('/user/login', 'POST', credentials);
+  // Clear any existing session token before login
+  clearSessionToken();
+  
+  try {
+    console.log('🔐 Logging in user:', credentials.email);
+    const result = await apiCall('/user/login', 'POST', credentials);
+    console.log('📨 Login API response:', result);
+    
+    // Store session token if provided in response
+    let sessionToken = null;
+    
+    if (result.session_token) {
+      sessionToken = result.session_token;
+      console.log('✅ Session token from response.session_token:', sessionToken);
+    } else if (result.data?.session_token) {
+      sessionToken = result.data.session_token;
+      console.log('✅ Session token from response.data.session_token:', sessionToken);
+    } else if (result.token) {
+      sessionToken = result.token;
+      console.log('✅ Session token from response.token:', sessionToken);
+    } else if (result.data?.token) {
+      sessionToken = result.data.token;
+      console.log('✅ Session token from response.data.token:', sessionToken);
+    }
+    
+    if (sessionToken) {
+      setSessionToken(sessionToken);
+      console.log('💾 Session token stored in localStorage');
+    } else {
+      console.warn('⚠️ No session token found in login response');
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('❌ Login error:', error);
+    throw error;
+  }
 };
 
 // Verify login OTP
@@ -1040,6 +1185,7 @@ export interface Review {
   verified: boolean;
   helpful: number;
   images?: string[];
+  review:string;
 }
 
 export interface ProductDetailsResponse {

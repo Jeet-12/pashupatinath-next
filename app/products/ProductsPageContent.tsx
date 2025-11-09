@@ -1085,7 +1085,7 @@ export default function ProductsPageContent() {
             {!loading && (
               <div className={`gap-6 ${
                 viewMode === 'grid' 
-                  ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3'
+                  ? 'grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3'
                   : 'flex flex-col space-y-6'
               }`}>
                 {sortedProducts.map(product => (

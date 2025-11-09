@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { loginUser, setSessionToken } from "../libs/api";
-import { getGoogleOAuthUrl } from "../libs/google-oauth";
 
 interface LoginForm {
   email: string;
@@ -24,20 +23,23 @@ function LoginPageInner() {
   const [formData, setFormData] = useState<LoginForm>({ email: "" });
   const [errors, setErrors] = useState<LoginErrors>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  // const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [redirectTo, setRedirectTo] = useState("");
 
   useEffect(() => {
     setIsMounted(true);
 
     const emailParam = searchParams.get("email") || "";
-    const redirectParam = searchParams.get("redirect_to") || "";
+    const redirectParam = searchParams.get("redirect_to") || 
+                         sessionStorage.getItem('login_redirect') || 
+                         "/";
 
     setFormData({ email: emailParam });
     setRedirectTo(redirectParam);
 
-    if (redirectParam) {
-      sessionStorage.setItem("login_redirect", redirectParam);
+    // Clear the stored redirect after reading it
+    if (sessionStorage.getItem('login_redirect')) {
+      sessionStorage.removeItem('login_redirect');
     }
   }, [searchParams]);
 
@@ -93,29 +95,32 @@ function LoginPageInner() {
         throw new Error(loginResponse.message || "Login failed");
       }
     } catch (error: any) {
-      setErrors({
-        general: error.message || "An error occurred. Please try again.",
-      });
+      // Don't show error if it's just redirecting for auth
+      if (error.message !== 'AUTHENTICATION_REQUIRED') {
+        setErrors({
+          general: error.message || "An error occurred. Please try again.",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleGoogleLogin = async () => {
-    setIsGoogleLoading(true);
+  // const handleGoogleLogin = async () => {
+  //   setIsGoogleLoading(true);
 
-    try {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
-      const googleAuthUrl = getGoogleOAuthUrl(redirectTo || `${appUrl}/dashboard`);
-      window.location.href = googleAuthUrl;
-    } catch (err: unknown) {
-      setErrors({
-        general: err instanceof Error ? err.message : "An unexpected error occurred.",
-      });
-    } finally {
-      setIsGoogleLoading(false);
-    }
-  };
+  //   try {
+  //     const appUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+  //     // const googleAuthUrl = getGoogleOAuthUrl(redirectTo || `${appUrl}/dashboard`);
+  //     window.location.href = googleAuthUrl;
+  //   } catch (err: unknown) {
+  //     setErrors({
+  //       general: err instanceof Error ? err.message : "An unexpected error occurred.",
+  //     });
+  //   } finally {
+  //     setIsGoogleLoading(false);
+  //   }
+  // };
 
   if (!isMounted) {
     return (
@@ -207,35 +212,6 @@ function LoginPageInner() {
               </button>
             </div>
           </form>
-
-          {/* Google login */}
-          {/* <div className="mt-8">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or continue with</span>
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <button
-                onClick={handleGoogleLogin}
-                disabled={isGoogleLoading}
-                className="w-full inline-flex justify-center items-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isGoogleLoading ? (
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                ) : (
-                  <span>Continue with Google</span>
-                )}
-              </button>
-            </div>
-          </div> */}
 
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-600">

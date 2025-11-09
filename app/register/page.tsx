@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useUserRegistration } from '../hooks/useUserRegistration';
-import { checkEmail } from '../libs/api';
+import { checkEmail, getSessionToken } from '../libs/api';
 
 interface RegisterForm {
   name: string;
@@ -95,18 +95,28 @@ export default function RegisterPage() {
       // If email doesn't exist, proceed with registration
       const result = await register(formData);
       
-      // Redirect to OTP verification page with email
-      if (isMounted && result.success) {
+      // Check if we have a session token before redirecting
+      const sessionToken = getSessionToken();
+      console.log('Session token after registration:', sessionToken);
+      
+      if (sessionToken) {
+        // Redirect to OTP verification page with email
         router.push(`/verifyOtp?email=${encodeURIComponent(formData.email)}&type=register`);
+      } else {
+        // If no session token, check if the API call was successful anyway
+        if (result.success) {
+          // Some APIs might not return session tokens but still register successfully
+          // Try redirecting anyway and let the OTP page handle it
+          router.push(`/verifyOtp?email=${encodeURIComponent(formData.email)}&type=register`);
+        } else {
+          throw new Error('Registration failed: No session token received');
+        }
       }
     } catch (error: any) {
+      console.error('Registration error:', error);
       setErrors({ 
         general: error.message || 'An error occurred during registration. Please try again.' 
       });
-      setTimeout(() => {
-        router.push('/login');
-      }, 2000);
-      
     }
   };
 
@@ -117,16 +127,14 @@ export default function RegisterPage() {
       // Simulate Google OAuth process
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-     
       if (isMounted) {
         router.push('/');
       }
     } catch (err: unknown) {
-  setErrors({
-    general: err instanceof Error ? err.message : 'Google registration failed. Please try again.'
-  });
-}
- finally {
+      setErrors({
+        general: err instanceof Error ? err.message : 'Google registration failed. Please try again.'
+      });
+    } finally {
       setIsGoogleLoading(false);
     }
   };
@@ -241,46 +249,19 @@ export default function RegisterPage() {
                   <>
                     <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h" />
-                      </svg>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Creating Account...
                   </>
                 ) : 'Create Account'}
               </button>
             </div>
           </form>
 
-          {/* <div className="mt-8">
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300"></div>
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Or continue with</span>
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <button
-                onClick={handleGoogleRegister}
-                disabled={isGoogleLoading}
-                className="w-full inline-flex justify-center items-center py-3 px-4 border border-gray-300 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isGoogleLoading && (
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-700" xmlns=""> 
-                  <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5" />
-                  </svg>
-                  </svg>
-                )}
-                Sign up with Google
-              </button>
-            </div>
-          </div> */}
-
           <div className="mt-8 text-center">
             <p className="text-sm text-gray-600">
               Already have an account?{' '}
-              <Link href="/login" className="font-medium ">
+              <Link href="/login" className="font-medium text-[#5F3623] hover:text-[#f5821f]">
                 Sign in
               </Link>
             </p>

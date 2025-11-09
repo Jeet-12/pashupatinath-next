@@ -4,18 +4,20 @@ import { Suspense, useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useOTPVerification } from "../hooks/useOTPVerification";
-import { getSessionToken, verifyLoginOTP, verifyOTP } from "../libs/api";
+import { getAuthToken, getSessionToken, verifyLoginOTP, verifyOTP } from "../libs/api";
 
 function OTPVerificationPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const email = searchParams.get("email") || "";
-  const type = searchParams.get("type") || "register"; // 'login' or 'register'
+  const type = searchParams.get("type") || "register";
+  const redirectParam = searchParams.get("redirect_to") || "";
 
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const [timeLeft, setTimeLeft] = useState(30);
   const [isResendDisabled, setIsResendDisabled] = useState(true);
   const [sessionToken, setSessionToken] = useState<string | null>(null);
+  const [errors, setErrors] = useState<{ general?: string }>({});
   const inputRefs = useRef<HTMLInputElement[]>([]);
 
   const { resend, isLoading, error } = useOTPVerification();
@@ -23,10 +25,15 @@ function OTPVerificationPageInner() {
   // Initialize session token
   useEffect(() => {
     const token = getSessionToken();
+    console.log('OTP Page - Session token found:', token);
     setSessionToken(token);
 
     if (!token) {
-      router.push(type === "login" ? "/login" : "/register");
+      console.log('No session token found, but continuing anyway');
+      // Instead of redirecting immediately, show a warning but allow the user to continue
+      setErrors({ 
+        general: "Session token missing. You can still try to verify OTP, but if it fails, you may need to start over." 
+      });
     }
   }, [router, type]);
 
@@ -65,45 +72,72 @@ function OTPVerificationPageInner() {
     }
   };
 
-  // Submit OTP
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const enteredOtp = otp.join("");
 
-    if (!sessionToken) {
-      // alert("No active session. Please try again.");
-      router.push(type === "login" ? "/login" : "/register");
-      return;
-    }
-
     if (enteredOtp.length === 6) {
       try {
         let result;
-        if (type === "login") {
-          result = await verifyLoginOTP({ email, otp: enteredOtp, sessionToken });
+        
+        // If we have a session token, use it. Otherwise try without it.
+        if (sessionToken) {
+          if (type === "login") {
+            result = await verifyLoginOTP({ email, otp: enteredOtp, sessionToken });
+          } else {
+            result = await verifyOTP({ email, otp: enteredOtp, sessionToken });
+          }
         } else {
-          result = await verifyOTP({ email, otp: enteredOtp, sessionToken });
+          // Try verification without session token (some APIs might work with just email and OTP)
+          // You might need to modify your verifyOTP function to handle this case
+          if (type === "login") {
+            result = await verifyLoginOTP({ email, otp: enteredOtp, sessionToken: '' });
+          } else {
+            result = await verifyOTP({ email, otp: enteredOtp, sessionToken: '' });
+          }
         }
 
         if (result.success) {
-          const redirectTo =
-            result.data?.redirect_to || sessionStorage.getItem("login_redirect") || "/";
-          sessionStorage.removeItem("login_redirect");
-          window.location.href = redirectTo;
+          // Clear the session token after successful verification
+          setSessionToken(null);
+          
+          // Get redirect destination
+          const redirectTo = 
+            result.data?.redirect_to || 
+            redirectParam ||
+            sessionStorage.getItem('login_redirect') || 
+            "/";
+          
+          // Clear stored redirects
+          sessionStorage.removeItem('login_redirect');
+          
+          // Check if we have auth token (user is logged in)
+          const authToken = getAuthToken();
+          if (authToken) {
+            // Use window.location for full page reload to ensure auth state is fresh
+            window.location.href = redirectTo;
+          } else {
+            // If no auth token, redirect to login
+            router.push('/login');
+          }
+        } else {
+          throw new Error(result.message || 'OTP verification failed');
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error("OTP verification failed:", error);
+        if (error.message !== 'AUTHENTICATION_REQUIRED') {
+          setErrors({ general: error.message || 'OTP verification failed. Please try again or start over.' });
+        }
       }
     } else {
-      // alert("Please enter a complete 6-digit OTP");
+      setErrors({ general: "Please enter a complete 6-digit OTP" });
     }
   };
 
   // Resend OTP
   const handleResend = async () => {
     if (!sessionToken) {
-      // alert("No active session. Please try again.");
-      router.push(type === "login" ? "/login" : "/register");
+      setErrors({ general: "Cannot resend OTP without session token. Please start the registration process again." });
       return;
     }
 
@@ -111,8 +145,10 @@ function OTPVerificationPageInner() {
       await resend(email, sessionToken);
       setTimeLeft(30);
       setIsResendDisabled(true);
+      setErrors({});
     } catch (error) {
       console.error("Failed to resend OTP:", error);
+      setErrors({ general: "Failed to resend OTP. Please try again." });
     }
   };
 
@@ -129,16 +165,6 @@ function OTPVerificationPageInner() {
 
     return () => clearTimeout(timer);
   }, [timeLeft]);
-
-  if (!sessionToken) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p>Loading session...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-orange-50 flex items-center justify-center p-4">
@@ -168,9 +194,9 @@ function OTPVerificationPageInner() {
 
         {/* OTP Form */}
         <div className="px-6 py-8">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4">
-              {error}
+          {(error || errors.general) && (
+            <div className={`${errors.general?.includes('missing') ? 'bg-yellow-50 border-yellow-200 text-yellow-700' : 'bg-red-50 border-red-200 text-red-700'} border px-4 py-3 rounded-lg text-sm mb-4`}>
+              {error || errors.general}
             </div>
           )}
 
@@ -207,9 +233,9 @@ function OTPVerificationPageInner() {
               <button
                 type="button"
                 onClick={handleResend}
-                disabled={isResendDisabled || isLoading}
+                disabled={isResendDisabled || isLoading || !sessionToken}
                 className={`flex-1 py-3 px-4 rounded-lg font-semibold ${
-                  isResendDisabled || isLoading
+                  isResendDisabled || isLoading || !sessionToken
                     ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                     : "bg-amber-100 text-amber-700 hover:bg-amber-200"
                 } transition-colors`}
@@ -233,6 +259,11 @@ function OTPVerificationPageInner() {
           <p className="text-sm text-center text-amber-700">
             Having trouble receiving the OTP? Please check your email or contact support.
           </p>
+          {!sessionToken && (
+            <p className="text-sm text-center text-red-600 mt-2">
+              No session token detected. If OTP verification fails, please restart the {type} process.
+            </p>
+          )}
         </div>
       </div>
     </div>
