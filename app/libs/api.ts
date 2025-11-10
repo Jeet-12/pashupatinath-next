@@ -399,6 +399,8 @@ export const validateSession = async (sessionToken: string): Promise<ApiResponse
   return await apiCall('/validate-session', 'POST', { session_token: sessionToken });
 };
 
+
+
 // Login user
 // export const loginUser = async (credentials: { email: string; password: string }): Promise<AuthResponse> => {
 //   const result = await apiCall('/login', 'POST', credentials) as AuthResponse;

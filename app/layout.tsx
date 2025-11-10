@@ -14,6 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://www.pashupatinathrudraksh.com"),
   title: "Pashupatinath Rudraksha | Original & Certified Rudraksha Beads",
   description:
     "Buy 100% Original Certified Rudraksha beads, malas, bracelets, and spiritual accessories sourced from Nepal. Trusted quality with lab certification and worldwide delivery.",
@@ -23,13 +24,20 @@ export const metadata: Metadata = {
     "Rudraksha Mala",
     "Pashupatinath Rudraksha",
     "Certified Rudraksha Beads",
-    "Spiritual Accessories"
+    "Spiritual Accessories",
+    "Nepali Rudraksha",
+    "Rudraksha beads online",
+    "Buy Rudraksha online",
+    "1 Mukhi Rudraksha",
+    "5 Mukhi Rudraksha",
+    "Gauri Shankar Rudraksha",
   ],
   openGraph: {
-    title: "Pashupatinath Rudraksha",
+    title: "Pashupatinath Rudraksha - Authentic Rudraksha from Nepal",
     description:
-      "Authentic Certified Rudraksha from Nepal with trust and tradition.",
+      "Discover authentic, certified Rudraksha beads and spiritual items at Pashupatinath Rudraksha. Sourced directly from Nepal, ensuring quality and tradition.",
     url: "https://www.pashupatinathrudraksh.com",
+    siteName: "Pashupatinath Rudraksha",
     type: "website",
     images: [
       {
@@ -40,11 +48,26 @@ export const metadata: Metadata = {
       },
     ],
   },
+  twitter: {
+    card: "summary_large_image",
+    site: "@pashupatinathrudraksh", // Assuming a twitter handle, can be changed
+    title: "Pashupatinath Rudraksha | Original & Certified Rudraksha Beads",
+    description:
+      "Buy 100% Original Certified Rudraksha beads, malas, bracelets, and spiritual accessories sourced from Nepal. Trusted quality with lab certification and worldwide delivery.",
+    // image: "/PR_Logo.webp",
+  },
   icons: {
     icon: "/PR_Logo.webp",
     shortcut: "/PR_Logo.webp",
     apple: "/PR_Logo.webp",
   },
+  robots: "index, follow",
+  alternates: {
+    canonical: "https://www.pashupatinathrudraksh.com",
+  },
+  themeColor: "#ffffff", // or a brand color
+  authors: [{ name: "Pashupatinath Rudraksha" }],
+  publisher: "Pashupatinath Rudraksha",
 };
 
 export default function RootLayout({

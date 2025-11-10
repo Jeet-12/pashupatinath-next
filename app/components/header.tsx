@@ -174,13 +174,14 @@ export default function Header() {
         };
     }, [isMenuOpen, searchFocused]);
 
-    // Handle search submission
+    // Handle search submission - UPDATED TO NAVIGATE TO PRODUCTS PAGE
     const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault();
         if (searchQuery.trim()) {
             setIsLoading(true);
             try {
-                await router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+                // Navigate to products page with search query instead of search page
+                await router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
             } catch (error) {
                 console.error('Navigation error:', error);
             } finally {
@@ -607,10 +608,6 @@ export default function Header() {
                                                         await handleLogout(e);
                                                         return;
                                                     }
-                                                    // if (item.action) {
-                                                    //     e.preventDefault();
-                                                    //     item.action();
-                                                    // }
                                                     setProfileDropdownOpen(false);
                                                 }}
                                             >

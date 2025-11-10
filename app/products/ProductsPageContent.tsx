@@ -16,6 +16,218 @@ type Filters = {
   availability: 'all' | 'in-stock' | 'low-stock';
 };
 
+
+// Review Modal Component - Add this before the Main Component
+const ReviewModal = memo(({ 
+  product, 
+  isOpen, 
+  onClose, 
+  onSubmit 
+}: { 
+  product: Product;
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (reviewData: { rate: number; review: string; title?: string; photos?: File[] }) => void;
+}) => {
+  const [rating, setRating] = useState(0);
+  const [title, setTitle] = useState('');
+  const [review, setReview] = useState('');
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (rating === 0 || !review.trim()) {
+      alert('Please provide a rating and review text');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await onSubmit({
+        rate: rating,
+        review: review.trim(),
+        title: title.trim() || undefined,
+        photos: photos.length > 0 ? photos : undefined
+      });
+      
+      // Reset form
+      setRating(0);
+      setTitle('');
+      setReview('');
+      setPhotos([]);
+      onClose();
+    } catch (error) {
+      console.error('Error submitting review:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const newPhotos = Array.from(files).slice(0, 5 - photos.length); // Max 5 photos
+      setPhotos(prev => [...prev, ...newPhotos]);
+    }
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotos(prev => prev.filter((_, i) => i !== index));
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-amber-100">
+          <div className="flex justify-between items-center">
+            <h2 className="text-2xl font-bold text-gray-900">Write a Review</h2>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors p-2"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div className="flex items-center space-x-4 mt-4">
+            <div className="w-16 h-16 relative bg-amber-50 rounded-xl overflow-hidden">
+              <Image
+                src={product.photo || '/placeholder-image.jpg'}
+                alt={product.title}
+                fill
+                className="object-cover"
+              />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900">{product.title}</h3>
+              <p className="text-amber-600 font-bold">₹{product.price.toLocaleString()}</p>
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Rating */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              Overall Rating *
+            </label>
+            <div className="flex space-x-1">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRating(star)}
+                  className="text-2xl focus:outline-none"
+                >
+                  <span className={star <= rating ? 'text-yellow-400' : 'text-gray-300'}>
+                    ★
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Review Title */}
+          <div>
+            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+              Review Title (Optional)
+            </label>
+            <input
+              type="text"
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Summarize your experience"
+              className="w-full px-4 py-3 border border-amber-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+            />
+          </div>
+
+          {/* Review Text */}
+          <div>
+            <label htmlFor="review" className="block text-sm font-medium text-gray-700 mb-2">
+              Your Review *
+            </label>
+            <textarea
+              id="review"
+              value={review}
+              onChange={(e) => setReview(e.target.value)}
+              placeholder="Share your experience with this product..."
+              rows={4}
+              className="w-full px-4 py-3 border border-amber-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none"
+              required
+            />
+          </div>
+
+          {/* Photo Upload */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Add Photos ({photos.length}/5)
+            </label>
+            <div className="space-y-4">
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handlePhotoUpload}
+                disabled={photos.length >= 5}
+                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100"
+              />
+              
+              {photos.length > 0 && (
+                <div className="grid grid-cols-3 gap-4">
+                  {photos.map((photo, index) => (
+                    <div key={index} className="relative group">
+                      <div className="aspect-square bg-amber-50 rounded-xl overflow-hidden">
+                        <img
+                          src={URL.createObjectURL(photo)}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removePhoto(index)}
+                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Submit Buttons */}
+          <div className="flex space-x-4 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-6 py-3 border-2 border-amber-500 text-amber-600 rounded-2xl font-semibold hover:bg-amber-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting || rating === 0 || !review.trim()}
+              className="flex-1 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-2xl font-semibold hover:from-amber-600 hover:to-orange-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? 'Submitting...' : 'Submit Review'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+});
+
+ReviewModal.displayName = 'ReviewModal'; 
+
+
 // Memoized Product Card Component
 const ProductCard = memo(({ 
   product, 
@@ -225,6 +437,7 @@ const ProductCard = memo(({
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
               : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl'
           }`}
+           onClick={handleAddToCartClick}
         >
           Buy Now
         </button>
@@ -413,6 +626,7 @@ export default function ProductsPageContent() {
   const [loading, setLoading] = useState(true);
   const [wishlist, setWishlist] = useState<number[]>([]);
   const [activeUrlCategory, setActiveUrlCategory] = useState<string | null>(null);
+  const [urlSearchQuery, setUrlSearchQuery] = useState<string | null>(null);
 
   // Memoized handlers
   const handleAddToCart = useCallback(async (slug: string, price: number) => {
@@ -490,27 +704,64 @@ export default function ProductsPageContent() {
     };
   }, []);
 
-  // Handle URL parameters after products are loaded
+  // Read URL parameters on component mount and when searchParams change
   useEffect(() => {
-    if (products.length > 0) {
-      const mainCategoryFromUrl = searchParams?.get('main-category');
-      const categoryFromUrl = searchParams?.get('category');
-      
-      if (mainCategoryFromUrl) {
-        setActiveUrlCategory(mainCategoryFromUrl);
-        setFilters(prev => ({
-          ...prev,
-          categories: [`main_category:${mainCategoryFromUrl}`]
-        }));
-      } else if (categoryFromUrl) {
-        setActiveUrlCategory(categoryFromUrl);
-        setFilters(prev => ({
-          ...prev,
-          categories: [`slug:${categoryFromUrl}`]
-        }));
-      }
+    const searchFromUrl = searchParams?.get('search');
+    const mainCategoryFromUrl = searchParams?.get('main-category');
+    const categoryFromUrl = searchParams?.get('category');
+    
+    if (searchFromUrl) {
+      setUrlSearchQuery(searchFromUrl);
+      setSearchQuery(searchFromUrl);
+      // Hide recent products when searching
+      setShowRecentProducts(false);
     }
-  }, [searchParams, products]);
+    
+    if (mainCategoryFromUrl) {
+      setActiveUrlCategory(mainCategoryFromUrl);
+      setFilters(prev => ({
+        ...prev,
+        categories: [`main_category:${mainCategoryFromUrl}`]
+      }));
+    } else if (categoryFromUrl) {
+      setActiveUrlCategory(categoryFromUrl);
+      setFilters(prev => ({
+        ...prev,
+        categories: [`slug:${categoryFromUrl}`]
+      }));
+    }
+  }, [searchParams]);
+
+  // Update the searchQuery state when URL search changes
+  useEffect(() => {
+    if (urlSearchQuery && urlSearchQuery !== searchQuery) {
+      setSearchQuery(urlSearchQuery);
+    }
+  }, [urlSearchQuery, searchQuery]);
+
+  // Handle search from products page
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      // Update URL without page reload using shallow routing
+      const params = new URLSearchParams();
+      params.set('search', searchQuery.trim());
+      window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+      setUrlSearchQuery(searchQuery.trim());
+      setShowRecentProducts(false);
+    }
+  };
+
+  // Clear search
+  const clearSearch = () => {
+    setSearchQuery('');
+    setUrlSearchQuery(null);
+    // Remove search parameter from URL
+    const params = new URLSearchParams(window.location.search);
+    params.delete('search');
+    window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+    setShowRecentProducts(true);
+  };
 
   // Responsive check
   useEffect(() => {
@@ -593,14 +844,21 @@ export default function ProductsPageContent() {
       availability: 'all'
     });
     setSearchQuery('');
+    setUrlSearchQuery(null);
     setActiveUrlCategory(null);
+    setShowRecentProducts(true);
+    
+    // Clear URL parameters
+    const params = new URLSearchParams();
+    window.history.replaceState({}, '', `${window.location.pathname}`);
   }, [priceRange]);
 
   // Optimized product filtering
   const filteredProducts = useMemo(() => {
     return products.filter(product => {
-      // Search filter
-      if (searchQuery && !product.title.toLowerCase().includes(searchQuery.toLowerCase())) {
+      // Search filter - check both URL search and local search
+      const currentSearch = urlSearchQuery || searchQuery;
+      if (currentSearch && !product.title.toLowerCase().includes(currentSearch.toLowerCase())) {
         return false;
       }
       
@@ -645,7 +903,7 @@ export default function ProductsPageContent() {
       
       return true;
     });
-  }, [products, filters, searchQuery]);
+  }, [products, filters, searchQuery, urlSearchQuery]);
 
   // Optimized sorting
   const sortedProducts = useMemo(() => {
@@ -669,8 +927,10 @@ export default function ProductsPageContent() {
     (filters.minRating > 0 ? 1 : 0) +
     filters.categories.length +
     (filters.discountRange > 0 ? 1 : 0) +
-    (filters.availability !== 'all' ? 1 : 0),
-  [filters, priceRange]
+    (filters.availability !== 'all' ? 1 : 0) +
+    (urlSearchQuery ? 1 : 0) +
+    (searchQuery ? 1 : 0),
+  [filters, priceRange, urlSearchQuery, searchQuery]
   );
 
   const activeCategoryName = useMemo(() => {
@@ -751,17 +1011,47 @@ export default function ProductsPageContent() {
         <div className="container mx-auto px-4 relative z-10">
           <div className="text-center max-w-4xl mx-auto">
             <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-3xl backdrop-blur-sm mb-8 border border-white/30 shadow-2xl">
-              <span className="text-3xl">📿</span>
+              <span className="text-3xl">
+                {urlSearchQuery ? '🔍' : activeCategoryName ? '📿' : '🌟'}
+              </span>
             </div>
             <h1 className="text-5xl md:text-7xl font-bold mb-8 bg-gradient-to-r from-white to-amber-100 bg-clip-text text-transparent leading-tight">
-              {activeCategoryName ? `${activeCategoryName}` : 'Divine Collection'}
+              {urlSearchQuery 
+                ? `Search Results` 
+                : activeCategoryName 
+                  ? `${activeCategoryName}` 
+                  : 'Divine Collection'
+              }
             </h1>
             <p className="text-amber-100 text-xl md:text-2xl leading-relaxed max-w-3xl mx-auto mb-8 font-light">
-              Discover authentic Nepali Rudraksha beads with spiritual significance and premium quality
+              {urlSearchQuery 
+                ? `Showing results for "${urlSearchQuery}"`
+                : activeCategoryName
+                ? `Discover authentic ${activeCategoryName} with spiritual significance and premium quality`
+                : 'Discover authentic Nepali Rudraksha beads with spiritual significance and premium quality'
+              }
             </p>
             
+            {/* Active Search Badge */}
+            {urlSearchQuery && (
+              <div className="flex justify-center items-center gap-3">
+                <span className="bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-2xl text-lg font-semibold border border-white/30">
+                  Search: "{urlSearchQuery}"
+                </span>
+                <button
+                  onClick={clearSearch}
+                  className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 px-6 py-3 rounded-2xl text-lg font-semibold border border-white/30 transition-all duration-300 flex items-center gap-2"
+                >
+                  Clear Search
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
+            
             {/* Active Category Badge */}
-            {activeCategoryName && (
+            {activeCategoryName && !urlSearchQuery && (
               <div className="flex justify-center items-center gap-3">
                 <span className="bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-2xl text-lg font-semibold border border-white/30">
                   {activeCategoryName}
@@ -783,7 +1073,7 @@ export default function ProductsPageContent() {
 
       <div className="container mx-auto px-4 lg:px-8">
         {/* Recent Products Section with Toggle */}
-        {recentProducts.length > 0 && !activeCategoryName && (
+        {recentProducts.length > 0 && !activeCategoryName && !urlSearchQuery && !searchQuery && (
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 mb-12 border border-amber-100/50">
             <div className="flex justify-between items-center mb-8">
               <div>
@@ -821,16 +1111,35 @@ export default function ProductsPageContent() {
           <div className="flex flex-col lg:flex-row gap-6 items-center">
             {/* Search Bar */}
             <div className="flex-1 relative">
-              <input
-                type="text"
-                placeholder="Search for Rudraksha beads, malas, spiritual items..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-14 pr-6 py-4 border-2 border-amber-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 bg-white text-gray-900 placeholder-amber-400 text-lg font-medium transition-all duration-300"
-              />
-              <svg className="w-6 h-6 absolute left-5 top-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+              <form onSubmit={handleSearchSubmit} className="relative">
+                <input
+                  type="text"
+                  placeholder="Search for Rudraksha beads, malas, spiritual items..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-14 pr-6 py-4 border-2 border-amber-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 bg-white text-gray-900 placeholder-amber-400 text-lg font-medium transition-all duration-300"
+                />
+                <svg className="w-6 h-6 absolute left-5 top-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={clearSearch}
+                    className="absolute right-16 top-4 text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  className="absolute right-4 top-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 py-2 rounded-xl font-semibold hover:from-amber-600 hover:to-orange-600 transition-all duration-300"
+                >
+                  Search
+                </button>
+              </form>
             </div>
             
             {/* Controls */}
@@ -1053,13 +1362,20 @@ export default function ProductsPageContent() {
               <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                 <div>
                   <h2 className="text-3xl font-bold text-gray-900 mb-2">
-                    {searchQuery ? `Search Results for "${searchQuery}"` : 
-                     activeCategoryName ? `${activeCategoryName} Collection` : 'All Spiritual Products'}
+                    {urlSearchQuery 
+                      ? `Search Results for "${urlSearchQuery}"` 
+                      : searchQuery 
+                        ? `Search Results for "${searchQuery}"`
+                        : activeCategoryName 
+                          ? `${activeCategoryName} Collection` 
+                          : 'All Spiritual Products'
+                    }
                     <span className="text-xl font-normal text-gray-600 ml-3">({sortedProducts.length} products)</span>
                   </h2>
                   {activeFilterCount > 0 && (
                     <p className="text-gray-600 text-lg">
                       {activeFilterCount} active filter{activeFilterCount > 1 ? 's' : ''} applied
+                      {urlSearchQuery && ' • Searching across all categories'}
                     </p>
                   )}
                 </div>
@@ -1104,23 +1420,39 @@ export default function ProductsPageContent() {
             {!loading && sortedProducts.length === 0 && (
               <div className="text-center py-20 bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-amber-100/50">
                 <div className="w-32 h-32 mx-auto mb-8 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center">
-                  <span className="text-5xl">🔍</span>
+                  <span className="text-5xl">
+                    {urlSearchQuery ? '🔍' : '😔'}
+                  </span>
                 </div>
-                <h3 className="text-3xl font-bold text-gray-900 mb-4">No products found</h3>
+                <h3 className="text-3xl font-bold text-gray-900 mb-4">
+                  {urlSearchQuery ? 'No products found' : 'No products match your criteria'}
+                </h3>
                 <p className="text-gray-600 text-lg mb-8 max-w-md mx-auto leading-relaxed">
-                  {searchQuery 
-                    ? `We couldn't find any products matching "${searchQuery}". Try adjusting your search or filters.`
+                  {urlSearchQuery 
+                    ? `We couldn't find any products matching "${urlSearchQuery}". Try adjusting your search terms or browse all categories.`
+                    : searchQuery
+                    ? `We couldn't find any products matching "${searchQuery}". Try adjusting your search terms.`
                     : activeCategoryName
                     ? `No products found in ${activeCategoryName} category. Try selecting a different category.`
                     : 'No products match your current filters. Try adjusting your criteria to see more results.'
                   }
                 </p>
-                <button 
-                  onClick={resetFilters}
-                  className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-8 py-4 rounded-2xl hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 font-semibold text-lg"
-                >
-                  {activeCategoryName ? 'Show All Products' : 'Reset Filters & Search'}
-                </button>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <button 
+                    onClick={resetFilters}
+                    className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-8 py-4 rounded-2xl hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 font-semibold text-lg"
+                  >
+                    {urlSearchQuery ? 'Browse All Products' : 'Reset Filters & Search'}
+                  </button>
+                  {urlSearchQuery && (
+                    <button 
+                      onClick={clearSearch}
+                      className="bg-white text-amber-600 border-2 border-amber-500 px-8 py-4 rounded-2xl hover:bg-amber-50 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 font-semibold text-lg"
+                    >
+                      Clear Search
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>
