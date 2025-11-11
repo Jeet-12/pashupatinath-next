@@ -416,7 +416,7 @@ export default function Header() {
                                                 aria-expanded={activeDropdown === item.name}
                                                 aria-haspopup="true"
                                             >
-                                                <span className="text-sm">{item.icon}</span>
+                                                {/* <span className="text-sm">{item.icon}</span> */}
                                                 <span className="text-sm">{item.name}</span>
                                                 <svg 
                                                     className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform duration-200 ${
@@ -500,7 +500,7 @@ export default function Header() {
                                             className="flex items-center space-x-1 px-3 xl:px-4 py-2 text-gray-700 hover:text-amber-700 transition-all duration-200 font-medium rounded-lg hover:bg-amber-50 group whitespace-nowrap"
                                             onClick={() => handleMainItemClick(item)}
                                         >
-                                            <span className="text-sm">{item.icon}</span>
+                                            {/* <span className="text-sm">{item.icon}</span> */}
                                             <span className="text-sm">{item.name}</span>
                                         </Link>
                                     )}
@@ -611,7 +611,7 @@ export default function Header() {
                                                     setProfileDropdownOpen(false);
                                                 }}
                                             >
-                                                {/* <span className="text-base sm:text-lg">{item.icon}</span> */}
+                                                <span className="text-base sm:text-lg">{item.icon}</span>
                                                 <span className="font-medium flex-1 text-sm sm:text-base group-hover:translate-x-1 transition-transform duration-200">
                                                     {item.name}
                                                 </span>
@@ -689,7 +689,7 @@ export default function Header() {
                                             aria-expanded={activeDropdown === item.name}
                                         >
                                             <div className="flex items-center space-x-3">
-                                                <span className="text-base">{item.icon}</span>
+                                                {/* <span className="text-base">{item.icon}</span> */}
                                                 <span className="text-base">{item.name}</span>
                                             </div>
                                             <svg 
@@ -725,7 +725,7 @@ export default function Header() {
                                         className="flex items-center space-x-3 py-4 px-2 text-gray-700 hover:text-amber-700 transition-colors font-medium"
                                         onClick={() => setIsMenuOpen(false)}
                                     >
-                                        <span className="text-base">{item.icon}</span>
+                                        {/* <span className="text-base">{item.icon}</span> */}
                                         <span className="text-base">{item.name}</span>
                                     </Link>
                                 )}
@@ -742,7 +742,7 @@ export default function Header() {
                                         className="flex items-center justify-center space-x-2 py-3 px-4 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition-colors text-sm font-medium"
                                         onClick={() => setIsMenuOpen(false)}
                                     >
-                                        {/* <span>{item.icon}</span> */}
+                                        <span>{item.icon}</span>
                                         <span>{item.name}</span>
                                     </Link>
                                 ))}

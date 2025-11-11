@@ -11,7 +11,7 @@ export default function SacredCollections() {
       description: "100% Authentic Rudraksha sourced directly from Nepal.",
       image: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/41/Verified sourcing from Nepal.png",
       cta: "Explore",
-      link: "/rudraksha-collection"
+      link: "/products"
     },
     {
       id: 2,
@@ -19,7 +19,7 @@ export default function SacredCollections() {
       description: "Energized and ready-to-wear with Vedic rituals",
       image: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/41/Energized.png",
       cta: "Explore",
-      link: "/energized-rudraksha"
+      link: "/products"
     },
     {
       id: 3,
@@ -27,7 +27,7 @@ export default function SacredCollections() {
       description: "Ethical Lab Tested Rudraksha Malas",
       image: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/41/3000+ lab-tested Rudraksh.png",
       cta: "Explore",
-      link: "/spiritual-bracelets"
+      link: "/products"
     },
     {
       id: 4,
@@ -35,7 +35,7 @@ export default function SacredCollections() {
       description: "Ethical & Spiritual Bracelets",
       image: "https://www.pashupatinathrudraksh.com/storage/app/public/photos/41/Ethical & spiritual certification.png",
       cta: "Explore",
-      link: "/ethical-bracelets"
+      link: "/products"
     }
   ];
 
