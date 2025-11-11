@@ -611,7 +611,7 @@ export default function Header() {
                                                     setProfileDropdownOpen(false);
                                                 }}
                                             >
-                                                <span className="text-base sm:text-lg">{item.icon}</span>
+                                                {/* <span className="text-base sm:text-lg">{item.icon}</span> */}
                                                 <span className="font-medium flex-1 text-sm sm:text-base group-hover:translate-x-1 transition-transform duration-200">
                                                     {item.name}
                                                 </span>
@@ -742,7 +742,7 @@ export default function Header() {
                                         className="flex items-center justify-center space-x-2 py-3 px-4 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition-colors text-sm font-medium"
                                         onClick={() => setIsMenuOpen(false)}
                                     >
-                                        <span>{item.icon}</span>
+                                        {/* <span>{item.icon}</span> */}
                                         <span>{item.name}</span>
                                     </Link>
                                 ))}
