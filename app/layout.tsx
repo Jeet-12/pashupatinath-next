@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import GlobalShell from "./components/GlobalShell";
 
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -50,22 +51,22 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    site: "@pashupatinathrudraksh", // Assuming a twitter handle, can be changed
+    site: "@pashupatinathrudraksh",
     title: "Pashupatinath Rudraksha | Original & Certified Rudraksha Beads",
     description:
       "Buy 100% Original Certified Rudraksha beads, malas, bracelets, and spiritual accessories sourced from Nepal. Trusted quality with lab certification and worldwide delivery.",
-    // image: "/PR_Logo.webp",
+    images: ["/PR_Logo.webp"],
   },
   icons: {
-    icon: "/PR_Logo.webp",
-    shortcut: "/PR_Logo.webp",
-    apple: "/PR_Logo.webp",
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
   },
   robots: "index, follow",
   alternates: {
     canonical: "https://www.pashupatinathrudraksh.com",
   },
-  themeColor: "#ffffff", // or a brand color
+  themeColor: "#ffffff",
   authors: [{ name: "Pashupatinath Rudraksha" }],
   publisher: "Pashupatinath Rudraksha",
 };
@@ -77,6 +78,20 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        {/* ✅ Explicit meta and link tags for cross-browser favicon & OG support */}
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <meta name="theme-color" content="#ffffff" />
+        <meta property="og:image" content="/PR_Logo.webp" />
+        <meta property="twitter:image" content="/PR_Logo.webp" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Pashupatinath Rudraksha" />
+        <meta
+          name="twitter:description"
+          content="Authentic certified Rudraksha beads & malas from Nepal."
+        />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <GlobalShell>{children}</GlobalShell>
       </body>
