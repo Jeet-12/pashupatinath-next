@@ -1601,7 +1601,7 @@ const EnhancedShippingInfo = () => {
         <h5 className="font-black text-amber-900 text-lg lg:text-2xl mb-2 lg:mb-4">Standard Shipping</h5>
         <p className="text-gray-700 text-sm lg:text-lg mb-2 lg:mb-3 flex items-center space-x-2 lg:space-x-3">
           <span className="text-sm lg:text-base">⏱️</span>
-          <span>4-7 business days</span>
+          <span>5-7 business days</span>
         </p>
         <p className="text-gray-700 text-sm lg:text-lg flex items-center space-x-2 lg:space-x-3">
           <span className="text-sm lg:text-base">🎁</span>

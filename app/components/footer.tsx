@@ -35,12 +35,30 @@ WhatsAppFloatingButton.displayName = 'WhatsAppFloatingButton';
 const ChatbotModal = memo(() => {
   const [isVisible, setIsVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [messages, setMessages] = useState<Array<{type: string, content: string}>>([]);
+  const [messages, setMessages] = useState<Array<{type: string; content: string; buttonComponent?: React.ReactNode}>>([]);
   const [currentStep, setCurrentStep] = useState(0);
   const [userData, setUserData] = useState<Record<string, string>>({});
   const [isTyping, setIsTyping] = useState(false);
   const chatMessagesRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
+
+  const rudrakshaItems = [
+    { name: 'Ganesh Rudraksha', path: '/products?category=ganesh' },
+    { name: '1 Mukhi Rudraksha', path: '/products?category=1-mukhi' },
+    { name: '2 Mukhi Rudraksha', path: '/products?category=2-mukhi' },
+    { name: '3 Mukhi Rudraksha', path: '/products?category=3-mukhi' },
+    { name: '4 Mukhi Rudraksha', path: '/products?category=4-mukhi' },
+    { name: '5 Mukhi Rudraksha', path: '/products?category=5-mukhi' },
+    { name: '6 Mukhi Rudraksha', path: '/products?category=6-mukhi' },
+    { name: '7 Mukhi Rudraksha', path: '/products?category=7-mukhi' },
+    { name: '8 Mukhi Rudraksha', path: '/products?category=8-mukhi' },
+    { name: '9 Mukhi Rudraksha', path: '/products?category=9-mukhi' },
+    { name: '10 Mukhi Rudraksha', path: '/products?category=10-mukhi' },
+    { name: '11 Mukhi Rudraksha', path: '/products?category=11-mukhi' },
+    { name: '12 Mukhi Rudraksha', path: '/products?category=12-mukhi' },
+    { name: '13 Mukhi Rudraksha', path: '/products?category=13-mukhi' },
+    { name: '14 Mukhi Rudraksha', path: '/products?category=14-mukhi' },
+  ];
 
   const questions = [
     'Please enter your complete full name (First and Last name):',
@@ -160,6 +178,44 @@ I will analyze your birth chart using authentic Vedic numerology to recommend th
     }
   };
 
+  const BuyNowButton = ({ mukhi }: { mukhi: number }) => {
+    // Find the category path from rudrakshaItems
+    const rudrakshaItem = rudrakshaItems.find(item => 
+      item.name.includes(`${mukhi} Mukhi`)
+    );
+    
+    const redirectPath = rudrakshaItem ? rudrakshaItem.path : `/products?search=${mukhi} mukhi rudraksha`;
+
+    return (
+      <div style={{ textAlign: 'center', margin: '20px 0' }}>
+        <button 
+          onClick={() => window.open(redirectPath, '_blank')}
+          style={{
+            background: 'linear-gradient(135deg, #f5821f 0%, #e07515 100%)',
+            color: 'white',
+            border: 'none',
+            padding: '12px 24px',
+            borderRadius: '8px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            fontSize: '14px'
+          }}
+          onMouseOver={(e) => {
+            e.currentTarget.style.transform = 'scale(1.05)';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(245, 130, 31, 0.4)';
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.transform = 'scale(1)';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
+        >
+          🛒 BUY NOW - {mukhi} Mukhi Rudraksha
+        </button>
+      </div>
+    );
+  };
+
   const handleSendMessage = (quickMessage?: string) => {
     const message = quickMessage || chatInputRef.current?.value.trim();
     if (!message) return;
@@ -241,7 +297,10 @@ I will analyze your birth chart using authentic Vedic numerology to recommend th
 
     const rudraksha = rudrakshaDatabase[recommendedMukhi as keyof typeof rudrakshaDatabase];
 
-    const analysisMessage = `🔮 **PROFESSIONAL RUDRAKSHA RECOMMENDATION**
+    // First message with analysis and buy button
+    const analysisMessage = {
+      type: 'bot',
+      content: `🔮 **PROFESSIONAL RUDRAKSHA RECOMMENDATION**
 
 ✨ **RECOMMENDED RUDRAKSHA:**
 <span style="font-size: 20px; color: #8B4513; font-weight: bold;">${recommendedMukhi} Mukhi Rudraksha</span>
@@ -259,29 +318,20 @@ ${rudraksha.benefits}
 Enhanced performance, spiritual protection, and career growth
 
 🎯 **NUMEROLOGICAL COMPATIBILITY:**
-Accuracy Score: 92/100 based on your Life Path Number ${lifePathNumber}
+Accuracy Score: 92/100 based on your Life Path Number ${lifePathNumber}`,
+      buttonComponent: <BuyNowButton mukhi={recommendedMukhi} />
+    };
 
-<div style="text-align: center; margin: 20px 0;">
-  <button onclick="window.open('/products?search=${recommendedMukhi} mukhi rudraksha', '_blank')" 
-          style="background: linear-gradient(135deg, #f5821f 0%, #e07515 100%); 
-                 color: white; 
-                 border: none; 
-                 padding: 12px 24px; 
-                 border-radius: 8px; 
-                 font-weight: bold; 
-                 cursor: pointer;
-                 transition: all 0.3s ease;
-                 font-size: 14px;">
-    🛒 BUY NOW - ${recommendedMukhi} Mukhi Rudraksha
-  </button>
-</div>
-
-<div style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white; padding: 15px; border-radius: 10px; margin: 15px 0;">
+    // Second message with alert
+    const finalMessage = {
+      type: 'bot',
+      content: `<div style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white; padding: 15px; border-radius: 10px; margin: 15px 0;">
   <strong>⚠️ SPIRITUAL TIMING ALERT:</strong><br>
   Based on your birth data, you're in a favorable period for spiritual advancement. Wearing the correct Rudraksha now can accelerate your progress!
-</div>`;
+</div>`
+    };
 
-    setMessages(prev => [...prev, { type: 'bot', content: analysisMessage }]);
+    setMessages(prev => [...prev, analysisMessage, finalMessage]);
     setCurrentStep(prev => prev + 1); // Move past questions
   };
 
@@ -369,6 +419,8 @@ Accuracy Score: 92/100 based on your Life Path Number ${lifePathNumber}
                       className="text-gray-700 leading-relaxed text-sm"
                       dangerouslySetInnerHTML={{ __html: message.content.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') }}
                     />
+                    {/* Render the button component if it exists */}
+                    {message.buttonComponent && message.buttonComponent}
                   </div>
                   {message.type === 'user' && (
                     <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
@@ -415,24 +467,6 @@ Accuracy Score: 92/100 based on your Life Path Number ${lifePathNumber}
               </svg>
             </button>
           </div>
-
-          {/* Quick Name Suggestions - Only show on first step */}
-          {/* {currentStep === 0 && (
-            <div className="quick-suggestions px-4 pb-3 bg-white border-t border-amber-200">
-              <div className="text-xs text-gray-500 mb-2">Quick suggestions:</div>
-              <div className="flex flex-wrap gap-1">
-                {['Rajesh Kumar', 'Priya Singh', 'Amit Sharma', 'Sunita Patel'].map((name) => (
-                  <button
-                    key={name}
-                    onClick={() => handleQuickSuggestion(name)}
-                    className="text-xs bg-amber-100 text-[#8B4513] px-2 py-1 rounded hover:bg-amber-200 transition-colors border border-amber-300"
-                  >
-                    {name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )} */}
         </div>
       )}
     </>

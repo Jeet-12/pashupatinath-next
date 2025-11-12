@@ -36,35 +36,35 @@ const ShippingInfo: NextPage = () => {
         weight: '0-0.5 kg', 
         regular: 'FREE', 
         express: 'Contact Us',
-        time: '4-7 days',
+        time: '5-7 days',
         expressTime: '2-3 days'
       },
       { 
         weight: '0.5-1 kg', 
         regular: 'FREE', 
         express: 'Contact Us',
-        time: '4-7 days',
+        time: '5-7 days',
         expressTime: '2-3 days'
       },
       { 
         weight: '1-2 kg', 
         regular: 'FREE', 
         express: 'Contact Us',
-        time: '4-7 days',
+        time: '5-7 days',
         expressTime: '2-3 days'
       },
       { 
         weight: '2-3 kg', 
         regular: 'FREE', 
         express: 'Contact Us',
-        time: '4-7 days',
+        time: '5-7 days',
         expressTime: '2-3 days'
       },
       { 
         weight: '3-5 kg', 
         regular: 'FREE', 
         express: 'Contact Us',
-        time: '4-7 days',
+        time: '5-7 days',
         expressTime: '2-3 days'
       },
     ],

@@ -250,6 +250,7 @@ export default function Header() {
     };
 
     const rudrakshaItems = [
+        { name: 'Ganesh Rudraksha', path: '/products?category=ganesh' },
         { name: '1 Mukhi Rudraksha', path: '/products?category=1-mukhi' },
         { name: '2 Mukhi Rudraksha', path: '/products?category=2-mukhi' },
         { name: '3 Mukhi Rudraksha', path: '/products?category=3-mukhi' },
@@ -266,7 +267,7 @@ export default function Header() {
         { name: '14 Mukhi Rudraksha', path: '/products?category=14-mukhi' },
     ];
 
-    // Split rudraksha items into two columns
+    // Split rudraksha items into two columns for desktop
     const rudrakshaFirstColumn = rudrakshaItems.slice(0, 7);
     const rudrakshaSecondColumn = rudrakshaItems.slice(7);
 
@@ -277,7 +278,7 @@ export default function Header() {
 
     const profileItems = isLoggedIn
         ? [
-            { name: 'Dashboard', path: '/dashboard/user', icon: '📊' },
+            { name: 'My Profile', path: '/dashboard/user', icon: '📊' },
             { name: 'Track Order', path: '/order-track', icon: '📦' },
             { name: 'My Orders', path: '/dashboard/user/orders', icon: '📋' },
             { name: 'Logout', path: '/logout', icon: '🚪', action: handleLogout }
@@ -672,84 +673,102 @@ export default function Header() {
                 )}
 
                 {/* Mobile Menu - FIXED: Higher z-index than overlay but lower than toggle */}
-                <div 
-                    ref={mobileMenuRef}
-                    className={`lg:hidden absolute inset-x-0 top-full bg-white/95 backdrop-blur-md border-t border-amber-100 transition-all duration-300 overflow-hidden z-55 ${
-                        isMenuOpen ? 'max-h-[80vh] opacity-100' : 'max-h-0 opacity-0'
-                    }`}
-                >
-                    <div className="container mx-auto px-4 py-4 space-y-0 max-h-[70vh] overflow-y-auto">
-                        {menuItems.map((item) => (
-                            <div key={item.name} className="border-b border-amber-50 last:border-b-0">
-                                {item.hasDropdown ? (
-                                    <div>
-                                        <button
-                                            onClick={() => setActiveDropdown(activeDropdown === item.name ? null : item.name)}
-                                            className="w-full flex items-center justify-between py-4 px-2 text-gray-700 hover:text-amber-700 transition-colors font-medium text-left"
-                                            aria-expanded={activeDropdown === item.name}
-                                        >
-                                            <div className="flex items-center space-x-3">
-                                                {/* <span className="text-base">{item.icon}</span> */}
-                                                <span className="text-base">{item.name}</span>
-                                            </div>
-                                            <svg 
-                                                className={`w-4 h-4 transition-transform duration-300 ${
-                                                    activeDropdown === item.name ? 'rotate-180' : ''
-                                                }`}
-                                                fill="none" 
-                                                stroke="currentColor" 
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                            </svg>
-                                        </button>
-                                        
-                                        <div className={`pl-8 space-y-0 overflow-hidden transition-all duration-300 ${
-                                            activeDropdown === item.name ? 'max-h-96 opacity-100 pb-2' : 'max-h-0 opacity-0'
-                                        }`}>
-                                            {item.dropdownItems?.map((dropdownItem) => (
-                                                <Link
-                                                    key={dropdownItem.name}
-                                                    href={dropdownItem.path}
-                                                    className="block py-3 px-2 text-gray-600 hover:text-amber-700 transition-colors border-l-2 border-amber-100 hover:border-amber-400 hover:bg-amber-25 rounded-r-lg text-sm"
-                                                    onClick={() => setIsMenuOpen(false)}
-                                                >
-                                                    {dropdownItem.name}
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <Link
-                                        href={item.path}
-                                        className="flex items-center space-x-3 py-4 px-2 text-gray-700 hover:text-amber-700 transition-colors font-medium"
-                                        onClick={() => setIsMenuOpen(false)}
-                                    >
-                                        {/* <span className="text-base">{item.icon}</span> */}
-                                        <span className="text-base">{item.name}</span>
-                                    </Link>
-                                )}
+                {/* Mobile Menu - FIXED: Higher z-index than overlay but lower than toggle */}
+<div 
+    ref={mobileMenuRef}
+    className={`lg:hidden absolute inset-x-0 top-full bg-white/95 backdrop-blur-md border-t border-amber-100 transition-all duration-300 overflow-hidden z-55 ${
+        isMenuOpen ? 'max-h-[80vh] opacity-100' : 'max-h-0 opacity-0'
+    }`}
+>
+    <div className="container mx-auto px-4 py-4 space-y-0 max-h-[70vh] overflow-y-auto">
+        {menuItems.map((item) => (
+            <div key={item.name} className="border-b border-amber-50 last:border-b-0">
+                {item.hasDropdown ? (
+                    <div>
+                        <button
+                            onClick={() => setActiveDropdown(activeDropdown === item.name ? null : item.name)}
+                            className="w-full flex items-center justify-between py-4 px-2 text-gray-700 hover:text-amber-700 transition-colors font-medium text-left"
+                            aria-expanded={activeDropdown === item.name}
+                        >
+                            <div className="flex items-center space-x-3">
+                                {/* <span className="text-base">{item.icon}</span> */}
+                                <span className="text-base">{item.name}</span>
                             </div>
-                        ))}
+                            <svg 
+                                className={`w-4 h-4 transition-transform duration-300 ${
+                                    activeDropdown === item.name ? 'rotate-180' : ''
+                                }`}
+                                fill="none" 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
                         
-                        {/* Mobile Profile Links */}
-                        <div className="pt-4 border-t border-amber-100 mt-4 z-10" style={{zIndex:1}}>
-                            <div className="grid grid-cols-2 gap-2">
-                                {profileItems.slice(0, 2).map((item) => (
+                        <div className={`pl-4 space-y-0 overflow-hidden transition-all duration-300 ${
+                            activeDropdown === item.name ? 'max-h-96 opacity-100 pb-2' : 'max-h-0 opacity-0'
+                        }`}>
+                            {/* Special layout for Rudraksha in mobile */}
+                            {item.name === 'Rudraksha' ? (
+                                <div className="grid grid-cols-2 gap-1 py-2">
+                                    {rudrakshaItems.map((dropdownItem) => (
+                                        <Link
+                                            key={dropdownItem.name}
+                                            href={dropdownItem.path}
+                                            className="block py-2 px-3 text-gray-600 hover:text-amber-700 transition-colors hover:bg-amber-25 rounded-lg text-xs text-center"
+                                            onClick={() => setIsMenuOpen(false)}
+                                        >
+                                            {dropdownItem.name}
+                                        </Link>
+                                    ))}
+                                </div>
+                            ) : (
+                                // Single column for other dropdowns
+                                item.dropdownItems?.map((dropdownItem) => (
                                     <Link
-                                        key={item.name}
-                                        href={item.path}
-                                        className="flex items-center justify-center space-x-2 py-3 px-4 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition-colors text-sm font-medium"
+                                        key={dropdownItem.name}
+                                        href={dropdownItem.path}
+                                        className="block py-3 px-2 text-gray-600 hover:text-amber-700 transition-colors border-l-2 border-amber-100 hover:border-amber-400 hover:bg-amber-25 rounded-r-lg text-sm"
                                         onClick={() => setIsMenuOpen(false)}
                                     >
-                                        <span>{item.icon}</span>
-                                        <span>{item.name}</span>
+                                        {dropdownItem.name}
                                     </Link>
-                                ))}
-                            </div>
+                                ))
+                            )}
                         </div>
                     </div>
-                </div>
+                ) : (
+                    <Link
+                        href={item.path}
+                        className="flex items-center space-x-3 py-4 px-2 text-gray-700 hover:text-amber-700 transition-colors font-medium"
+                        onClick={() => setIsMenuOpen(false)}
+                    >
+                        {/* <span className="text-base">{item.icon}</span> */}
+                        <span className="text-base">{item.name}</span>
+                    </Link>
+                )}
+            </div>
+        ))}
+        
+        {/* Mobile Profile Links */}
+        <div className="pt-4 border-t border-amber-100 mt-4 z-10" style={{zIndex:1}}>
+            <div className="grid grid-cols-2 gap-2">
+                {profileItems.slice(0, 2).map((item) => (
+                    <Link
+                        key={item.name}
+                        href={item.path}
+                        className="flex items-center justify-center space-x-2 py-3 px-4 bg-amber-50 text-amber-700 rounded-lg hover:bg-amber-100 transition-colors text-sm font-medium"
+                        onClick={() => setIsMenuOpen(false)}
+                    >
+                        <span>{item.icon}</span>
+                        <span>{item.name}</span>
+                    </Link>
+                ))}
+            </div>
+        </div>
+    </div>
+</div>
             </header>
         </>
     );

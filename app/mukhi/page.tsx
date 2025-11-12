@@ -216,7 +216,6 @@ export default function SevenMukhiLandingPage() {
                   '✔ 100% Authentic Nepali Bead',
                   '✔ Ethical Lab Certification',
                   '✔ Free Shipping Across India',
-                  '✔ Easy Returns',
                   '✔ Secure Payment',
                   '✔ Expert Guidance'
                 ].map((badge, index) => (
@@ -757,7 +756,6 @@ export default function SevenMukhiLandingPage() {
 
             <div className="flex flex-wrap justify-center gap-3 sm:gap-4 lg:gap-6 text-xs sm:text-sm text-gray-300">
               <span>🔒 Secure Payment</span>
-              <span>🔄 Easy Returns</span>
               <span>✅ Authenticity Guaranteed</span>
               <span>🚚 Free Shipping</span>
             </div>

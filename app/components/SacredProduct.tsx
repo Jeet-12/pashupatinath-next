@@ -378,7 +378,7 @@ export default function SacredCollection({ products = [], categories = [] }: Sac
             <h1 className="text-4xl md:text-5xl font-bold text-[#5F3623] mb-4">
               Sacred Collection
             </h1>
-            <p className="text-gray-600 text-lg">Discover our handcrafted spiritual products</p>
+            <p className="text-gray-600 text-lg">Discover our handpicked spiritual products</p>
           </div>
 
           <div className="mb-12 relative">
