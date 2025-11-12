@@ -16,8 +16,7 @@ type Filters = {
   availability: 'all' | 'in-stock' | 'low-stock';
 };
 
-
-// Review Modal Component - Add this before the Main Component
+// Review Modal Component
 const ReviewModal = memo(({ 
   product, 
   isOpen, 
@@ -67,7 +66,7 @@ const ReviewModal = memo(({
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
-      const newPhotos = Array.from(files).slice(0, 5 - photos.length); // Max 5 photos
+      const newPhotos = Array.from(files).slice(0, 5 - photos.length);
       setPhotos(prev => [...prev, ...newPhotos]);
     }
   };
@@ -225,10 +224,8 @@ const ReviewModal = memo(({
   );
 });
 
-ReviewModal.displayName = 'ReviewModal'; 
+ReviewModal.displayName = 'ReviewModal';
 
-
-// Memoized Product Card Component
 const ProductCard = memo(({ 
   product, 
   onWishlistToggle, 
@@ -330,13 +327,13 @@ const ProductCard = memo(({
           {/* Badges */}
           <div className="absolute top-4 left-4 flex flex-col gap-2">
             {product.isNew && (
-              <span className="bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs font-bold py-2 px-3 rounded-xl shadow-lg">NEW</span>
+              <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold py-2 px-3 rounded-xl shadow-lg">NEW</span>
             )}
             {product.isBestSeller && (
-              <span className="bg-gradient-to-r from-purple-500 to-pink-600 text-white text-xs font-bold py-2 px-3 rounded-xl shadow-lg">BEST SELLER</span>
+              <span className="bg-gradient-to-r from-amber-600 to-orange-600 text-white text-xs font-bold py-2 px-3 rounded-xl shadow-lg">BEST SELLER</span>
             )}
             {hasDiscount && (
-              <span className="bg-gradient-to-r from-red-500 to-orange-600 text-white text-xs font-bold py-2 px-3 rounded-xl shadow-lg">
+              <span className="bg-gradient-to-r from-amber-700 to-orange-700 text-white text-xs font-bold py-2 px-3 rounded-xl shadow-lg">
                 {product.discount}% OFF
               </span>
             )}
@@ -344,9 +341,9 @@ const ProductCard = memo(({
           
           {/* Stock Badge */}
           <div className={`absolute bottom-4 left-4 text-white text-xs font-bold py-2 px-3 rounded-xl shadow-lg backdrop-blur-sm ${
-            stock > 10 ? 'bg-gradient-to-r from-green-500 to-emerald-600' : stock > 0 ? 'bg-gradient-to-r from-amber-500 to-orange-500' : 'bg-gradient-to-r from-red-500 to-pink-600'
+            stock > 10 ? 'bg-gradient-to-r from-amber-500 to-orange-500' : stock > 0 ? 'bg-gradient-to-r from-amber-400 to-orange-400' : 'bg-gradient-to-r from-gray-500 to-gray-600'
           }`}>
-            {stock > 0 ? `${stock} left` : 'Out of Stock'}
+            {stock > 0 ? `${stock} in stock` : 'Out of Stock'}
           </div>
         </div>
         
@@ -389,7 +386,7 @@ const ProductCard = memo(({
           <div className="mt-auto">
             <div className="flex items-center justify-between mb-4">
               <div className="flex flex-col">
-                <span className="text-2xl font-bold text-[#f5821f]">
+                <span className="text-2xl font-bold text-amber-600">
                   ₹{currentPrice.toLocaleString()}
                 </span>
                 {hasDiscount && (
@@ -397,7 +394,7 @@ const ProductCard = memo(({
                     <span className="text-gray-500 line-through text-sm font-medium">
                       ₹{product.price.toLocaleString()}
                     </span>
-                    <span className="text-green-600 text-sm font-semibold mt-1">
+                    <span className="text-amber-700 text-sm font-semibold mt-1">
                       You Save ₹{discountAmount.toLocaleString()} ({product.discount}%)
                     </span>
                   </>
@@ -435,9 +432,9 @@ const ProductCard = memo(({
           className={`px-6 font-semibold py-4 rounded-xl transition-all duration-300 flex items-center justify-center text-base ${
             stock === 0 
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-              : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl'
+              : 'bg-[#493723] hover:bg-[#3a2c1c] text-white shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95'
           }`}
-           onClick={handleAddToCartClick}
+          onClick={handleAddToCartClick}
         >
           Buy Now
         </button>
@@ -445,6 +442,8 @@ const ProductCard = memo(({
     </div>
   );
 });
+
+ProductCard.displayName = 'ProductCard';
 
 ProductCard.displayName = 'ProductCard';
 
@@ -507,7 +506,7 @@ const RecentProductCard = memo(({ product }: { product: RecentProduct }) => {
           loading="lazy"
         />
         {hasDiscount && (
-          <span className="absolute top-2 left-2 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-bold py-1 px-2 rounded-lg shadow-lg">
+          <span className="absolute top-2 left-2 bg-gradient-to-r from-amber-600 to-orange-600 text-white text-xs font-bold py-1 px-2 rounded-lg shadow-lg">
             {product.discount}% OFF
           </span>
         )}
@@ -516,13 +515,13 @@ const RecentProductCard = memo(({ product }: { product: RecentProduct }) => {
         {product.title}
       </h3>
       <div className="flex items-center gap-2">
-        <p className="text-[#f5821f] font-bold text-base">₹{currentPrice.toLocaleString()}</p>
+        <p className="text-amber-600 font-bold text-base">₹{currentPrice.toLocaleString()}</p>
         {hasDiscount && (
           <p className="text-gray-500 line-through text-sm">₹{product.price.toLocaleString()}</p>
         )}
       </div>
       {hasDiscount && (
-        <p className="text-green-600 text-xs font-semibold mt-1">
+        <p className="text-amber-700 text-xs font-semibold mt-1">
           Save ₹{discountAmount.toLocaleString()}
         </p>
       )}
@@ -554,9 +553,6 @@ const PriceRangeSlider = memo(({
     onChange(value.min, newMax);
   }, [value.min, onChange]);
 
-  const minPosition = ((value.min - min) / (max - min)) * 100;
-  const maxPosition = ((value.max - min) / (max - min)) * 100;
-
   return (
     <div className="space-y-6">
       <div className="flex justify-between text-gray-900 font-semibold text-lg">
@@ -573,8 +569,8 @@ const PriceRangeSlider = memo(({
           <div 
             className="absolute h-3 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl"
             style={{
-              left: `${minPosition}%`,
-              width: `${maxPosition - minPosition}%`
+              left: `${((value.min - min) / (max - min)) * 100}%`,
+              width: `${((value.max - value.min) / (max - min)) * 100}%`
             }}
           />
           
@@ -603,6 +599,236 @@ const PriceRangeSlider = memo(({
 
 PriceRangeSlider.displayName = 'PriceRangeSlider';
 
+// Mobile Filter Modal Component
+const MobileFilterModal = memo(({ 
+  isOpen, 
+  onClose, 
+  filters, 
+  priceRange,
+  categories,
+  discountRange,
+  onFilterChange,
+  onPriceChange,
+  onCategoryToggle,
+  onResetFilters
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  filters: Filters;
+  priceRange: { min: number; max: number };
+  categories: any[];
+  discountRange: { min: number; max: number };
+  onFilterChange: (key: keyof Filters, value: any) => void;
+  onPriceChange: (min: number, max: number) => void;
+  onCategoryToggle: (categoryId: string) => void;
+  onResetFilters: () => void;
+}) => {
+  const [activeSection, setActiveSection] = useState<string>('price');
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end justify-center z-50 lg:hidden">
+      <div className="bg-white rounded-t-3xl shadow-2xl w-full max-h-[90vh] overflow-hidden animate-slide-up">
+        {/* Header */}
+        <div className="flex justify-between items-center p-6 border-b border-amber-100">
+          <h2 className="text-2xl font-bold text-gray-900">Filters</h2>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={onResetFilters}
+              className="text-amber-600 hover:text-amber-800 font-semibold text-sm bg-amber-50 px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Reset
+            </button>
+            <button 
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700 p-2 rounded-lg bg-gray-100"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div className="flex h-[70vh]">
+          {/* Sidebar Navigation */}
+          <div className="w-1/3 bg-amber-50 border-r border-amber-100">
+            <nav className="p-4 space-y-2">
+              {[
+                { id: 'price', label: 'Price Range'},
+                { id: 'rating', label: 'Rating' },
+                { id: 'categories', label: 'Categories'},
+                { id: 'discount', label: 'Discount' },
+                { id: 'availability', label: 'Availability' }
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveSection(item.id)}
+                  className={`w-full text-left p-4 rounded-2xl transition-all duration-300 ${
+                    activeSection === item.id 
+                      ? 'bg-white text-amber-700 shadow-lg font-semibold' 
+                      : 'text-gray-600 hover:text-amber-600 hover:bg-white/50'
+                  }`}
+                >
+                  {/* <span className="text-lg mr-3">{item.icon}</span> */}
+                  {item.label}
+                </button>
+              ))}
+            </nav>
+          </div>
+
+          {/* Content Area */}
+          <div className="flex-1 overflow-y-auto p-6">
+            {activeSection === 'price' && (
+              <div>
+                <h3 className="font-bold text-lg text-gray-900 mb-6">Price Range</h3>
+                <PriceRangeSlider 
+                  min={priceRange.min}
+                  max={priceRange.max}
+                  value={{ min: filters.minPrice, max: filters.maxPrice }}
+                  onChange={onPriceChange}
+                />
+              </div>
+            )}
+
+            {activeSection === 'rating' && (
+              <div>
+                <h3 className="font-bold text-lg text-gray-900 mb-6">Customer Rating</h3>
+                <div className="space-y-4">
+                  {[4, 3, 2, 1].map(rating => (
+                    <label key={rating} className="flex items-center cursor-pointer group">
+                      <input
+                        type="radio"
+                        name="rating"
+                        checked={filters.minRating === rating}
+                        onChange={() => onFilterChange('minRating', rating)}
+                        className="hidden"
+                      />
+                      <div className={`w-6 h-6 border-2 rounded-full mr-4 flex items-center justify-center transition-all duration-300 ${
+                        filters.minRating === rating ? 'border-amber-500 bg-amber-500 scale-110' : 'border-gray-300 group-hover:border-amber-400'
+                      }`}>
+                        {filters.minRating === rating && (
+                          <div className="w-2 h-2 bg-white rounded-full" />
+                        )}
+                      </div>
+                      <div className="flex items-center">
+                        {[1,2,3,4,5].map((star) => (
+                          <svg
+                            key={star}
+                            className={`w-5 h-5 ${star <= rating ? 'text-yellow-400' : 'text-gray-300'}`}
+                            fill="currentColor"
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M9.049 2.927C9.3 2.215 10.7 2.215 10.951 2.927l1.286 3.964a1 1 0 00.95.69h4.162c.969 0 1.371 1.24.588 1.81l-3.37 2.448a1 1 0 00-.364 1.118l1.286 3.963c.251.712-.587 1.3-1.18.866l-3.37-2.448a1 1 0 00-1.176 0l-3.37 2.448c-.593.434-1.431-.154-1.18-.866l1.286-3.963a1 1 0 00-.364-1.118L2.067 9.39c-.783-.57-.38-1.81.588-1.81h4.162a1 1 0 00.95-.69l1.286-3.964z" />
+                          </svg>
+                        ))}
+                        <span className="ml-3 text-gray-700 font-medium">& above</span>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'categories' && (
+              <div>
+                <h3 className="font-bold text-lg text-gray-900 mb-6">Categories</h3>
+                <div className="max-h-60 overflow-y-auto space-y-3 custom-scrollbar">
+                  {categories.map(category => (
+                    <label key={category.id} className="flex items-center cursor-pointer group p-3 rounded-2xl hover:bg-amber-50 transition-all duration-300">
+                      <input
+                        type="checkbox"
+                        checked={filters.categories.includes(category.id)}
+                        onChange={() => onCategoryToggle(category.id)}
+                        className="hidden"
+                      />
+                      <div className={`w-6 h-6 border-2 rounded-lg mr-4 flex items-center justify-center transition-all duration-300 ${
+                        filters.categories.includes(category.id) ? 'border-amber-500 bg-amber-500 scale-110' : 'border-gray-300 group-hover:border-amber-400'
+                      }`}>
+                        {filters.categories.includes(category.id) && (
+                          <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                      <span className="text-gray-700 font-medium flex-1">{category.title}</span>
+                      <span className="text-sm text-amber-600 bg-amber-100 px-3 py-1 rounded-full font-semibold">
+                        {category.count}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'discount' && (
+              <div>
+                <h3 className="font-bold text-lg text-gray-900 mb-6">Discount</h3>
+                <div className="space-y-4">
+                  <input
+                    type="range"
+                    min={discountRange.min}
+                    max={discountRange.max}
+                    value={filters.discountRange}
+                    onChange={(e) => onFilterChange('discountRange', parseInt(e.target.value))}
+                    className="w-full h-3 bg-gray-200 rounded-xl appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-r [&::-webkit-slider-thumb]:from-amber-500 [&::-webkit-slider-thumb]:to-orange-500 [&::-webkit-slider-thumb]:border-4 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-lg"
+                  />
+                  <div className="flex justify-between text-sm text-gray-600 font-medium">
+                    <span>Min: {filters.discountRange}%</span>
+                    <span>Max: {discountRange.max}%</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'availability' && (
+              <div>
+                <h3 className="font-bold text-lg text-gray-900 mb-6">Availability</h3>
+                <div className="space-y-4">
+                  {(['all', 'in-stock', 'low-stock'] as const).map(availability => (
+                    <label key={availability} className="flex items-center cursor-pointer group p-3 rounded-2xl hover:bg-amber-50 transition-all duration-300">
+                      <input
+                        type="radio"
+                        name="availability"
+                        checked={filters.availability === availability}
+                        onChange={() => onFilterChange('availability', availability)}
+                        className="hidden"
+                      />
+                      <div className={`w-6 h-6 border-2 rounded-full mr-4 flex items-center justify-center transition-all duration-300 ${
+                        filters.availability === availability ? 'border-amber-500 bg-amber-500 scale-110' : 'border-gray-300 group-hover:border-amber-400'
+                      }`}>
+                        {filters.availability === availability && (
+                          <div className="w-2 h-2 bg-white rounded-full" />
+                        )}
+                      </div>
+                      <span className="text-gray-700 font-medium capitalize">
+                        {availability === 'in-stock' ? 'In Stock' : availability === 'low-stock' ? 'Low Stock' : 'All Items'}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Apply Button */}
+        <div className="p-6 border-t border-amber-100">
+          <button
+            onClick={onClose}
+            className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-4 rounded-2xl font-semibold text-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl"
+          >
+            Apply Filters
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+MobileFilterModal.displayName = 'MobileFilterModal';
+
 // Main Component
 export default function ProductsPageContent() {
   const searchParams = useSearchParams();
@@ -620,6 +846,7 @@ export default function ProductsPageContent() {
   
   const [sortBy, setSortBy] = useState('default');
   const [showFilters, setShowFilters] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchQuery, setSearchQuery] = useState('');
@@ -654,7 +881,6 @@ export default function ProductsPageContent() {
         : [...prev, productId]
     );
 
-    // Fire-and-forget backend call
     addToWishlistApiWithNotify({ slug }).catch(() => {
       // Optional: revert state on failure
     });
@@ -704,7 +930,7 @@ export default function ProductsPageContent() {
     };
   }, []);
 
-  // Read URL parameters on component mount and when searchParams change
+  // Read URL parameters
   useEffect(() => {
     const searchFromUrl = searchParams?.get('search');
     const mainCategoryFromUrl = searchParams?.get('main-category');
@@ -713,7 +939,6 @@ export default function ProductsPageContent() {
     if (searchFromUrl) {
       setUrlSearchQuery(searchFromUrl);
       setSearchQuery(searchFromUrl);
-      // Hide recent products when searching
       setShowRecentProducts(false);
     }
     
@@ -732,18 +957,75 @@ export default function ProductsPageContent() {
     }
   }, [searchParams]);
 
-  // Update the searchQuery state when URL search changes
+  // Update searchQuery state when URL search changes
   useEffect(() => {
     if (urlSearchQuery && urlSearchQuery !== searchQuery) {
       setSearchQuery(urlSearchQuery);
     }
   }, [urlSearchQuery, searchQuery]);
 
-  // Handle search from products page
+  // Responsive check
+  useEffect(() => {
+    const checkIsMobile = () => {
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      if (!mobile) {
+        setShowMobileFilters(false);
+      }
+    };
+    
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
+
+  // Filter handlers
+  const handleFilterChange = useCallback((key: keyof Filters, value: any) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  }, []);
+
+  const handlePriceChange = useCallback((min: number, max: number) => {
+    setFilters(prev => ({ ...prev, minPrice: min, maxPrice: max }));
+  }, []);
+
+  const handleCategoryToggle = useCallback((categoryId: string) => {
+    setFilters(prev => ({
+      ...prev,
+      categories: prev.categories.includes(categoryId)
+        ? prev.categories.filter(c => c !== categoryId)
+        : [...prev.categories, categoryId]
+    }));
+  }, []);
+
+  const clearCategoryFilter = useCallback(() => {
+    setFilters(prev => ({
+      ...prev,
+      categories: []
+    }));
+    setActiveUrlCategory(null);
+  }, []);
+
+  const resetFilters = useCallback(() => {
+    setFilters({
+      minPrice: priceRange.min,
+      maxPrice: priceRange.max,
+      minRating: 0,
+      categories: [],
+      discountRange: 0,
+      availability: 'all'
+    });
+    setSearchQuery('');
+    setUrlSearchQuery(null);
+    setActiveUrlCategory(null);
+    setShowRecentProducts(true);
+    
+    const params = new URLSearchParams();
+    window.history.replaceState({}, '', `${window.location.pathname}`);
+  }, []);
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      // Update URL without page reload using shallow routing
       const params = new URLSearchParams();
       params.set('search', searchQuery.trim());
       window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
@@ -752,24 +1034,14 @@ export default function ProductsPageContent() {
     }
   };
 
-  // Clear search
   const clearSearch = () => {
     setSearchQuery('');
     setUrlSearchQuery(null);
-    // Remove search parameter from URL
     const params = new URLSearchParams(window.location.search);
     params.delete('search');
     window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
     setShowRecentProducts(true);
   };
-
-  // Responsive check
-  useEffect(() => {
-    const checkIsMobile = () => setIsMobile(window.innerWidth < 768);
-    checkIsMobile();
-    window.addEventListener('resize', checkIsMobile);
-    return () => window.removeEventListener('resize', checkIsMobile);
-  }, []);
 
   // Memoized calculations
   const priceRange = useMemo(() => ({
@@ -812,67 +1084,22 @@ export default function ProductsPageContent() {
     [recentProduct]
   );
 
-  // Optimized filter handlers
-  const handlePriceChange = useCallback((min: number, max: number) => {
-    setFilters(prev => ({ ...prev, minPrice: min, maxPrice: max }));
-  }, []);
-
-  const handleCategoryToggle = useCallback((categoryId: string) => {
-    setFilters(prev => ({
-      ...prev,
-      categories: prev.categories.includes(categoryId)
-        ? prev.categories.filter(c => c !== categoryId)
-        : [...prev.categories, categoryId]
-    }));
-  }, []);
-
-  const clearCategoryFilter = useCallback(() => {
-    setFilters(prev => ({
-      ...prev,
-      categories: []
-    }));
-    setActiveUrlCategory(null);
-  }, []);
-
-  const resetFilters = useCallback(() => {
-    setFilters({
-      minPrice: priceRange.min,
-      maxPrice: priceRange.max,
-      minRating: 0,
-      categories: [],
-      discountRange: 0,
-      availability: 'all'
-    });
-    setSearchQuery('');
-    setUrlSearchQuery(null);
-    setActiveUrlCategory(null);
-    setShowRecentProducts(true);
-    
-    // Clear URL parameters
-    const params = new URLSearchParams();
-    window.history.replaceState({}, '', `${window.location.pathname}`);
-  }, [priceRange]);
-
   // Optimized product filtering
   const filteredProducts = useMemo(() => {
     return products.filter(product => {
-      // Search filter - check both URL search and local search
       const currentSearch = urlSearchQuery || searchQuery;
       if (currentSearch && !product.title.toLowerCase().includes(currentSearch.toLowerCase())) {
         return false;
       }
       
-      // Price filter
       if (product.price < filters.minPrice || product.price > filters.maxPrice) {
         return false;
       }
       
-      // Rating filter
       if ((product.reviews_avg_rate || 0) < filters.minRating) {
         return false;
       }
       
-      // Category filter
       if (filters.categories.length > 0) {
         const matchesCategory = filters.categories.some(filterCat => {
           if (filterCat.startsWith('main_category:')) {
@@ -888,12 +1115,10 @@ export default function ProductsPageContent() {
         if (!matchesCategory) return false;
       }
       
-      // Discount filter
       if (product.discount < filters.discountRange) {
         return false;
       }
       
-      // Availability filter
       if (filters.availability === 'in-stock' && product.stock <= 0) {
         return false;
       }
@@ -1034,7 +1259,7 @@ export default function ProductsPageContent() {
             
             {/* Active Search Badge */}
             {urlSearchQuery && (
-              <div className="flex justify-center items-center gap-3">
+              <div className="flex flex-col sm:flex-row justify-center items-center gap-3">
                 <span className="bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-2xl text-lg font-semibold border border-white/30">
                   Search: "{urlSearchQuery}"
                 </span>
@@ -1052,7 +1277,7 @@ export default function ProductsPageContent() {
             
             {/* Active Category Badge */}
             {activeCategoryName && !urlSearchQuery && (
-              <div className="flex justify-center items-center gap-3">
+              <div className="flex flex-col sm:flex-row justify-center items-center gap-3">
                 <span className="bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-2xl text-lg font-semibold border border-white/30">
                   {activeCategoryName}
                 </span>
@@ -1075,7 +1300,7 @@ export default function ProductsPageContent() {
         {/* Recent Products Section with Toggle */}
         {recentProducts.length > 0 && !activeCategoryName && !urlSearchQuery && !searchQuery && (
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 mb-12 border border-amber-100/50">
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
               <div>
                 <h2 className="text-3xl font-bold text-gray-900 mb-2">Recently Added</h2>
                 <p className="text-gray-600 text-lg">Fresh additions to our spiritual collection</p>
@@ -1110,14 +1335,14 @@ export default function ProductsPageContent() {
         <div className="bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 mb-8 border border-amber-100/50">
           <div className="flex flex-col lg:flex-row gap-6 items-center">
             {/* Search Bar */}
-            <div className="flex-1 relative">
+            <div className="flex-1 w-full">
               <form onSubmit={handleSearchSubmit} className="relative">
                 <input
                   type="text"
                   placeholder="Search for Rudraksha beads, malas, spiritual items..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-14 pr-6 py-4 border-2 border-amber-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 bg-white text-gray-900 placeholder-amber-400 text-lg font-medium transition-all duration-300"
+                  className="w-full pl-14 pr-32 py-4 border-2 border-amber-200 rounded-2xl focus:outline-none focus:ring-4 focus:ring-amber-500/20 focus:border-amber-500 bg-white text-gray-900 placeholder-amber-400 text-lg font-medium transition-all duration-300"
                 />
                 <svg className="w-6 h-6 absolute left-5 top-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -1126,7 +1351,7 @@ export default function ProductsPageContent() {
                   <button
                     type="button"
                     onClick={clearSearch}
-                    className="absolute right-16 top-4 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute right-28 top-4 text-gray-400 hover:text-gray-600 transition-colors"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1143,11 +1368,11 @@ export default function ProductsPageContent() {
             </div>
             
             {/* Controls */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 w-full lg:w-auto">
               {/* Filters Button */}
               <button 
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-4 rounded-2xl hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl font-semibold"
+                onClick={() => isMobile ? setShowMobileFilters(true) : setShowFilters(!showFilters)}
+                className="flex-1 lg:flex-none flex items-center justify-center gap-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 py-4 rounded-2xl hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl font-semibold"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
@@ -1183,8 +1408,8 @@ export default function ProductsPageContent() {
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Filters Sidebar */}
-          {(showFilters || !isMobile) && (
+          {/* Desktop Filters Sidebar */}
+          {!isMobile && showFilters && (
             <aside className="w-full lg:w-96 bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl p-8 h-fit sticky top-8 border border-amber-100/50">
               <div className="flex justify-between items-center mb-8">
                 <h2 className="text-2xl font-bold text-gray-900">Filters</h2>
@@ -1197,26 +1422,13 @@ export default function ProductsPageContent() {
                       Clear All
                     </button>
                   )}
-                  {isMobile && (
-                    <button 
-                      onClick={() => setShowFilters(false)}
-                      className="text-gray-500 hover:text-gray-700 p-2 rounded-lg bg-gray-100"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  )}
                 </div>
               </div>
               
               <div className="space-y-8">
                 {/* Price Range Filter */}
                 <div>
-                  <h3 className="font-bold text-lg text-gray-900 mb-6 flex items-center gap-2">
-                    <span className="text-amber-500">💰</span>
-                    Price Range
-                  </h3>
+                  <h3 className="font-bold text-lg text-gray-900 mb-6">Price Range</h3>
                   <PriceRangeSlider 
                     min={priceRange.min}
                     max={priceRange.max}
@@ -1227,10 +1439,7 @@ export default function ProductsPageContent() {
 
                 {/* Rating Filter */}
                 <div>
-                  <h3 className="font-bold text-lg text-gray-900 mb-6 flex items-center gap-2">
-                    <span className="text-amber-500">⭐</span>
-                    Customer Rating
-                  </h3>
+                  <h3 className="font-bold text-lg text-gray-900 mb-6">Customer Rating</h3>
                   <div className="space-y-4">
                     {[4, 3, 2, 1].map(rating => (
                       <label key={rating} className="flex items-center cursor-pointer group">
@@ -1238,7 +1447,7 @@ export default function ProductsPageContent() {
                           type="radio"
                           name="rating"
                           checked={filters.minRating === rating}
-                          onChange={() => setFilters(prev => ({ ...prev, minRating: rating }))}
+                          onChange={() => handleFilterChange('minRating', rating)}
                           className="hidden"
                         />
                         <div className={`w-6 h-6 border-2 rounded-full mr-4 flex items-center justify-center transition-all duration-300 ${
@@ -1268,10 +1477,7 @@ export default function ProductsPageContent() {
 
                 {/* Categories Filter */}
                 <div>
-                  <h3 className="font-bold text-lg text-gray-900 mb-6 flex items-center gap-2">
-                    <span className="text-amber-500">📂</span>
-                    Categories
-                  </h3>
+                  <h3 className="font-bold text-lg text-gray-900 mb-6">Categories</h3>
                   <div className="max-h-80 overflow-y-auto space-y-3 custom-scrollbar">
                     {categories.map(category => (
                       <label key={category.id} className="flex items-center cursor-pointer group p-3 rounded-2xl hover:bg-amber-50 transition-all duration-300">
@@ -1301,17 +1507,14 @@ export default function ProductsPageContent() {
 
                 {/* Discount Filter */}
                 <div>
-                  <h3 className="font-bold text-lg text-gray-900 mb-6 flex items-center gap-2">
-                    <span className="text-amber-500">🎯</span>
-                    Discount
-                  </h3>
+                  <h3 className="font-bold text-lg text-gray-900 mb-6">Discount</h3>
                   <div className="space-y-4">
                     <input
                       type="range"
                       min={discountRange.min}
                       max={discountRange.max}
                       value={filters.discountRange}
-                      onChange={(e) => setFilters(prev => ({ ...prev, discountRange: parseInt(e.target.value) }))}
+                      onChange={(e) => handleFilterChange('discountRange', parseInt(e.target.value))}
                       className="w-full h-3 bg-gray-200 rounded-xl appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-gradient-to-r [&::-webkit-slider-thumb]:from-amber-500 [&::-webkit-slider-thumb]:to-orange-500 [&::-webkit-slider-thumb]:border-4 [&::-webkit-slider-thumb]:border-white [&::-webkit-slider-thumb]:shadow-lg"
                     />
                     <div className="flex justify-between text-sm text-gray-600 font-medium">
@@ -1323,10 +1526,7 @@ export default function ProductsPageContent() {
 
                 {/* Availability Filter */}
                 <div>
-                  <h3 className="font-bold text-lg text-gray-900 mb-6 flex items-center gap-2">
-                    <span className="text-amber-500">📦</span>
-                    Availability
-                  </h3>
+                  <h3 className="font-bold text-lg text-gray-900 mb-6">Availability</h3>
                   <div className="space-y-4">
                     {(['all', 'in-stock', 'low-stock'] as const).map(availability => (
                       <label key={availability} className="flex items-center cursor-pointer group p-3 rounded-2xl hover:bg-amber-50 transition-all duration-300">
@@ -1334,7 +1534,7 @@ export default function ProductsPageContent() {
                           type="radio"
                           name="availability"
                           checked={filters.availability === availability}
-                          onChange={() => setFilters(prev => ({ ...prev, availability }))}
+                          onChange={() => handleFilterChange('availability', availability)}
                           className="hidden"
                         />
                         <div className={`w-6 h-6 border-2 rounded-full mr-4 flex items-center justify-center transition-all duration-300 ${
@@ -1354,6 +1554,20 @@ export default function ProductsPageContent() {
               </div>
             </aside>
           )}
+
+          {/* Mobile Filter Modal */}
+          <MobileFilterModal
+            isOpen={showMobileFilters}
+            onClose={() => setShowMobileFilters(false)}
+            filters={filters}
+            priceRange={priceRange}
+            categories={categories}
+            discountRange={discountRange}
+            onFilterChange={handleFilterChange}
+            onPriceChange={handlePriceChange}
+            onCategoryToggle={handleCategoryToggle}
+            onResetFilters={resetFilters}
+          />
 
           {/* Main Content */}
           <div className="flex-1">
@@ -1401,7 +1615,7 @@ export default function ProductsPageContent() {
             {!loading && (
               <div className={`gap-6 ${
                 viewMode === 'grid' 
-                  ? 'grid grid-cols-2 md:grid-cols-2 xl:grid-cols-3'
+                  ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'
                   : 'flex flex-col space-y-6'
               }`}>
                 {sortedProducts.map(product => (
@@ -1473,6 +1687,19 @@ export default function ProductsPageContent() {
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: linear-gradient(to bottom, #d97706, #ea580c);
+        }
+        @keyframes slide-up {
+          from {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-up {
+          animation: slide-up 0.3s ease-out;
         }
       `}</style>
     </div>

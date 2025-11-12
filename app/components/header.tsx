@@ -356,12 +356,12 @@ export default function Header() {
                     <div className="container mx-auto px-4 h-12 flex items-center justify-center">
                         <div className="flex items-center space-x-3 text-sm font-medium flex-wrap justify-center">
                             <span className="flex items-center space-x-1 whitespace-nowrap">
-                                <span className="text-amber-200">🚚</span>
-                                <span>Free shipping on orders over ₹500</span>
+                                {/* <span className="text-amber-200">🚚</span> */}
+                                <span>Free shipping on all orders</span>
                             </span>
                             <span className="hidden sm:inline">•</span>
                             <span className="hidden sm:flex items-center space-x-1 whitespace-nowrap">
-                                <span className="text-amber-200">⭐</span>
+                                {/* <span className="text-amber-200">⭐</span> */}
                                 <span>Authentic Rudraksha Guaranteed</span>
                             </span>
                         </div>

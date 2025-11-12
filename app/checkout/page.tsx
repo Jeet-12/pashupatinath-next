@@ -138,6 +138,7 @@ const CheckoutPage = () => {
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [showAddressList, setShowAddressList] = useState(false);
+  const [countdown, setCountdown] = useState(20);
   const [address, setAddress] = useState<AddressFormData>({
     first_name: '',
     last_name: '',
@@ -158,7 +159,6 @@ const CheckoutPage = () => {
   const [orderId, setOrderId] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
-  const [countdown, setCountdown] = useState(15);
   
   // Coupon states
   const [couponCode, setCouponCode] = useState('');
@@ -264,22 +264,26 @@ const CheckoutPage = () => {
     });
   }, [appliedCoupon, couponCode, couponDiscount, subtotal, availableCoupons]);
 
-  useEffect(() => {
-    if (orderSuccess) {
-      const timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            router.push('/');
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+ useEffect(() => {
+  if (orderSuccess) {
+    // Set countdown to 20 seconds
+    setCountdown(20);
+    
+    const timer = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          // Redirect to orders page instead of home
+          router.push('/dashboard/user/orders');
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
-      return () => clearInterval(timer);
-    }
-  }, [orderSuccess, router]);
+    return () => clearInterval(timer);
+  }
+}, [orderSuccess, router]);
   
   // Check screen size and load Razorpay
   useEffect(() => {
@@ -1900,11 +1904,11 @@ const CheckoutPage = () => {
                   </div>
                 )}
 
-                {subtotal < 2000 && (
+                {/* {subtotal < 2000 && (
                   <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
                     Add ₹{(2000 - subtotal).toLocaleString()} more for FREE shipping!
                   </div>
-                )}
+                )} */}
               </div>
 
               {/* Total */}

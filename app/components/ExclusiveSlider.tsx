@@ -299,111 +299,111 @@ export default function ElegantCategorySlider({ products }: ElegantCategorySlide
             </button>
             
             {/* Slider with curved design */}
-            <div className="relative overflow-hidden">
-              <div 
-                ref={sliderRef}
-                className="transition-transform duration-700 ease-in-out py-8"
-                style={{ transform: getTransformValue() }}
-              >
-                <div className={`grid gap-6 mx-4`} style={{ 
-                  gridTemplateColumns: `repeat(${extendedCategories.length}, minmax(0, 1fr))`,
-                  width: `${extendedCategories.length * (100 / itemsToShow)}%`
-                }}>
-                  {extendedCategories.map((category, index) => (
-                    <Link
-                      key={`${category.id}-${index}`}
-                      href={category.url}
-                      className="relative group cursor-pointer block"
-                    >
-                      {/* Card with curved design */}
-                      <div className="bg-gradient-to-b from-white to-amber-50 rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 border border-amber-100 h-full flex flex-col">
-                        {/* Image container with curved bottom */}
-                        <div className="relative h-44 overflow-hidden">
-                          <div className="absolute inset-0 bg-gradient-to-tr from-amber-400/5 to-amber-600/5 z-10"></div>
-                          <Image
-                            src={category.image}
-                            alt={category.name}
-                            fill
-                            className="object-contain scale-90 group-hover:scale-95 transition-transform duration-700"
-                            sizes="(max-width: 768px) 50vw, 25vw"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              target.src = '/placeholder-image.jpg';
-                              target.onerror = null;
-                            }}
-                          />
-                          
-                          {/* Discount badge */}
-                          {category.discountPercentage > 0 && (
-                            <div className="absolute top-4 left-4 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-semibold py-1 px-2 rounded-full shadow-md">
-                              {category.discountPercentage}% OFF
-                            </div>
-                          )}
-                          
-                          {/* Wishlist button */}
-                          <button
-                            onClick={(e) => toggleWishlist(category.id, e)}
-                            className={`absolute top-4 right-4 p-2 rounded-full shadow-md transition-all duration-300 ${
-                              category.isInWishlist 
-                                ? 'bg-red-500 text-white' 
-                                : 'bg-white/90 text-gray-600 hover:bg-white'
-                            }`}
-                            aria-label={category.isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
-                          >
-                            <svg 
-                              className={`w-4 h-4 ${category.isInWishlist ? 'fill-current' : ''}`} 
-                              viewBox="0 0 24 24" 
-                              stroke="currentColor" 
-                              strokeWidth={category.isInWishlist ? 0 : 2}
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                            </svg>
-                          </button>
-                          
-                          {/* Curved bottom for image section */}
-                          <div className="absolute -bottom-4 left-0 w-full h-8 bg-white rounded-t-3xl"></div>
-                        </div>
-                        
-                        {/* Content section */}
-                        <div className="p-5 pt-6 flex flex-col flex-grow relative">
-                          {/* Decorative curve separator */}
-                          <div className="absolute -top-4 left-0 w-full flex justify-center">
-                            <div className="w-16 h-4 bg-amber-100 rounded-b-full"></div>
-                          </div>
-                          
-                          <h3 className="font-semibold text-amber-900 text-center mb-2">{category.name}</h3>
-                          
-                          {/* Price section */}
-                          <div className="flex flex-col items-center gap-1 mb-3">
-                            <div className="flex items-center gap-2">
-                              <span className="text-lg font-bold text-amber-800">
-                                {formatPrice(category.price)}
-                              </span>
-                              {category.discountPercentage > 0 && category.originalPrice > 0 && (
-                                <span className="text-sm text-gray-500 line-through">
-                                  {formatPrice(category.originalPrice)}
-                                </span>
-                              )}
-                            </div>
-                            {category.discountPercentage > 0 && (
-                              <span className="text-xs text-green-600 font-semibold bg-green-50 px-2 py-1 rounded">
-                                You save {formatPrice(category.originalPrice - category.price)}
-                              </span>
-                            )}
-                          </div>
-                          
-                          <div className="mt-auto text-center">
-                            <button className="text-xs font-medium py-2 px-5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-full transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
-                              Explore
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
+        <div className="relative overflow-hidden">
+  <div 
+    ref={sliderRef}
+    className="transition-transform duration-700 ease-in-out py-8"
+    style={{ transform: getTransformValue() }}
+  >
+    <div className={`grid gap-6 mx-4`} style={{ 
+      gridTemplateColumns: `repeat(${extendedCategories.length}, minmax(0, 1fr))`,
+      width: `${extendedCategories.length * (100 / itemsToShow)}%`
+    }}>
+      {extendedCategories.map((category, index) => (
+        <Link
+          key={`${category.id}-${index}`}
+          href={category.url}
+          className="relative group cursor-pointer block"
+        >
+          {/* Card with curved design */}
+          <div className="bg-gradient-to-b from-white to-amber-50 rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-500 border border-amber-100 h-full flex flex-col">
+            {/* Image container with curved bottom */}
+            <div className="relative h-44 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-tr from-amber-400/5 to-amber-600/5 z-10"></div>
+              <Image
+                src={category.image}
+                alt={category.name}
+                fill
+                className="object-contain scale-90 group-hover:scale-95 transition-transform duration-700"
+                sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, 25vw"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = '/placeholder-image.jpg';
+                  target.onerror = null;
+                }}
+              />
+              
+              {/* Discount badge */}
+              {category.discountPercentage > 0 && (
+                <div className="absolute top-4 left-4 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-semibold py-1 px-2 rounded-full shadow-md">
+                  {category.discountPercentage}% OFF
                 </div>
+              )}
+              
+              {/* Wishlist button */}
+              <button
+                onClick={(e) => toggleWishlist(category.id, e)}
+                className={`absolute top-4 right-4 p-2 rounded-full shadow-md transition-all duration-300 ${
+                  category.isInWishlist 
+                    ? 'bg-red-500 text-white' 
+                    : 'bg-white/90 text-gray-600 hover:bg-white'
+                }`}
+                aria-label={category.isInWishlist ? "Remove from wishlist" : "Add to wishlist"}
+              >
+                <svg 
+                  className={`w-4 h-4 ${category.isInWishlist ? 'fill-current' : ''}`} 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor" 
+                  strokeWidth={category.isInWishlist ? 0 : 2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+              </button>
+              
+              {/* Curved bottom for image section */}
+              <div className="absolute -bottom-4 left-0 w-full h-8 bg-white rounded-t-3xl"></div>
+            </div>
+            
+            {/* Content section */}
+            <div className="p-5 pt-6 flex flex-col flex-grow relative">
+              {/* Decorative curve separator */}
+              <div className="absolute -top-4 left-0 w-full flex justify-center">
+                <div className="w-16 h-4 bg-amber-100 rounded-b-full"></div>
+              </div>
+              
+              <h3 className="font-semibold text-amber-900 text-center mb-2">{category.name}</h3>
+              
+              {/* Price section */}
+              <div className="flex flex-col items-center gap-1 mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-bold text-amber-800">
+                    {formatPrice(category.price)}
+                  </span>
+                  {category.discountPercentage > 0 && category.originalPrice > 0 && (
+                    <span className="text-sm text-gray-500 line-through">
+                      {formatPrice(category.originalPrice)}
+                    </span>
+                  )}
+                </div>
+                {category.discountPercentage > 0 && (
+                  <span className="text-xs text-green-600 font-semibold bg-green-50 px-2 py-1 rounded">
+                    You save {formatPrice(category.originalPrice - category.price)}
+                  </span>
+                )}
+              </div>
+              
+              <div className="mt-auto text-center">
+                <button className="text-xs font-medium py-2 px-5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-full transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+                  Explore
+                </button>
               </div>
             </div>
+          </div>
+        </Link>
+      ))}
+    </div>
+  </div>
+</div>
           </div>
           
           {/* Dots indicator with curved design */}

@@ -475,11 +475,11 @@ export default function CartDrawer() {
               </div>
 
               {/* Additional Info */}
-              <div className="mt-4 text-center">
+              {/* <div className="mt-4 text-center">
                 <p className="text-xs text-gray-500">
                   Free shipping on orders over ₹999
                 </p>
-              </div>
+              </div> */}
             </div>
           )}
         </div>

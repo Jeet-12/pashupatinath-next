@@ -51,7 +51,7 @@ export default function SacredCollections() {
             Discover Our Sacred Collections
           </h1>
           <p className="text-xl text-gray-700 mb-10">
-            Explore our handcrafted Rudraksha beads and spiritual bracelets, carefully selected for their purity and energy.
+            Explore our handpicked Rudraksha beads and spiritual bracelets, carefully selected for their purity and energy.
           </p>
           <button className="bg-[#f5821f] hover:bg-[#e07a1d] text-white font-semibold py-3 px-8 rounded-full transition-colors duration-300 shadow-lg">
             Shop Collection

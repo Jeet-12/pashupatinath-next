@@ -444,13 +444,13 @@ const TrustBadges = () => {
     {
       icon: '🚚',
       title: 'Free Shipping',
-      description: 'Above ₹2000 Orders'
+      description: 'All Orders'
     },
-    {
-      icon: '↩️',
-      title: 'Easy Returns',
-      description: '7-Day Return Policy'
-    },
+    // {
+    //   icon: '↩️',
+    //   title: 'Easy Returns',
+    //   description: 'No Return Policy'
+    // },
     {
       icon: '🙏',
       title: 'Blessed & Energized',
@@ -1087,7 +1087,7 @@ export default function ProductDetailsPage() {
             </div>
 
             {/* Enhanced Pricing */}
-            <div className="mb-4 lg:mb-8">
+            {/* <div className="mb-4 lg:mb-8">
               <div className="flex items-center space-x-3 lg:space-x-6 mb-3 lg:mb-4">
                 <span className="text-2xl lg:text-5xl xl:text-6xl font-black bg-gradient-to-r from-[#f5821f] to-orange-600 bg-clip-text text-transparent">
                   ₹{currentPrice.toLocaleString()}
@@ -1106,10 +1106,10 @@ export default function ProductDetailsPage() {
                   💰 Save ₹{discountAmount.toLocaleString()} ({product.discount}% OFF)
                 </motion.div>
               )}
-            </div>
+            </div> */}
 
             {/* Enhanced Stock Status */}
-            <motion.div 
+            {/* <motion.div 
               className={`inline-flex items-center px-4 lg:px-8 py-2 lg:py-4 rounded-xl lg:rounded-2xl text-sm lg:text-lg font-black mb-4 lg:mb-8 shadow-xl lg:shadow-2xl border-2 ${
                 product.stock > 10 ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white border-green-400' : 
                 product.stock > 0 ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-amber-400' : 
@@ -1122,11 +1122,11 @@ export default function ProductDetailsPage() {
               {product.stock > 10 ? '✅ In Stock - Ready to Ship' : 
                product.stock > 0 ? `⚠️ Only ${product.stock} Left - Order Soon` : 
                '❌ Out of Stock'}
-            </motion.div>
+            </motion.div> */}
 
             {/* Enhanced Description */}
             <motion.div 
-              className="text-gray-700 mb-4 lg:mb-8 leading-relaxed text-sm lg:text-lg bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl lg:rounded-3xl p-3 lg:p-6 border-2 border-amber-200/50 shadow-lg max-h-32 lg:max-h-48 overflow-y-auto"
+              className="text-gray-700 mb-4 lg:mb-8 leading-relaxed text-sm lg:text-lg bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl lg:rounded-3xl p-3 lg:p-6 border-2 border-amber-200/50 shadow-lg  "
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1.4 }}
@@ -1202,7 +1202,7 @@ export default function ProductDetailsPage() {
                 className={`flex-1 font-black py-3 lg:py-6 rounded-xl lg:rounded-3xl transition-all duration-500 flex items-center justify-center text-base lg:text-xl ${
                   product.stock === 0 
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                    : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-xl lg:shadow-3xl hover:shadow-2xl lg:hover:shadow-4xl transform hover:-translate-y-1 lg:hover:-translate-y-2'
+                    : 'bg-[#493723] hover:bg-[#3a2c1c] text-white shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95'
                 }`}
                 whileHover={product.stock === 0 ? {} : { scale: 1.02 }}
                 whileTap={product.stock === 0 ? {} : { scale: 0.98 }}
@@ -1242,10 +1242,10 @@ export default function ProductDetailsPage() {
                   whileTap={{ scale: 0.98 }}
                 >
                   <div className="flex items-center space-x-2 lg:space-x-3">
-                    {tab === 'description' && <span className="text-sm lg:text-base">📖</span>}
-                    {tab === 'reviews' && <span className="text-sm lg:text-base">⭐</span>}
-                    {tab === 'shipping' && <span className="text-sm lg:text-base">🚚</span>}
-                    {tab === 'benefits' && <span className="text-sm lg:text-base">✨</span>}
+                    {tab === 'description' }
+                    {tab === 'reviews'}
+                    {tab === 'shipping'}
+                    {tab === 'benefits'}
                     <span className="whitespace-nowrap">{tab.charAt(0).toUpperCase() + tab.slice(1)}</span>
                     {tab === 'reviews' && (
                       <span className="bg-amber-500 text-white text-xs lg:text-sm px-2 lg:px-3 py-1 rounded-full">
@@ -1543,8 +1543,8 @@ const EnhancedReviewsSection = ({
                     by {review.user_info?.name || 'Anonymous'}
                   </span>
                   {review.user_info?.email && (
-                    <span className="bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs lg:text-base px-2 lg:px-4 py-1 lg:py-2 rounded-xl lg:rounded-2xl font-black max-w-max">
-                      ✅ Verified Purchase
+                    <span className="bg-[#493723] from-green-500 to-emerald-600 text-white text-xs lg:text-base px-2 lg:px-4 py-1 lg:py-2 rounded-xl lg:rounded-2xl font-black max-w-max">
+                       Verified Purchase
                     </span>
                   )}
                 </div>
@@ -1594,56 +1594,56 @@ const EnhancedReviewsSection = ({
 const EnhancedShippingInfo = () => {
   return (
     <div className="space-y-6 lg:space-y-10">
-      <div>
-        <h4 className="text-lg lg:text-3xl font-black text-amber-800 mb-4 lg:mb-8">🚚 Shipping Information</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-8">
-          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl lg:rounded-3xl p-4 lg:p-8 border-2 border-amber-200 shadow-lg lg:shadow-2xl">
-            <h5 className="font-black text-amber-900 text-lg lg:text-2xl mb-2 lg:mb-4">Standard Shipping</h5>
-            <p className="text-gray-700 text-sm lg:text-lg mb-2 lg:mb-3 flex items-center space-x-2 lg:space-x-3">
-              <span className="text-sm lg:text-base">⏱️</span>
-              <span>4-7 business days</span>
-            </p>
-            <p className="text-gray-700 text-sm lg:text-lg flex items-center space-x-2 lg:space-x-3">
-              <span className="text-sm lg:text-base">🎁</span>
-              <span>Free shipping on orders above ₹500</span>
-            </p>
-          </div>
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl lg:rounded-3xl p-4 lg:p-8 border-2 border-green-200 shadow-lg lg:shadow-2xl">
-            <h5 className="font-black text-green-900 text-lg lg:text-2xl mb-2 lg:mb-4">Express Shipping</h5>
-            <p className="text-gray-700 text-sm lg:text-lg mb-2 lg:mb-3 flex items-center space-x-2 lg:space-x-3">
-              <span className="text-sm lg:text-base">⚡</span>
-              <span>2-3 business days</span>
-            </p>
-            <p className="text-gray-700 text-sm lg:text-lg flex items-center space-x-2 lg:space-x-3">
-              <span className="text-sm lg:text-base">💰</span>
-              <span>Additional charges apply</span>
-            </p>
-          </div>
-        </div>
+  <div>
+    <h4 className="text-lg lg:text-3xl font-black text-amber-800 mb-4 lg:mb-8">🚚 Shipping Information</h4>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-8">
+      <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl lg:rounded-3xl p-4 lg:p-8 border-2 border-amber-200 shadow-lg lg:shadow-2xl">
+        <h5 className="font-black text-amber-900 text-lg lg:text-2xl mb-2 lg:mb-4">Standard Shipping</h5>
+        <p className="text-gray-700 text-sm lg:text-lg mb-2 lg:mb-3 flex items-center space-x-2 lg:space-x-3">
+          <span className="text-sm lg:text-base">⏱️</span>
+          <span>4-7 business days</span>
+        </p>
+        <p className="text-gray-700 text-sm lg:text-lg flex items-center space-x-2 lg:space-x-3">
+          <span className="text-sm lg:text-base">🎁</span>
+          <span className="font-semibold text-green-600">Free shipping on all orders</span>
+        </p>
       </div>
-
-      <div>
-        <h4 className="text-lg lg:text-3xl font-black text-amber-800 mb-4 lg:mb-8">↩️ Return & Exchange Policy</h4>
-        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl lg:rounded-3xl p-4 lg:p-8 border-2 border-blue-200 shadow-lg lg:shadow-2xl">
-          <p className="text-gray-700 text-sm lg:text-xl mb-4 lg:mb-6 leading-relaxed">
-            We offer a <strong className="text-blue-600">7-day return policy</strong> for all our sacred rudraksha products. Your satisfaction is our priority.
-          </p>
-          <ul className="text-gray-700 space-y-2 lg:space-y-4 text-sm lg:text-lg">
-            {[
-              "Items must be returned in original condition with packaging",
-              "Return shipping costs are the responsibility of the customer",
-              "Refunds are processed within 3-5 business days",
-              "Certified and blessed products ensure authenticity"
-            ].map((item, index) => (
-              <li key={index} className="flex items-center space-x-2 lg:space-x-4">
-                <div className="w-2 h-2 lg:w-3 lg:h-3 bg-blue-500 rounded-full flex-shrink-0"></div>
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
+      <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl lg:rounded-3xl p-4 lg:p-8 border-2 border-green-200 shadow-lg lg:shadow-2xl">
+        <h5 className="font-black text-green-900 text-lg lg:text-2xl mb-2 lg:mb-4">Express Shipping</h5>
+        <p className="text-gray-700 text-sm lg:text-lg mb-2 lg:mb-3 flex items-center space-x-2 lg:space-x-3">
+          <span className="text-sm lg:text-base">⚡</span>
+          <span>2-3 business days</span>
+        </p>
+        <p className="text-gray-700 text-sm lg:text-lg flex items-center space-x-2 lg:space-x-3">
+          <span className="text-sm lg:text-base">📞</span>
+          <span className="font-semibold text-blue-600">Contact us for express shipping rates</span>
+        </p>
       </div>
     </div>
+  </div>
+
+  {/* <div>
+    <h4 className="text-lg lg:text-3xl font-black text-amber-800 mb-4 lg:mb-8">↩️ Return & Exchange Policy</h4>
+    <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl lg:rounded-3xl p-4 lg:p-8 border-2 border-blue-200 shadow-lg lg:shadow-2xl">
+      <p className="text-gray-700 text-sm lg:text-xl mb-4 lg:mb-6 leading-relaxed">
+        We offer a <strong className="text-blue-600">7-day return policy</strong> for all our sacred rudraksha products. Your satisfaction is our priority.
+      </p>
+      <ul className="text-gray-700 space-y-2 lg:space-y-4 text-sm lg:text-lg">
+        {[
+          "Items must be returned in original condition with packaging",
+          "Return shipping costs are the responsibility of the customer",
+          "Refunds are processed within 3-5 business days",
+          "Certified and blessed products ensure authenticity"
+        ].map((item, index) => (
+          <li key={index} className="flex items-center space-x-2 lg:space-x-4">
+            <div className="w-2 h-2 lg:w-3 lg:h-3 bg-blue-500 rounded-full flex-shrink-0"></div>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div> */}
+</div>
   );
 };
 
@@ -1757,7 +1757,7 @@ const EnhancedRelatedProducts = ({ relatedProducts, getImageUrl }: any) => {
                     </span>
                   )}
                   {relatedProduct.is_featured && (
-                    <span className="absolute top-2 lg:top-4 right-2 lg:right-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs lg:text-sm font-black py-1 lg:py-2 px-2 lg:px-4 rounded-lg lg:rounded-2xl shadow-lg lg:shadow-2xl border-2 border-white/20">
+                    <span className="absolute top-2 lg:top-4 right-2 lg:right-4 bg-[#493723] from-green-500 to-emerald-600 text-white text-xs lg:text-sm font-black py-1 lg:py-2 px-2 lg:px-4 rounded-lg lg:rounded-2xl shadow-lg lg:shadow-2xl border-2 border-white/20">
                       ✨ FEATURED
                     </span>
                   )}
