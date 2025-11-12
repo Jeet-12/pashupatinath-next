@@ -519,6 +519,81 @@ export const initiateGoogleLogin = async (redirectTo?: string): Promise<ApiRespo
   }
   return await apiCall(`/auth/google/redirect?${params.toString()}`, 'GET');
 };
+// Add to your existing API functions in libs/api.ts
+
+export interface ProductTrackOrderResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    order: Order;
+    tracking_data?: {
+      status: boolean;
+      data?: any;
+      message?: string;
+    };
+  };
+}
+
+/**
+ * Track order by order number (product track order)
+ */
+export const productTrackOrder = async (orderNumber: string): Promise<ProductTrackOrderResponse> => {
+  try {
+    const sessionToken = getSessionPayloadToken();
+    
+    if (!sessionToken) {
+      return {
+        success: false,
+        message: 'Authentication required. Please log in.',
+      };
+    }
+
+    const response = await fetch(`${API_BASE_URL}/orders/track/${orderNumber}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${sessionToken}`,
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        clearAuthToken();
+        clearSessionToken();
+        clearUser();
+        window.dispatchEvent(new CustomEvent('authInvalid'));
+        
+        return {
+          success: false,
+          message: 'Authentication failed. Please log in again.',
+        };
+      }
+      
+      if (response.status === 404) {
+        return {
+          success: false,
+          message: result.message || 'Order not found. Please check your order number.',
+        };
+      }
+      
+      return {
+        success: false,
+        message: result.message || 'Failed to track order',
+      };
+    }
+
+    return result;
+  } catch (error) {
+    console.error('Error tracking order:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to track order',
+    };
+  }
+};
 
 export const handleGoogleCallback = async (code: string, state?: string): Promise<AuthResponse> => {
   const payload: any = { code };
@@ -1389,6 +1464,8 @@ export interface Order {
   products_details: OrderItem[];
   created_at: string;
   updated_at: string;
+  first_name: string;
+  last_name: string;
   payment?: {
     transaction_id: string;
     status: string;
