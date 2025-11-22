@@ -1,5 +1,6 @@
 "use client";
 
+import Image from 'next/image';
 import React, { useState, useEffect } from 'react';
 import { 
   getUserReviews, 
@@ -27,7 +28,7 @@ export default function UserReviewsPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [editReview, setEditReview] = useState<Review | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(true);  
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState<boolean>(false);
 
@@ -74,7 +75,7 @@ export default function UserReviewsPage() {
 
   useEffect(() => {
     fetchReviews();
-  }, [currentPage]);
+  }, [currentPage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Filter and sort reviews
   useEffect(() => {
@@ -197,10 +198,10 @@ export default function UserReviewsPage() {
           closeModals();
           fetchReviews(); // Refresh statistics
         } else {
-          // alert(response.message || 'Failed to delete review');
+          alert(response.message || 'Failed to delete review');
         }
       } catch (err: any) {
-        // alert(err.message || 'Failed to delete review');
+        alert(err.message || 'Failed to delete review');
       }
     }
   };
@@ -218,10 +219,10 @@ export default function UserReviewsPage() {
         closeModals();
         fetchReviews(); // Re-fetch to ensure statistics are fresh
       } else {
-        // alert(response.message || 'Failed to update review');
+        alert(response.message || 'Failed to update review');
       }
     } catch (err: any) {
-      // alert(err.message || 'Failed to update review');
+      alert(err.message || 'Failed to update review');
     } finally {
       setSubmitting(false);
     }
@@ -237,10 +238,10 @@ export default function UserReviewsPage() {
         closeModals();
         fetchReviews(); // Refresh statistics
       } else {
-        // alert(response.message || 'Failed to create review');
+        alert(response.message || 'Failed to create review');
       }
     } catch (err: any) {
-      // alert(err.message || 'Failed to create review');
+      alert(err.message || 'Failed to create review');
     } finally {
       setSubmitting(false);
     }
@@ -278,10 +279,10 @@ export default function UserReviewsPage() {
             } : null);
         }
       } else {
-        // alert(response.message || 'Failed to delete image');
+        alert(response.message || 'Failed to delete image');
       }
     } catch (err: any) {
-      // alert(err.message || 'Failed to delete image');
+      alert(err.message || 'Failed to delete image');
     }
   };
 
@@ -490,11 +491,13 @@ export default function UserReviewsPage() {
               {review.images && review.images.length > 0 && (
                 <div className="flex space-x-2 mb-4">
                   {review.images.map((image, index) => (
-                    <div key={index} className="relative w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
-                      <img 
+                    <div key={index} className="relative w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">  
+                      <Image
                         src={image} 
                         alt={`Review image ${index + 1}`}
-                        className="w-16 h-16 object-cover"
+                        width={64}
+                        height={64}
+                        className="object-cover"
                       />
                     </div>
                   ))}
@@ -709,11 +712,13 @@ function ReviewDetailsModal({
           {/* Product Info */}
           <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
             <div className="w-16 h-16 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
-              {review.product.image ? (
-                <img 
+              {review.product.image ? (  
+                <Image
                   src={review.product.image} 
                   alt={review.product.name}
-                  className="w-16 h-16 object-cover"
+                  width={64}
+                  height={64}
+                  className="object-cover"
                 />
               ) : (
                 <span className="text-xs text-gray-500">IMG</span>
@@ -745,11 +750,13 @@ function ReviewDetailsModal({
               <h4 className="font-medium text-gray-900 mb-3">Review Images</h4>
               <div className="grid grid-cols-3 gap-3">
                 {review.images.map((image, index) => (
-                  <div key={index} className="relative aspect-square bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden group">
-                    <img 
+                  <div key={index} className="relative aspect-square bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden group">  
+                    <Image
                       src={image} 
                       alt={`Review image ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      width={100}
+                      height={100}
+                      className="object-cover"
                     />
                     <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
                       <button
@@ -963,11 +970,13 @@ function EditReviewModal({
               <label className="block text-sm font-medium text-gray-700 mb-2">Current Images</label>
               <div className="grid grid-cols-4 gap-2">
                 {formData.existing_images.map((image: string, index: number) => (
-                  <div key={index} className="relative aspect-square bg-gray-200 rounded-lg overflow-hidden group">
-                    <img 
+                  <div key={index} className="relative aspect-square bg-gray-200 rounded-lg overflow-hidden group">  
+                    <Image
                       src={image} 
                       alt={`Existing image ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      width={100}
+                      height={100}
+                      className="object-cover"
                     />
                     <button
                       type="button"
@@ -996,12 +1005,14 @@ function EditReviewModal({
             />
             {newImages.length > 0 && (
               <div className="grid grid-cols-4 gap-2 mt-2">
-                {newImages.map((file, index) => (
-                  <div key={index} className="relative aspect-square bg-gray-200 rounded-lg overflow-hidden group">
-                    <img 
+                {newImages.map((file, index) => (  
+                  <div key={index} className="relative aspect-square bg-gray-200 rounded-lg overflow-hidden group">  
+                    <Image
                       src={URL.createObjectURL(file)} 
                       alt={`New image ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      width={100}
+                      height={100}
+                      className="object-cover"
                     />
                     <button
                       type="button"
@@ -1186,12 +1197,14 @@ function CreateReviewModal({
             />
             {images.length > 0 && (
               <div className="grid grid-cols-4 gap-2 mt-2">
-                {images.map((file, index) => (
-                  <div key={index} className="relative aspect-square bg-gray-200 rounded-lg overflow-hidden group">
-                    <img 
+                {images.map((file, index) => (  
+                  <div key={index} className="relative aspect-square bg-gray-200 rounded-lg overflow-hidden group">  
+                    <Image
                       src={URL.createObjectURL(file)} 
                       alt={`New image ${index + 1}`}
-                      className="w-full h-full object-cover"
+                      width={100}
+                      height={100}
+                      className="object-cover"
                     />
                     <button
                       type="button"

@@ -158,7 +158,7 @@ const CheckoutPage = () => {
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [orderId, setOrderId] = useState<string>('');
   const [error, setError] = useState<string>('');
-  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+  const [_razorpayLoaded, setRazorpayLoaded] = useState(false);
   
   // Coupon states
   const [couponCode, setCouponCode] = useState('');
@@ -380,8 +380,8 @@ const CheckoutPage = () => {
           setAppliedCoupon(couponData);
         }
       }
-    } catch (err) {
-      console.error('Error loading cart:', err);
+    } catch (_err) {
+      console.error('Error loading cart:', _err);
       setError('Failed to load cart items');
     }
   }, []);
@@ -398,8 +398,8 @@ const CheckoutPage = () => {
         const defaultAddress = addressesData.find((addr: Address) => addr.is_default);
         setSelectedAddress(defaultAddress || addressesData[0] || null);
       }
-    } catch (err) {
-      console.error('Error loading addresses:', err);
+    } catch (_err) {
+      console.error('Error loading addresses:', _err);
       setError('Failed to load addresses');
     }
   }, []);
@@ -410,8 +410,8 @@ const CheckoutPage = () => {
       if (couponsResponse.success && couponsResponse.data) {
         setAvailableCoupons(couponsResponse.data as any);
       }
-    } catch (err) {
-      console.error('Error loading available coupons:', err);
+    } catch (_err) {
+      console.error('Error loading available coupons:', _err);
     }
   }, []);
 
@@ -496,7 +496,7 @@ const CheckoutPage = () => {
       } else {
         setError(response.message || 'Failed to save address');
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to save address');
     }
   };
@@ -566,7 +566,7 @@ const CheckoutPage = () => {
       }));
       setAddresses(updatedAddresses);
       setSelectedAddress(updatedAddresses.find(addr => addr.id === addressId) || null);
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to set default address');
     }
   };
@@ -578,7 +578,7 @@ const CheckoutPage = () => {
       if (selectedAddress?.id === addressId) {
         setSelectedAddress(updatedAddresses[0] || null);
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to delete address');
     }
   };
@@ -643,7 +643,7 @@ const CheckoutPage = () => {
         
         // Refresh cart data to reflect coupon changes
         await loadCartData();
-      } else {
+      } else { 
         setCouponError(response.message || 'Invalid coupon code');
       }
     } catch (err: any) {
@@ -671,7 +671,7 @@ const CheckoutPage = () => {
         
         // Clear success message after 3 seconds
         setTimeout(() => setError(''), 3000);
-      } else {
+      } else {  
         setCouponError(response.message || 'Failed to remove coupon');
       }
     } catch (err: any) {
@@ -807,7 +807,7 @@ const CheckoutPage = () => {
       console.log('Starting Razorpay payment process...');
 
       // Ensure Razorpay is loaded
-      if (!razorpayLoaded) {
+      if (_razorpayLoaded) {
         console.log('Razorpay not loaded, initializing...');
         const loaded = await initializeRazorpay();
         if (!loaded) {
@@ -851,7 +851,7 @@ const CheckoutPage = () => {
             // Verify payment signature AND complete order via Laravel
             console.log('Verifying payment signature and completing order via Laravel...');
             const verificationResult = await verifyPaymentAndCompleteOrder(response, internal_order_id);
-            
+             
             if (!verificationResult.success) {
               setError(verificationResult.message || 'Payment verification failed. Please contact support.');
               setIsLoading(false);
@@ -968,7 +968,7 @@ const CheckoutPage = () => {
           setOrderSuccess(true);
           setOrderId(response.data.order_number);
         } else {
-          setError(response.message || 'Failed to create order');
+          setError(response.message || 'Failed to create order');  
           setIsLoading(false);
         }
       }

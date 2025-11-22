@@ -1,15 +1,18 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+
+import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
+import { Geist as GeistSans, Geist_Mono as GeistMono, Geist } from "next/font/google";
 import "./globals.css";
 import GlobalShell from "./components/GlobalShell";
-
+import PageTrackingProvider from "./PageTrackingProvider";
+import VisitorTrackingProvider from "./components/VisitorTrackingProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
+const geistMono = GeistMono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
@@ -66,9 +69,12 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://www.pashupatinathrudraksh.com",
   },
-  themeColor: "#ffffff",
   authors: [{ name: "Pashupatinath Rudraksha" }],
   publisher: "Pashupatinath Rudraksha",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({
@@ -78,22 +84,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-        {/* ✅ Explicit meta and link tags for cross-browser favicon & OG support */}
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-        <meta name="theme-color" content="#ffffff" />
-        <meta property="og:image" content="/PR_Logo.webp" />
-        <meta property="twitter:image" content="/PR_Logo.webp" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Pashupatinath Rudraksha" />
-        <meta
-          name="twitter:description"
-          content="Authentic certified Rudraksha beads & malas from Nepal."
-        />
-      </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <GlobalShell>{children}</GlobalShell>
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`} suppressHydrationWarning={true}>
+        <Suspense>
+          <PageTrackingProvider>
+            <VisitorTrackingProvider>
+              <GlobalShell>{children}</GlobalShell>
+            </VisitorTrackingProvider>
+          </PageTrackingProvider>
+        </Suspense>
       </body>
     </html>
   );

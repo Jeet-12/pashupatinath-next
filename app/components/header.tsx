@@ -145,7 +145,7 @@ export default function Header() {
 
         window.addEventListener('authInvalid', onAuthInvalid as EventListener);
         return () => window.removeEventListener('authInvalid', onAuthInvalid as EventListener);
-    }, []);
+    }, [router]);
 
     // Handle escape key and body scroll lock
     useEffect(() => {
@@ -255,7 +255,7 @@ export default function Header() {
         { name: '2 Mukhi Rudraksha', path: '/products?category=2-mukhi' },
         { name: '3 Mukhi Rudraksha', path: '/products?category=3-mukhi' },
         { name: '4 Mukhi Rudraksha', path: '/products?category=4-mukhi' },
-        { name: '5 Mukhi Rudraksha', path: '/products?category=5-mukhi' },
+        { name: '5 Mukhi Rudraksha', path: '/products?category=5-mukh' },
         { name: '6 Mukhi Rudraksha', path: '/products?category=6-mukhi' },
         { name: '7 Mukhi Rudraksha', path: '/products?category=7-mukhi' },
         { name: '8 Mukhi Rudraksha', path: '/products?category=8-mukhi' },

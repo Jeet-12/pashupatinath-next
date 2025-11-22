@@ -12,15 +12,12 @@ import {
   Clock, 
   Users,
   HelpCircle,
-  Truck,
-  RefreshCw,
   Shield,
   Star,
   MapPin,
   Send,
   CheckCircle,
   AlertCircle ,
-  FileText,
   Heart
 } from 'lucide-react';
 

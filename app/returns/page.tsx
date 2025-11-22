@@ -1,9 +1,6 @@
-"use client";
-
-import { useState, useEffect } from 'react';
-import { NextPage } from 'next';
-import Head from 'next/head';
 import Link from 'next/link';
+import type { Metadata } from 'next';
+import { Suspense } from 'react';
 import { 
   ChevronRight, 
   RefreshCw, 
@@ -14,56 +11,27 @@ import {
   Package,
   Mail,
   Phone,
-  FileText,
   AlertTriangle,
-  ArrowRight,
   CreditCard,
-  Truck,
-  Heart,
   Ban
 } from 'lucide-react';
+import PolicyNavigation from './PolicyNavigation'; // Import the new client component
 
-const RefundReturnPolicy: NextPage = () => {
-  const [activeSection, setActiveSection] = useState('');
-  const [isVisible, setIsVisible] = useState(false);
+export const metadata: Metadata = {
+  title: 'No Return Policy | Pashupatinath Rudraksh',
+  description: 'Important: We do not accept returns after purchase. Learn about our refund policy for damaged or wrong items only.',
+};
+
+const RefundReturnPolicy = () => {
+  // This state was for a fade-in effect, which can be handled with CSS animations
+  // or removed for simplicity. We'll assume it's always visible for a server component.
+  const isVisible = true; 
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
   });
-
-  useEffect(() => {
-    setIsVisible(true);
-    
-    const handleScroll = () => {
-      const sections = document.querySelectorAll('.policy-section');
-      sections.forEach(section => {
-        const sectionTop = section.getBoundingClientRect().top;
-        if (sectionTop < 150 && sectionTop > -100) {
-          setActiveSection(section.id);
-        }
-      });
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  const policySections = [
-    { id: 'no-return-policy', title: 'No Return Policy', icon: <Ban size={18} /> },
-    { id: 'refund-policy', title: 'Refund Policy', icon: <CreditCard size={18} /> },
-    { id: 'damaged-items', title: 'Damaged Items', icon: <AlertTriangle size={18} /> },
-    { id: 'wrong-items', title: 'Wrong Items', icon: <Package size={18} /> },
-    { id: 'contact', title: 'Contact Support', icon: <Phone size={18} /> }
-  ];
-
-  const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
 
   const refundScenarios = [
     {
@@ -103,11 +71,6 @@ const RefundReturnPolicy: NextPage = () => {
 
   return (
     <>
-      <Head>
-        <title>No Return Policy | Pashupatinath Rudraksh</title>
-        <meta name="description" content="Important: We do not accept returns after purchase. Learn about our refund policy for damaged or wrong items only." />
-      </Head>
-
       {/* Enhanced Breadcrumbs */}
       <div className="breadcrumbs-section bg-gradient-to-r from-amber-50 to-orange-50">
         <div className="container mx-auto px-4">
@@ -136,39 +99,9 @@ const RefundReturnPolicy: NextPage = () => {
             
             {/* Sidebar Navigation */}
             <div className="lg:w-1/4">
-              <div className="sticky top-24 bg-white rounded-2xl shadow-lg p-6 border border-amber-200">
-                <h3 className="text-lg font-semibold text-amber-900 mb-4 flex items-center">
-                  <FileText className="mr-2" size={20} />
-                  Quick Navigation
-                </h3>
-                <nav className="space-y-2">
-                  {policySections.map((section) => (
-                    <button
-                      key={section.id}
-                      onClick={() => scrollToSection(section.id)}
-                      className={`w-full text-left px-3 py-2 rounded-lg transition-all duration-200 flex items-center ${
-                        activeSection === section.id
-                          ? 'bg-amber-100 text-amber-900 border-l-4 border-amber-500'
-                          : 'text-gray-600 hover:bg-amber-50 hover:text-amber-800'
-                      }`}
-                    >
-                      <span className="mr-3 opacity-70">{section.icon}</span>
-                      {section.title}
-                    </button>
-                  ))}
-                </nav>
-
-                {/* Important Notice */}
-                <div className="mt-6 p-4 bg-red-50 rounded-lg border border-red-200">
-                  <h4 className="font-semibold text-red-800 mb-2 flex items-center">
-                    <Ban size={16} className="mr-2" />
-                    Important Notice
-                  </h4>
-                  <p className="text-red-700 text-sm">
-                    No returns accepted for change of mind or personal reasons.
-                  </p>
-                </div>
-              </div>
+              <Suspense fallback={<div>Loading Navigation...</div>}>
+                <PolicyNavigation />
+              </Suspense>
             </div>
 
             {/* Policy Content */}
@@ -451,11 +384,6 @@ const RefundReturnPolicy: NextPage = () => {
         </div>
       </div>
 
-      <style jsx global>{`
-        html {
-          scroll-behavior: smooth;
-        }
-      `}</style>
     </>
   );
 };

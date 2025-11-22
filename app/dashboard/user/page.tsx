@@ -1,5 +1,6 @@
 "use client";
 
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
@@ -14,7 +15,7 @@ import {
 
 export default function UserDashboard() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [_activeTab, _setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -219,11 +220,13 @@ export default function UserDashboard() {
       <div className="flex items-center space-x-4">
         {/* User Avatar */}
         <div className="relative">
-          {getUserAvatar() ? (
-            <img 
+          {getUserAvatar() ? (  
+            <Image
               src={getUserAvatar()} 
               alt={getUserDisplayName()}
-              className="w-16 h-16 rounded-full object-cover border-2 border-amber-200"
+              width={64}
+              height={64}
+              className="rounded-full object-cover border-2 border-amber-200"
             />
           ) : (
             <div className="w-16 h-16 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-xl">

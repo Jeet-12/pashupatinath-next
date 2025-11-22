@@ -3,10 +3,30 @@
 import Image from 'next/image';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { singleAddToCart } from '../libs/api';
 
 export default function SevenMukhiLandingPage() {
+  const router = useRouter();
   const [selectedVariant, setSelectedVariant] = useState('normal');
   const [isStickyVisible, setIsStickyVisible] = useState(false);
+  const [quantity, setQuantity] = useState(1);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isBuyingNow, setIsBuyingNow] = useState(false);
+
+  // Product details for 7 Mukhi
+  const productDetails = {
+    slug: '7-mukhi-pashupatinath-rudraksh',
+    title: '7 Mukhi Nepali Rudraksha',
+    price: 2100,
+    discount: 20,
+    currentPrice: 1680,
+    stock: 50
+  };
+
+  const currentPrice = productDetails.currentPrice;
+  const variantPrice = selectedVariant === 'silver' ? 200 : 0;
+  const totalPrice = (currentPrice + variantPrice) * quantity;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -25,6 +45,87 @@ export default function SevenMukhiLandingPage() {
     }
   };
 
+  const handleQuantityChange = (value: number) => {
+    if (value < 1) return;
+    if (value > productDetails.stock) return;
+    setQuantity(value);
+  };
+
+  const addToCart = async () => {
+    if (isAddingToCart) return;
+    
+    setIsAddingToCart(true);
+    try {
+      const total_price = totalPrice;
+      const selected_thread = selectedVariant === 'silver' ? 'silver' : 'normal';
+      
+      const res = await singleAddToCart({ 
+        slug: productDetails.slug, 
+        quantity, 
+        total_price, 
+        selected_cap: null, 
+        // selected_thread 
+      });
+      
+      if (!res.success) {
+        // Handle error - you might want to show a toast notification
+        console.error('Add to cart error:', res.message);
+        // You can add a toast notification here
+        alert('Failed to add to cart. Please try again.');
+      } else {
+        try { 
+          window.dispatchEvent(new CustomEvent('countsUpdated')); 
+        } catch {}
+        // Show success notification
+        console.log('Added to cart successfully');
+        alert('Product added to cart successfully!');
+      }
+    } catch (error) {
+      console.error('Add to cart error:', error);
+      alert('An error occurred. Please try again.');
+    } finally {
+      setIsAddingToCart(false);
+    }
+  };
+
+  const buyNow = async () => {
+    if (isBuyingNow) return;
+    
+    setIsBuyingNow(true);
+    try {
+      // First add to cart
+      const total_price = totalPrice;
+      const selected_thread = selectedVariant === 'silver' ? 'silver' : 'normal';
+      
+      const res = await singleAddToCart({ 
+        slug: productDetails.slug, 
+        quantity, 
+        total_price, 
+        selected_cap: null, 
+        // selected_thread 
+      });
+      
+      if (res.success) {
+        // Redirect to checkout page
+        router.push('/checkout');
+      } else {
+        alert('Failed to process order. Please try again.');
+      }
+    } catch (error) {
+      console.error('Buy now error:', error);
+      alert('An error occurred. Please try again.');
+    } finally {
+      setIsBuyingNow(false);
+    }
+  };
+
+  const handleWhatsAppClick = () => {
+    const phoneNumber = '7377371008';
+    const message = `Hello! I'm interested in the 7 Mukhi Nepali Rudraksha. I have some questions before purchasing.`;
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white">
       {/* Sticky CTA Bar */}
@@ -40,18 +141,24 @@ export default function SevenMukhiLandingPage() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4">
             <div className="text-center sm:text-left flex-1 min-w-0">
               <h3 className="text-lg sm:text-xl font-bold truncate">Your Wealth. Your Stability. Your Peace.</h3>
-              <p className="text-amber-200 text-sm sm:text-base truncate">7 Mukhi Nepali Rudraksha • Today: ₹1680 (20% OFF)</p>
+              <p className="text-amber-200 text-sm sm:text-base truncate">
+                7 Mukhi Nepali Rudraksha • Today: ₹{currentPrice} ({productDetails.discount}% OFF)
+              </p>
             </div>
             <div className="flex gap-2 sm:gap-3 w-full sm:w-auto justify-center">
               <motion.button
-                className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-bold hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-lg text-sm sm:text-base flex-1 sm:flex-none min-w-[140px]"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => scrollToSection('pricing')}
+                onClick={buyNow}
+                disabled={isBuyingNow}
+                className={`bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-bold hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-lg text-sm sm:text-base flex-1 sm:flex-none min-w-[140px] ${
+                  isBuyingNow ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                whileHover={isBuyingNow ? {} : { scale: 1.05 }}
+                whileTap={isBuyingNow ? {} : { scale: 0.95 }}
               >
-                Buy Now
+                {isBuyingNow ? 'Processing...' : 'Buy Now'}
               </motion.button>
               <motion.button
+                onClick={handleWhatsAppClick}
                 className="border-2 border-green-500 text-green-500 px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-bold hover:bg-green-500 hover:text-white transition-all duration-300 text-sm sm:text-base flex-1 sm:flex-none min-w-[140px]"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -86,7 +193,7 @@ export default function SevenMukhiLandingPage() {
                   {/* Badges */}
                   <div className="absolute top-3 sm:top-4 left-3 sm:left-4 flex flex-col gap-1 sm:gap-2">
                     <span className="bg-gradient-to-r from-red-500 to-orange-600 text-white text-xs sm:text-sm font-bold py-1 sm:py-2 px-2 sm:px-4 rounded-full shadow-lg">
-                      🔥 20% OFF
+                      🔥 {productDetails.discount}% OFF
                     </span>
                     <span className="bg-gradient-to-r from-green-500 to-emerald-600 text-white text-xs sm:text-sm font-bold py-1 sm:py-2 px-2 sm:px-4 rounded-full shadow-lg">
                       ✨ LIMITED OFFER
@@ -97,14 +204,18 @@ export default function SevenMukhiLandingPage() {
                 {/* Variant Preview */}
                 <div className="flex gap-3 sm:gap-4 mt-4 sm:mt-6 justify-center">
                   <div className="text-center">
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl border-2 border-amber-500 bg-amber-50 mx-auto"></div>
+                    <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl border-2 ${
+                      selectedVariant === 'normal' ? 'border-amber-500 bg-amber-50' : 'border-gray-300 bg-gray-100'
+                    } mx-auto`}></div>
                     <span className="text-xs mt-1 block">Normal</span>
                   </div>
                   <div className="text-center">
-                    <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl border-2 border-gray-300 bg-gray-100 mx-auto flex items-center justify-center">
-                      <span className="text-gray-400 text-sm sm:text-lg">⚪</span>
+                    <div className={`w-12 h-12 sm:w-16 sm:h-16 rounded-lg sm:rounded-xl border-2 ${
+                      selectedVariant === 'silver' ? 'border-amber-500 bg-amber-50' : 'border-gray-300 bg-gray-100'
+                    } mx-auto flex items-center justify-center`}>
+                      <span className={`text-sm sm:text-lg ${selectedVariant === 'silver' ? 'text-gray-600' : 'text-gray-400'}`}>⚪</span>
                     </div>
-                    <span className="text-xs mt-1 block">Silver</span>
+                    <span className="text-xs mt-1 block">Silver +₹200</span>
                   </div>
                 </div>
               </div>
@@ -144,14 +255,45 @@ export default function SevenMukhiLandingPage() {
                 transition={{ delay: 0.4 }}
               >
                 <div className="flex items-baseline gap-2 sm:gap-4 mb-1 sm:mb-2 flex-wrap">
-                  <span className="text-2xl sm:text-3xl lg:text-4xl font-bold">₹1680.00</span>
-                  <span className="text-lg sm:text-xl line-through opacity-80">₹2100.00</span>
+                  <span className="text-2xl sm:text-3xl lg:text-4xl font-bold">₹{totalPrice.toLocaleString()}</span>
+                  <span className="text-lg sm:text-xl line-through opacity-80">₹{(productDetails.price * quantity).toLocaleString()}</span>
                   <span className="bg-white text-amber-600 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-bold">
-                    20% OFF
+                    {productDetails.discount}% OFF
                   </span>
                 </div>
                 <p className="text-amber-100 font-semibold text-sm sm:text-base">🎁 Limited Festival Offer – Ends Soon</p>
+                {selectedVariant === 'silver' && (
+                  <p className="text-amber-100 text-sm mt-1">Includes Silver Capping (+₹200)</p>
+                )}
               </motion.div>
+
+              {/* Quantity Selector */}
+              <div className="flex items-center space-x-3 sm:space-x-4">
+                <span className="text-gray-700 font-bold text-sm sm:text-base">Quantity:</span>
+                <div className="flex items-center bg-white border-2 border-amber-300 rounded-xl sm:rounded-2xl shadow-lg overflow-hidden">
+                  <motion.button
+                    onClick={() => handleQuantityChange(quantity - 1)}
+                    className="px-3 sm:px-4 py-2 text-gray-600 hover:text-amber-600 disabled:opacity-30 transition-all duration-200 text-lg font-bold"
+                    disabled={quantity <= 1}
+                    whileHover={{ scale: 1.05, backgroundColor: "#fef3c7" }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    -
+                  </motion.button>
+                  <span className="px-4 sm:px-6 py-2 text-gray-800 font-bold text-lg bg-amber-50 min-w-12 text-center border-x-2 border-amber-200">
+                    {quantity}
+                  </span>
+                  <motion.button
+                    onClick={() => handleQuantityChange(quantity + 1)}
+                    className="px-3 sm:px-4 py-2 text-gray-600 hover:text-amber-600 disabled:opacity-30 transition-all duration-200 text-lg font-bold"
+                    disabled={productDetails.stock <= quantity}
+                    whileHover={{ scale: 1.05, backgroundColor: "#fef3c7" }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    +
+                  </motion.button>
+                </div>
+              </div>
 
               {/* Variant Picker */}
               <div className="space-y-3 sm:space-y-4">
@@ -184,31 +326,43 @@ export default function SevenMukhiLandingPage() {
                     <div className="text-xs sm:text-sm text-gray-600">+₹200 • Enhanced</div>
                   </motion.button>
                 </div>
-                <motion.button
-                  className="w-full p-3 sm:p-4 border-2 border-dashed border-gray-300 rounded-xl sm:rounded-2xl hover:border-amber-400 transition-colors duration-300"
-                  whileHover={{ scale: 1.01 }}
-                >
-                  <span className="text-gray-600 text-sm sm:text-base">🎨 Choose Thread Colour</span>
-                </motion.button>
               </div>
 
               {/* CTA Buttons */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <motion.button
-                  className="bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-2xl"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  onClick={buyNow}
+                  disabled={isBuyingNow}
+                  className={`bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-2xl ${
+                    isBuyingNow ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                  whileHover={isBuyingNow ? {} : { scale: 1.05 }}
+                  whileTap={isBuyingNow ? {} : { scale: 0.95 }}
                 >
-                  💫 Buy Now – Get Yours
+                  {isBuyingNow ? 'Processing...' : '💫 Buy Now – Get Yours'}
                 </motion.button>
                 <motion.button
-                  className="bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-2xl"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  onClick={addToCart}
+                  disabled={isAddingToCart}
+                  className={`bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg hover:from-blue-600 hover:to-indigo-700 transition-all duration-300 shadow-2xl ${
+                    isAddingToCart ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
+                  whileHover={isAddingToCart ? {} : { scale: 1.05 }}
+                  whileTap={isAddingToCart ? {} : { scale: 0.95 }}
                 >
-                  💬 WhatsApp Guidance
+                  {isAddingToCart ? 'Adding...' : '🛒 Add to Cart'}
                 </motion.button>
               </div>
+
+              {/* WhatsApp Button */}
+              <motion.button
+                onClick={handleWhatsAppClick}
+                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-2xl"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                💬 WhatsApp Guidance
+              </motion.button>
 
               {/* Trust Badges */}
               <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 pt-3 sm:pt-4">
@@ -288,6 +442,25 @@ export default function SevenMukhiLandingPage() {
               </motion.div>
             ))}
           </div>
+
+          <motion.div
+            className="text-center mt-8 sm:mt-12"
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <motion.button
+              onClick={buyNow}
+              disabled={isBuyingNow}
+              className={`bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-2xl w-full sm:w-auto ${
+                isBuyingNow ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+              whileHover={isBuyingNow ? {} : { scale: 1.05 }}
+              whileTap={isBuyingNow ? {} : { scale: 0.95 }}
+            >
+              {isBuyingNow ? 'Processing...' : '✅ Yes, I Need This – Buy My 7 Mukhi Now'}
+            </motion.button>
+          </motion.div>
         </div>
       </section>
 
@@ -327,11 +500,15 @@ export default function SevenMukhiLandingPage() {
               </div>
 
               <motion.button
-                className="mt-6 sm:mt-8 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-2xl w-full sm:w-auto"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                onClick={buyNow}
+                disabled={isBuyingNow}
+                className={`mt-6 sm:mt-8 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-2xl w-full sm:w-auto ${
+                  isBuyingNow ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                whileHover={isBuyingNow ? {} : { scale: 1.05 }}
+                whileTap={isBuyingNow ? {} : { scale: 0.95 }}
               >
-                ✅ Yes, I Need This – Buy My 7 Mukhi Now
+                {isBuyingNow ? 'Processing...' : '✅ Yes, I Need This – Buy My 7 Mukhi Now'}
               </motion.button>
             </motion.div>
 
@@ -402,6 +579,7 @@ export default function SevenMukhiLandingPage() {
                 
                 {item.button && (
                   <motion.button
+                    onClick={handleWhatsAppClick}
                     className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-2 sm:py-3 rounded-lg sm:rounded-xl font-semibold hover:from-green-600 hover:to-emerald-700 transition-all duration-300 text-sm sm:text-base"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -469,6 +647,7 @@ export default function SevenMukhiLandingPage() {
                   This bead is traditionally worn to build patience, grounded thinking, and long-term stability in both money and mind – not "overnight magic."
                 </p>
                 <motion.button
+                  onClick={handleWhatsAppClick}
                   className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl font-semibold hover:from-amber-600 hover:to-orange-600 transition-all duration-300 text-sm sm:text-base w-full sm:w-auto"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -573,11 +752,15 @@ export default function SevenMukhiLandingPage() {
             transition={{ duration: 0.6 }}
           >
             <motion.button
-              className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-2xl w-full sm:w-auto"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              onClick={buyNow}
+              disabled={isBuyingNow}
+              className={`bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-2xl w-full sm:w-auto ${
+                isBuyingNow ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+              whileHover={isBuyingNow ? {} : { scale: 1.05 }}
+              whileTap={isBuyingNow ? {} : { scale: 0.95 }}
             >
-              🛍️ I Want My Certified 7 Mukhi → Buy Now
+              {isBuyingNow ? 'Processing...' : '🛍️ I Want My Certified 7 Mukhi → Buy Now'}
             </motion.button>
           </motion.div>
         </div>
@@ -652,11 +835,15 @@ export default function SevenMukhiLandingPage() {
             </div>
 
             <motion.button
-              className="mt-6 sm:mt-8 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-2xl w-full sm:w-auto"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              onClick={buyNow}
+              disabled={isBuyingNow}
+              className={`mt-6 sm:mt-8 bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-2xl w-full sm:w-auto ${
+                isBuyingNow ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
+              whileHover={isBuyingNow ? {} : { scale: 1.05 }}
+              whileTap={isBuyingNow ? {} : { scale: 0.95 }}
             >
-              🛍️ Get My Authentic 7 Mukhi Now
+              {isBuyingNow ? 'Processing...' : '🛍️ Get My Authentic 7 Mukhi Now'}
             </motion.button>
           </motion.div>
         </div>
@@ -733,19 +920,24 @@ export default function SevenMukhiLandingPage() {
             </p>
 
             <div className="bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl sm:rounded-2xl p-4 sm:p-6 max-w-md mx-auto mb-6 sm:mb-8">
-              <div className="text-2xl sm:text-3xl font-bold">Today's Price: ₹1680</div>
-              <div className="text-amber-100 text-sm sm:text-base">(20% OFF) • Free Shipping Across India • Lab Certificate Included</div>
+              <div className="text-2xl sm:text-3xl font-bold">Today's Price: ₹{currentPrice}</div>
+              <div className="text-amber-100 text-sm sm:text-base">({productDetails.discount}% OFF) • Free Shipping Across India • Lab Certificate Included</div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-4 sm:mb-6">
               <motion.button
-                className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-2xl w-full sm:w-auto"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                onClick={buyNow}
+                disabled={isBuyingNow}
+                className={`bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-2xl w-full sm:w-auto ${
+                  isBuyingNow ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+                whileHover={isBuyingNow ? {} : { scale: 1.05 }}
+                whileTap={isBuyingNow ? {} : { scale: 0.95 }}
               >
-                🛍️ Buy My 7 Mukhi Now
+                {isBuyingNow ? 'Processing...' : '🛍️ Buy My 7 Mukhi Now'}
               </motion.button>
               <motion.button
+                onClick={handleWhatsAppClick}
                 className="border-2 border-green-500 text-green-500 px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg hover:bg-green-500 hover:text-white transition-all duration-300 w-full sm:w-auto"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}

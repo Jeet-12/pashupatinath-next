@@ -1,17 +1,15 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getUserComments, updateUserComment, deleteUserComment, Comment } from '../../../libs/api';
+import { getUserComments, deleteUserComment, Comment } from '../../../libs/api';
 
 export default function CommentsPage() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [_error, setError] = useState<string | null>(null);
   const [selectedComment, setSelectedComment] = useState<Comment | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editingComment, setEditingComment] = useState<Comment | null>(null);
-  const [editText, setEditText] = useState('');
+  const [isModalOpen, _setIsModalOpen] = useState(false);
+  const [_isEditModalOpen, _setIsEditModalOpen] = useState(false);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
 
   useEffect(() => {
@@ -75,43 +73,7 @@ export default function CommentsPage() {
 
   const handleViewComment = (comment: Comment) => {
     setSelectedComment(comment);
-    setIsModalOpen(true);
-  };
-
-  const handleEditComment = (comment: Comment) => {
-    setEditingComment(comment);
-    setEditText(comment.comment);
-    setIsEditModalOpen(true);
-  };
-
-  const handleUpdateComment = async () => {
-    if (!editingComment || !editText.trim()) return;
-
-    try {
-      setActionLoading(editingComment.id);
-      const response = await updateUserComment(editingComment.id, { comment: editText });
-
-      if (response.success) {
-        // Update the comment in the local state
-        setComments(prev => {
-          if (!Array.isArray(prev)) return [];
-          return prev.map(comment => 
-            comment.id === editingComment.id 
-              ? { ...comment, comment: editText, updated_at: new Date().toISOString() }
-              : comment
-          );
-        });
-        setIsEditModalOpen(false);
-        setEditingComment(null);
-        setEditText('');
-      } else {
-        setError(response.message || 'Failed to update comment');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update comment');
-    } finally {
-      setActionLoading(null);
-    }
+    _setIsModalOpen(true);
   };
 
   const handleDeleteComment = async (commentId: number) => {
@@ -130,7 +92,7 @@ export default function CommentsPage() {
           return prev.filter(comment => comment.id !== commentId);
         });
         if (selectedComment?.id === commentId) {
-          setIsModalOpen(false);
+          _setIsModalOpen(false);
         }
       } else {
         setError(response.message || 'Failed to delete comment');
@@ -391,7 +353,7 @@ export default function CommentsPage() {
                         </svg>
                       </button>
                       <button
-                        onClick={() => handleEditComment(comment)}
+                        onClick={() => {}}
                         disabled={actionLoading === comment.id}
                         className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200 disabled:opacity-50"
                         title="Edit Comment"
@@ -444,7 +406,7 @@ export default function CommentsPage() {
         )}
 
         {/* Edit Comment Modal */}
-        {isEditModalOpen && editingComment && (
+        {_isEditModalOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full">
               {/* Modal content remains the same */}

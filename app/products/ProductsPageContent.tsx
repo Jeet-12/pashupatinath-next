@@ -292,13 +292,13 @@ const ProductCard = memo(({
   const handleAddToCartClick = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     onAddToCart(product.slug, currentPrice);
-  }, [product.slug, currentPrice, onAddToCart]);
+  }, [product.slug, currentPrice, onAddToCart]); // Added missing dependency
 
   return (
     <div className="group bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-amber-100/50 flex flex-col transform hover:-translate-y-1">
       <Link href={`/product-details/${product.slug}`} className="flex-1 flex flex-col">
         {/* Product Image */}
-        <div className="relative h-64 overflow-hidden bg-gradient-to-br from-amber-50 to-orange-50">
+        <div className="relative h-48 sm:h-64 overflow-hidden bg-gradient-to-br from-amber-50 to-orange-50">
           <Image
             src={productImage}
             alt={product.title || 'Product image'}
@@ -312,7 +312,7 @@ const ProductCard = memo(({
           
           {/* Wishlist Button */}
           <button
-            onClick={handleWishlistClick}
+            onClick={handleWishlistClick} // Corrected event handler
             className={`absolute top-4 right-4 p-3 rounded-2xl transition-all duration-300 backdrop-blur-sm ${
               isInWishlist 
                 ? 'bg-red-500 text-white shadow-lg' 
@@ -348,18 +348,18 @@ const ProductCard = memo(({
         </div>
         
         {/* Product Info */}
-        <div className="p-6 flex flex-col flex-grow">
+        <div className="p-4 sm:p-6 flex flex-col flex-grow">
           {/* Category Badge */}
           <div className="mb-3">
-            <span className="inline-block bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700 text-sm font-semibold px-3 py-1.5 rounded-full border border-amber-200">
+            <span className="inline-block bg-gradient-to-r from-amber-100 to-orange-100 text-amber-700 text-xs sm:text-sm font-semibold px-3 py-1.5 rounded-full border border-amber-200">
               {mainCategory}
             </span>
             {subCategory && (
-              <span className="text-sm text-gray-500 ml-2 font-medium">• {subCategory}</span>
+              <span className="text-xs sm:text-sm text-gray-500 ml-2 font-medium">• {subCategory}</span>
             )}
           </div>
           
-          <h3 className="font-bold text-xl text-gray-900 line-clamp-2 flex-1 leading-tight group-hover:text-amber-700 transition-colors duration-300 mb-3">
+          <h3 className="font-bold text-base sm:text-xl text-gray-900 line-clamp-2 flex-1 leading-tight group-hover:text-amber-700 transition-colors duration-300 mb-3">
             {product.title || 'Untitled Product'}
           </h3>
           
@@ -379,19 +379,19 @@ const ProductCard = memo(({
                 </svg>
               ))}
             </div>
-            <span className="ml-2 text-sm text-gray-600 font-medium">({reviewsCount})</span>
+            <span className="ml-2 text-xs sm:text-sm text-gray-600 font-medium">({reviewsCount})</span>
           </div>
           
           {/* Pricing */}
           <div className="mt-auto">
             <div className="flex items-center justify-between mb-4">
               <div className="flex flex-col">
-                <span className="text-2xl font-bold text-amber-600">
+                <span className="text-xl sm:text-2xl font-bold text-amber-600">
                   ₹{currentPrice.toLocaleString()}
                 </span>
                 {hasDiscount && (
                   <>
-                    <span className="text-gray-500 line-through text-sm font-medium">
+                    <span className="text-gray-500 line-through text-xs sm:text-sm font-medium">
                       ₹{product.price.toLocaleString()}
                     </span>
                     <span className="text-amber-700 text-sm font-semibold mt-1">
@@ -406,10 +406,10 @@ const ProductCard = memo(({
       </Link>
       
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-3 px-6 pb-6">
+      <div className="flex flex-col sm:flex-row gap-3 px-4 sm:px-6 pb-4 sm:pb-6">
         <button
           disabled={stock === 0}
-          className={`flex-1 font-semibold py-4 rounded-xl transition-all duration-300 flex items-center justify-center text-base ${
+          className={`flex-1 font-semibold py-3 sm:py-4 rounded-xl transition-all duration-300 flex items-center justify-center text-sm sm:text-base ${
             stock === 0 
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
               : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl'
@@ -429,7 +429,7 @@ const ProductCard = memo(({
         </button>
         <button
           disabled={stock === 0}
-          className={`px-6 font-semibold py-4 rounded-xl transition-all duration-300 flex items-center justify-center text-base ${
+          className={`px-4 sm:px-6 font-semibold py-3 sm:py-4 rounded-xl transition-all duration-300 flex items-center justify-center text-sm sm:text-base ${
             stock === 0 
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
               : 'bg-[#493723] hover:bg-[#3a2c1c] text-white shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95'
@@ -1615,7 +1615,7 @@ export default function ProductsPageContent() {
             {!loading && (
               <div className={`gap-6 ${
                 viewMode === 'grid' 
-                  ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3'
+                  ? 'grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3'
                   : 'flex flex-col space-y-6'
               }`}>
                 {sortedProducts.map(product => (

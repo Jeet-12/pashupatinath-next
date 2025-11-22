@@ -83,16 +83,57 @@ const ChatbotModal = memo(() => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Scroll to top when important messages are added
   useEffect(() => {
-    if (chatMessagesRef.current) {
-      chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+    if (chatMessagesRef.current && messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      
+      // Check if this is an important message that should show from top
+      const isImportantMessage = 
+        lastMessage.type === 'bot' && 
+        (lastMessage.content.includes('Welcome') || 
+         lastMessage.content.includes('PROFESSIONAL RUDRAKSHA RECOMMENDATION'));
+      
+      if (isImportantMessage) {
+        // Scroll to top immediately and then again after a short delay
+        chatMessagesRef.current.scrollTop = 0;
+        
+        const scrollToTop = () => {
+          if (chatMessagesRef.current) {
+            chatMessagesRef.current.scrollTop = 0;
+          }
+        };
+        
+        // Multiple attempts to ensure it stays at top
+        setTimeout(scrollToTop, 50);
+        setTimeout(scrollToTop, 100);
+        setTimeout(scrollToTop, 200);
+      } else {
+        // For regular messages, scroll to bottom
+        setTimeout(() => {
+          if (chatMessagesRef.current) {
+            chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+          }
+        }, 100);
+      }
     }
-  }, [messages, isTyping]);
+  }, [messages]);
+
+  // Scroll when typing changes
+  useEffect(() => {
+    if (chatMessagesRef.current && !isTyping) {
+      setTimeout(() => {
+        if (chatMessagesRef.current) {
+          chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+        }
+      }, 100);
+    }
+  }, [isTyping]);
 
   useEffect(() => {
     if (isVisible && messages.length === 0) {
       // Add welcome message when chatbot opens
-      setMessages([{
+      const welcomeMessage = {
         type: 'bot',
         content: `नमस्ते! 🙏 Welcome to your personalized Rudraksha consultation.
 
@@ -104,9 +145,10 @@ I will analyze your birth chart using authentic Vedic numerology to recommend th
 ✅ Authentic Spiritual Guidance
 
 🔒 Your information is completely confidential and secure`
-      }]);
+      };
+      setMessages([welcomeMessage]);
     }
-  }, [isVisible]);
+  }, [isVisible, messages.length]);
 
   const toggleChatbot = () => {
     setIsVisible(!isVisible);
@@ -169,13 +211,6 @@ I will analyze your birth chart using authentic Vedic numerology to recommend th
     }
     
     return { valid: true };
-  };
-
-  const handleQuickSuggestion = (name: string) => {
-    if (chatInputRef.current) {
-      chatInputRef.current.value = name;
-      handleSendMessage(name);
-    }
   };
 
   const BuyNowButton = ({ mukhi }: { mukhi: number }) => {
@@ -394,24 +429,43 @@ Accuracy Score: 92/100 based on your Life Path Number ${lifePathNumber}`,
           <div 
             ref={chatMessagesRef}
             className="chat-messages p-4 h-80 overflow-y-auto bg-gradient-to-b from-amber-50 to-orange-50" 
-            style={{ maxHeight: isMobile ? 'calc(60vh - 120px)' : '320px' }}
+            style={{ 
+              maxHeight: isMobile ? 'calc(60vh - 120px)' : '320px',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
           >
             {messages.map((message, index) => (
               <div 
                 key={index} 
-                className={`message ${message.type}-message mb-4 ${
+                className={`message mb-4 ${
                   message.type === 'bot' 
-                    ? 'bg-white p-4 rounded-lg shadow-md border-l-4 border-[#8B4513]' 
-                    : 'bg-blue-50 p-3 rounded-lg shadow-sm border-l-4 border-blue-500 ml-8'
+                    ? 'flex justify-start' 
+                    : 'flex justify-end'
                 }`}
               >
-                <div className="flex items-start space-x-2">
-                  {message.type === 'bot' && (
-                    <div className="w-8 h-8 bg-[#8B4513] rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-white text-sm font-bold">ॐ</span>
-                    </div>
-                  )}
-                  <div className="flex-1">
+                <div className={`flex items-start space-x-2 max-w-[85%] ${
+                  message.type === 'user' ? 'flex-row-reverse space-x-reverse' : ''
+                }`}>
+                  {/* Avatar */}
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                    message.type === 'bot' 
+                      ? 'bg-[#8B4513]' 
+                      : 'bg-blue-500'
+                  }`}>
+                    <span className={`text-white text-sm font-bold ${
+                      message.type === 'bot' ? 'text-xs' : 'text-xs'
+                    }`}>
+                      {message.type === 'bot' ? 'ॐ' : 'You'}
+                    </span>
+                  </div>
+                  
+                  {/* Message Content */}
+                  <div className={`flex-1 ${
+                    message.type === 'bot' 
+                      ? 'bg-white p-4 rounded-lg shadow-md border-l-4 border-[#8B4513]' 
+                      : 'bg-blue-50 p-3 rounded-lg shadow-sm border-l-4 border-blue-500'
+                  }`}>
                     {message.type === 'bot' && (
                       <div className="font-semibold text-[#8B4513] text-sm mb-1">RudraGuide Pro</div>
                     )}
@@ -422,11 +476,6 @@ Accuracy Score: 92/100 based on your Life Path Number ${lifePathNumber}`,
                     {/* Render the button component if it exists */}
                     {message.buttonComponent && message.buttonComponent}
                   </div>
-                  {message.type === 'user' && (
-                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-                      <span className="text-white text-xs font-bold">You</span>
-                    </div>
-                  )}
                 </div>
               </div>
             ))}
@@ -663,7 +712,6 @@ const LogoSection = memo(() => {
 
 LogoSection.displayName = 'LogoSection';
 
-// Mobile Bottom Menu Component - Fixed for Safari
 const MobileBottomMenu = memo(() => {
   const [activeItem, setActiveItem] = useState('home');
   const [isVisible, setIsVisible] = useState(true);
@@ -722,18 +770,18 @@ const MobileBottomMenu = memo(() => {
       key: 'home', 
       label: 'Home', 
       icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M2.25 12v7.5c0 1.5 1.123 2.25 2.25 2.25h15c1.5 0 2.25-.75 2.25-2.25V12M9 10.25v4.5m3-4.5v4.5m3-4.5v4.5" />
         </svg>
       ), 
       href: '/' 
     },
     { 
       key: 'consultation', 
-      label: 'Consultation', 
+      label: 'Consult', 
       icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
         </svg>
       ), 
       onClick: handleConsultationClick,
@@ -743,8 +791,9 @@ const MobileBottomMenu = memo(() => {
       key: 'rudraksha', 
       label: 'Rudraksha', 
       icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" />
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 9.563C9 9.252 9.252 9 9.563 9h4.874c.311 0 .563.252.563.563v4.874c0 .311-.252.563-.563.563H9.564A.562.562 0 0 1 9 14.437V9.564Z" />
         </svg>
       ), 
       href: '/products?main-category=rudraksha'
@@ -753,18 +802,28 @@ const MobileBottomMenu = memo(() => {
       key: 'accessories', 
       label: 'Accessories', 
       icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 0 1 0 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 0 1 0-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375Z" />
         </svg>
       ), 
       href: '/products?main-category=rudraksha_accessories'
+    },
+    { 
+      key: 'call', 
+      label: 'Call Us', 
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
+        </svg>
+      ), 
+      onClick: handleCallClick
     },
   ];
 
   return (
     <div className={`
-      fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 py-3 px-2 flex justify-between items-center md:hidden z-50
-      shadow-2xl transition-transform duration-300 ease-in-out
+      fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 py-2 px-1 flex justify-between items-center md:hidden z-50
+      shadow-lg transition-transform duration-300 ease-in-out
       ${isVisible ? 'translate-y-0' : 'translate-y-full'}
       safe-area-inset-bottom
     `}
@@ -774,7 +833,7 @@ const MobileBottomMenu = memo(() => {
       bottom: '0',
       left: '0',
       right: '0',
-      paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))'
+      paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom, 0px))'
     }}>
       {menuItems.map((item) => (
         item.onClick ? (
@@ -785,7 +844,7 @@ const MobileBottomMenu = memo(() => {
               setActiveItem(item.key);
               item.onClick?.();
             }}
-            className={`flex flex-col items-center justify-center flex-1 px-1 py-2 rounded-xl transition-all duration-200 min-w-0 ${
+            className={`flex flex-col items-center justify-center flex-1 px-1 py-1 rounded-lg transition-all duration-200 min-w-0 ${
               activeItem === item.key 
                 ? 'text-[#f5821f] bg-orange-50 transform scale-105' 
                 : 'text-gray-600 hover:text-[#f5821f] hover:bg-gray-50'
@@ -801,7 +860,7 @@ const MobileBottomMenu = memo(() => {
           <Link
             key={item.key}
             href={item.href || '#'}
-            className={`flex flex-col items-center justify-center flex-1 px-1 py-2 rounded-xl transition-all duration-200 min-w-0 ${
+            className={`flex flex-col items-center justify-center flex-1 px-1 py-1 rounded-lg transition-all duration-200 min-w-0 ${
               activeItem === item.key 
                 ? 'text-[#f5821f] bg-orange-50 transform scale-105' 
                 : 'text-gray-600 hover:text-[#f5821f] hover:bg-gray-50'
@@ -818,6 +877,8 @@ const MobileBottomMenu = memo(() => {
     </div>
   );
 });
+
+MobileBottomMenu.displayName = 'MobileBottomMenu';
 
 MobileBottomMenu.displayName = 'MobileBottomMenu';
 

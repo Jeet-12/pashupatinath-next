@@ -26,7 +26,7 @@ interface SacredCollectionProps {
 }
 
 export default function SacredCollection({ products = [], categories = [] }: SacredCollectionProps) {
-  const [cart, setCart] = useState<any[]>([]);
+  const [_cart, setCart] = useState<any[]>([]);
   const [wishlist, setWishlist] = useState<number[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [_isScrolling, _setIsScrolling] = useState(false);

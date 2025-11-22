@@ -1,15 +1,12 @@
-"use client";
 
-import { useState, useEffect } from 'react';
-import { NextPage } from 'next';
+
+import { Suspense } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { 
   ChevronRight, 
   Ruler,
   Circle,
-  // AlertCircle,
-  // Info,
   Download,
   Printer,
   Share2,
@@ -18,18 +15,13 @@ import {
   Eye,
   Hand,
   ArrowRight,
-  CheckCircle,
-  RulerIcon
 } from 'lucide-react';
+import SizeGuideInteractive from '../checkout/SizeGuideInteractive';
+import PrintStyles from './PrintStyles';
+// import QuickActionBar from './QuickActionBar';
 
-const SizeGuide: NextPage = () => {
-  const [activeTab, setActiveTab] = useState('mukhi');
-  const [selectedSize, setSelectedSize] = useState('');
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    setIsVisible(true);
-  }, []);
+const SizeGuide = () => {
+  const isVisible = true; 
 
   const sizeCategories = {
     mukhi: [
@@ -106,17 +98,9 @@ const SizeGuide: NextPage = () => {
     }
   ];
 
-  const printGuide = () => {
-    window.print();
-  };
-
-  const downloadGuide = () => {
-    // In real implementation, this would download a PDF
-    // alert('Downloading Size Guide PDF...');
-  };
-
   return (
     <>
+      <PrintStyles />
       <Head>
         <title>Rudraksh Size Guide | Pashupatinath Rudraksh</title>
         <meta name="description" content="Comprehensive size guide for Rudraksh beads and malas. Choose the perfect size for your spiritual journey." />
@@ -151,39 +135,7 @@ const SizeGuide: NextPage = () => {
           }`}>
 
             {/* Quick Action Bar */}
-            <div className="flex flex-wrap gap-4 justify-between items-center mb-8 p-6 bg-purple-50 rounded-2xl">
-              <div>
-                <h2 className="text-xl font-semibold text-purple-900 mb-2">
-                  Need Help Choosing?
-                </h2>
-                <p className="text-purple-700">
-                  Contact our experts for personalized size recommendations
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={downloadGuide}
-                  className="bg-white text-purple-700 border border-purple-300 hover:bg-purple-50 px-4 py-2 rounded-lg font-semibold transition-all duration-200 flex items-center"
-                >
-                  <Download size={16} className="mr-2" />
-                  Download PDF
-                </button>
-                <button
-                  onClick={printGuide}
-                  className="bg-white text-purple-700 border border-purple-300 hover:bg-purple-50 px-4 py-2 rounded-lg font-semibold transition-all duration-200 flex items-center"
-                >
-                  <Printer size={16} className="mr-2" />
-                  Print Guide
-                </button>
-                <a
-                  href="https://wa.me/917377371008?text=Hi,%20I%20need%20help%20choosing%20the%20right%20Rudraksh%20size"
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-200 flex items-center"
-                >
-                  <Share2 size={16} className="mr-2" />
-                  Consult Expert
-                </a>
-              </div>
-            </div>
+            {/* <QuickActionBar /> */}
 
             {/* Size Categories */}
             <section className="mb-16">
@@ -200,70 +152,10 @@ const SizeGuide: NextPage = () => {
                 </p>
               </div>
 
-              {/* Tab Navigation */}
-              <div className="flex flex-wrap justify-center gap-2 mb-8">
-                {Object.keys(sizeCategories).map((category) => (
-                  <button
-                    key={category}
-                    onClick={() => setActiveTab(category)}
-                    className={`px-6 py-3 rounded-full font-medium transition-all duration-200 flex items-center capitalize ${
-                      activeTab === category
-                        ? 'bg-purple-600 text-white shadow-lg'
-                        : 'bg-white text-gray-600 hover:text-gray-800 border border-gray-200'
-                    }`}
-                  >
-                    <RulerIcon size={16} className="mr-2" />
-                    {category === 'mukhi' ? 'Mukhi Sizes' : 
-                     category === 'beads' ? 'Bead Sizes' : 'Mala Lengths'}
-                  </button>
-                ))}
-              </div>
-
-              {/* Size Table */}
-              <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white">
-                      <tr>
-                        <th className="px-6 py-4 text-left font-semibold">Size</th>
-                        <th className="px-6 py-4 text-left font-semibold">Description</th>
-                        <th className="px-6 py-4 text-left font-semibold">Common Usage</th>
-                        <th className="px-6 py-4 text-left font-semibold">Recommended For</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {sizeCategories[activeTab as keyof typeof sizeCategories].map((item, index) => (
-                        <tr 
-                          key={index} 
-                          className={`hover:bg-purple-50 transition-colors cursor-pointer ${
-                            selectedSize === item.size ? 'bg-purple-100' : ''
-                          }`}
-                          onClick={() => setSelectedSize(item.size)}
-                        >
-                          <td className="px-6 py-4">
-                            <div className="flex items-center">
-                              <div className="w-3 h-3 bg-purple-500 rounded-full mr-3"></div>
-                              <span className="font-semibold text-gray-900">{item.size}</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="text-gray-700">{item.description}</span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="text-gray-600">{item.usage}</span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center">
-                              <CheckCircle size={16} className="text-green-500 mr-2" />
-                              <span className="text-gray-600">{item.recommended}</span>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              {/* Interactive part is now a client component */}
+              <Suspense fallback={<div>Loading size chart...</div>}>
+                <SizeGuideInteractive sizeCategories={sizeCategories} />
+              </Suspense>
             </section>
 
             {/* Mukhi Types Size Reference */}
@@ -430,7 +322,7 @@ const SizeGuide: NextPage = () => {
             </section>
 
             {/* Final CTA */}
-            <section className="text-center">
+            <section className="text-center no-print">
               <div className="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl shadow-xl p-12 text-white">
                 <h3 className="text-3xl font-bold mb-4">
                   Still Unsure About Size?
@@ -459,16 +351,6 @@ const SizeGuide: NextPage = () => {
           </div>
         </div>
       </div>
-
-      <style jsx global>{`
-        @media print {
-          .breadcrumbs-section,
-          button,
-          a {
-            display: none !important;
-          }
-        }
-      `}</style>
     </>
   );
 };

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { getUserOrders, getOrderDetails, downloadInvoiceSimple, ApiResponse } from '../../../libs/api';
 
@@ -193,7 +194,7 @@ export default function UserOrdersPage() {
   useEffect(() => {
     fetchUserData();
     fetchOrders();
-  }, [currentPage]);
+  }, [currentPage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Filter orders
   useEffect(() => {
@@ -491,12 +492,14 @@ export default function UserOrdersPage() {
                       <div key={index} className="flex items-center space-x-4">
                         <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
                           {item.image && item.image !== '/api/placeholder/60/60' ? (
-                            <img 
+                            <Image 
                               src={item.image} 
                               alt={item.name}
-                              className="w-full h-full object-cover"
+                              width={48}
+                              height={48}
+                              className="object-cover"
                               onError={(e) => {
-                                e.currentTarget.src = '/api/placeholder/60/60';
+                                (e.target as HTMLImageElement).src = '/api/placeholder/60/60';
                               }}
                             />
                           ) : (
@@ -688,13 +691,15 @@ export default function UserOrdersPage() {
                     <div key={index} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
-                          {item.image && item.image !== '/api/placeholder/60/60' ? (
-                            <img 
+                            {item.image && item.image !== '/api/placeholder/60/60' ? (  
+                              <Image
                               src={item.image} 
                               alt={item.name}
-                              className="w-full h-full object-cover"
+                                width={48}
+                                height={48}
+                                className="object-cover"
                               onError={(e) => {
-                                e.currentTarget.src = '/api/placeholder/60/60';
+                                  (e.target as HTMLImageElement).src = '/api/placeholder/60/60';
                               }}
                             />
                           ) : (

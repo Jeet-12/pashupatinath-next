@@ -210,7 +210,7 @@ export default function CartDrawer() {
         window.removeEventListener('countsUpdated', onCountsUpdated as EventListener);
         window.removeEventListener('openCartDrawer', onOpenEvent as EventListener);
       } catch {}
-    };
+    }; // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleProceedToOrder = () => {

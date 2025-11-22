@@ -1,11 +1,9 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { 
-  getUserProfile, 
-  updateUserProfile, 
-  changePassword, 
-  UserProfile, 
-  UserStats,
+  getUserProfile,
+  updateUserProfile,
+  changePassword,
   UpdateProfileData,
   ChangePasswordData
 } from '../../../libs/api';
@@ -173,20 +171,6 @@ export default function UserProfilePage() {
       [section]: {
         ...(prev[section] as any),
         [field]: value
-      }
-    }));
-  };
-
-  // Handle address changes
-  const handleAddressChange = <T extends keyof AddressBook, F extends string>(type: T, field: F, value: any) => {
-    setUserData(prev => ({
-      ...prev,
-      address: {
-        ...prev.address,
-        [type]: {
-          ...((prev.address as any)[type]),
-          [field]: value
-        }
       }
     }));
   };
