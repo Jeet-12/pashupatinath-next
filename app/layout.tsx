@@ -1,19 +1,15 @@
 
 import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
-import { Geist as GeistSans, Geist_Mono as GeistMono, Geist } from "next/font/google";
+import { Geist } from "next/font/google";
 import "./globals.css";
 import GlobalShell from "./components/GlobalShell";
 import PageTrackingProvider from "./PageTrackingProvider";
 import VisitorTrackingProvider from "./components/VisitorTrackingProvider";
+import { Toaster } from "sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = GeistMono({
-  variable: "--font-geist-mono",
   subsets: ["latin"],
 });
 
@@ -84,7 +80,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`} suppressHydrationWarning={true}>
+      <body className={`${geistSans.variable} antialiased`} suppressHydrationWarning={true}>
         <Suspense>
           <PageTrackingProvider>
             <VisitorTrackingProvider>
@@ -92,6 +88,7 @@ export default function RootLayout({
             </VisitorTrackingProvider>
           </PageTrackingProvider>
         </Suspense>
+        <Toaster richColors position="top-center" />
       </body>
     </html>
   );

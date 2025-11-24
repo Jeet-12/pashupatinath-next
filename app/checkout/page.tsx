@@ -836,74 +836,82 @@ const CheckoutPage = () => {
 
       console.log('Opening Razorpay checkout with order ID:', razorpay_order_id);
 
-      const options: RazorpayOptions = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
-        amount: Math.round(total * 100),
-        currency: 'INR',
-        name: 'Pashupatinath Rudraksha',
-        description: 'Order Payment',
-        image: '/logo.png',
-        order_id: razorpay_order_id,
-        handler: async function (response: RazorpayResponse) {
-          try {
-            console.log('Payment successful response:', response);
-            
-            // Verify payment signature AND complete order via Laravel
-            console.log('Verifying payment signature and completing order via Laravel...');
-            const verificationResult = await verifyPaymentAndCompleteOrder(response, internal_order_id);
-             
-            if (!verificationResult.success) {
-              setError(verificationResult.message || 'Payment verification failed. Please contact support.');
-              setIsLoading(false);
-              return;
-            }
+     const options: RazorpayOptions = {
+  key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
+  amount: Math.round(total * 100),
+  currency: 'INR',
+  name: 'Pashupatinath Rudraksha',
+  description: 'Order Payment',
+  image: '/logo.png',
+  order_id: razorpay_order_id,
+  handler: async function (response: RazorpayResponse) {
+    try {
+      console.log('Payment successful response:', response);
+      
+      // Verify payment signature AND complete order via Laravel
+      console.log('Verifying payment signature and completing order via Laravel...');
+      const verificationResult = await verifyPaymentAndCompleteOrder(response, internal_order_id);
+       
+      if (!verificationResult.success) {
+        setError(verificationResult.message || 'Payment verification failed. Please contact support.');
+        setIsLoading(false);
+        return;
+      }
 
-            console.log('Payment verified and order completed successfully:', verificationResult.order);
+      console.log('Payment verified and order completed successfully:', verificationResult.order);
 
-            // Show success message
-            setIsLoading(false);
-            setOrderSuccess(true);
-            setOrderId(verificationResult.order?.order_number || 'N/A');
-            
-          } catch (err) {
-            console.error('Payment verification and order completion error:', err);
-            setError('Failed to complete order. Please contact support with your payment ID.');
-            setIsLoading(false);
-          }
-        },
-        prefill: {
-          name: selectedAddress ? `${selectedAddress.first_name} ${selectedAddress.last_name}`.trim() : '',
-          email: selectedAddress?.email || '',
-          contact: selectedAddress?.phone || '',
-        },
-        notes: {
-          address: selectedAddress ? `${selectedAddress.address_line_1}, ${selectedAddress.city}, ${selectedAddress.state}, ${selectedAddress.postal_code}` : '',
-          order_type: 'product_purchase',
-          internal_order_id: internal_order_id.toString()
-        },
-        theme: {
-          color: '#F59E0B',
-        },
-        modal: {
-          ondismiss: function() {
-            setIsLoading(false);
-            setError('Payment was cancelled. You can try again.');
-            console.log('Payment modal dismissed by user');
-          },
-          escape: true,
-          confirm_close: true
-        },
-        retry: {
-          enabled: true,
-          max_count: 3
-        },
-        timeout: 900,
-        remember_customer: true,
-        readonly: {
-          contact: true,
-          email: true
-        }
-      };
+      // Show success message
+      setIsLoading(false);
+      setOrderSuccess(true);
+      setOrderId(verificationResult.order?.order_number || 'N/A');
+      
+    } catch (err) {
+      console.error('Payment verification and order completion error:', err);
+      setError('Failed to complete order. Please contact support with your payment ID.');
+      setIsLoading(false);
+    }
+  },
+  prefill: {
+    name: selectedAddress ? `${selectedAddress.first_name} ${selectedAddress.last_name}`.trim() : '',
+    email: selectedAddress?.email || '',
+    contact: selectedAddress?.phone || '',
+  },
+  notes: {
+    address: selectedAddress ? `${selectedAddress.address_line_1}, ${selectedAddress.city}, ${selectedAddress.state}, ${selectedAddress.postal_code}` : '',
+    order_type: 'product_purchase',
+    internal_order_id: internal_order_id.toString()
+  },
+  theme: {
+    color: '#F59E0B',
+  },
+  // Enhanced modal configuration for mobile
+  modal: {
+    ondismiss: function() {
+      setIsLoading(false);
+      setError('Payment was cancelled. You can try again.');
+      console.log('Payment modal dismissed by user');
+    },
+    escape: false, // Prevent accidental dismissal on mobile
+    confirm_close: false, // Disable confirm close on mobile for better UX
+    animation: true, // Enable animations for mobile
+  },
+  retry: {
+    enabled: true,
+    max_count: 3
+  },
+  timeout: 300, // Reduce timeout for mobile
+  remember_customer: false, // Disable on mobile for security
+  // Mobile-specific configurations
+  config: {
+    display: {
+      language: 'en',
+      // Mobile-optimized display
+    }
+  },
+  // Add callback URL for external payment methods
+  callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/callback`,
+  redirect: true, // Enable redirect for external payment methods
+};
 
       // Create and open Razorpay instance
       const paymentObject = new window.Razorpay(options);
@@ -1529,186 +1537,196 @@ const CheckoutPage = () => {
               {/* Add Address Form */}
               {showAddressForm && (
                 <div className="bg-gradient-to-br from-white to-amber-50 rounded-2xl p-8 border-2 border-amber-200 shadow-lg mt-6">
-                  <div className="flex items-center space-x-3 mb-6">
-                    <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                      </svg>
-                    </div>
-                    <h3 className="text-xl font-bold text-gray-900">Add New Address</h3>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
-                      <input
-                        type="text"
-                        name="first_name"
-                        value={address.first_name}
-                        onChange={handleInputChange}
-                        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
-                      <input
-                        type="text"
-                        name="last_name"
-                        value={address.last_name}
-                        onChange={handleInputChange}
-                        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500"
-                        required
-                      />
-                    </div>
-                  </div>
+  <div className="flex items-center space-x-3 mb-6">
+    <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
+      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+      </svg>
+    </div>
+    <h3 className="text-xl font-bold text-gray-900">Add New Address</h3>
+  </div>
+  
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
+      <input
+        type="text"
+        name="first_name"
+        value={address.first_name}
+        onChange={handleInputChange}
+        placeholder="Enter first name"
+        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400"
+        required
+      />
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
+      <input
+        type="text"
+        name="last_name"
+        value={address.last_name}
+        onChange={handleInputChange}
+        placeholder="Enter last name"
+        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400"
+        required
+      />
+    </div>
+  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-                      <input
-                        type="email"
-                        name="email"
-                        value={address.email}
-                        onChange={handleInputChange}
-                        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Phone *</label>
-                      <input
-                        type="tel"
-                        name="phone"
-                        value={address.phone}
-                        onChange={handleInputChange}
-                        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500"
-                        required
-                      />
-                    </div>
-                  </div>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+      <input
+        type="email"
+        name="email"
+        value={address.email}
+        onChange={handleInputChange}
+        placeholder="Enter email address"
+        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400"
+        required
+      />
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">Phone *</label>
+      <input
+        type="tel"
+        name="phone"
+        value={address.phone}
+        onChange={handleInputChange}
+        placeholder="Enter phone number"
+        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400"
+        required
+      />
+    </div>
+  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
-                      <input
-                        type="text"
-                        name="country"
-                        value={address.country}
-                        onChange={handleInputChange}
-                        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 bg-gray-100"
-                        readOnly
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">State *</label>
-                      <input
-                        type="text"
-                        name="state"
-                        value={address.state}
-                        onChange={handleInputChange}
-                        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">City *</label>
-                      <input
-                        type="text"
-                        name="city"
-                        value={address.city}
-                        onChange={handleInputChange}
-                        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500"
-                        required
-                      />
-                    </div>
-                  </div>
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
+      <input
+        type="text"
+        name="country"
+        value={address.country}
+        onChange={handleInputChange}
+        placeholder="Country"
+        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400 bg-gray-100"
+        readOnly
+      />
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">State *</label>
+      <input
+        type="text"
+        name="state"
+        value={address.state}
+        onChange={handleInputChange}
+        placeholder="Enter state"
+        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400"
+        required
+      />
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">City *</label>
+      <input
+        type="text"
+        name="city"
+        value={address.city}
+        onChange={handleInputChange}
+        placeholder="Enter city"
+        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400"
+        required
+      />
+    </div>
+  </div>
 
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Address Line 1 *</label>
-                    <input
-                      type="text"
-                      name="address_line_1"
-                      value={address.address_line_1}
-                      onChange={handleInputChange}
-                      className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500"
-                      required
-                    />
-                  </div>
+  <div className="mb-4">
+    <label className="block text-sm font-medium text-gray-700 mb-2">Address Line 1 *</label>
+    <input
+      type="text"
+      name="address_line_1"
+      value={address.address_line_1}
+      onChange={handleInputChange}
+      placeholder="Enter street address"
+      className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400"
+      required
+    />
+  </div>
 
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Address Line 2</label>
-                    <input
-                      type="text"
-                      name="address_line_2"
-                      value={address.address_line_2}
-                      onChange={handleInputChange}
-                      className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500"
-                    />
-                  </div>
+  <div className="mb-4">
+    <label className="block text-sm font-medium text-gray-700 mb-2">Address Line 2</label>
+    <input
+      type="text"
+      name="address_line_2"
+      value={address.address_line_2}
+      onChange={handleInputChange}
+      placeholder="Apartment, suite, unit, etc. (optional)"
+      className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400"
+    />
+  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Postal Code *</label>
-                      <input
-                        type="text"
-                        name="postal_code"
-                        value={address.postal_code}
-                        onChange={handleInputChange}
-                        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Address Type</label>
-                      <div className="flex space-x-2">
-                        {(['home', 'work', 'other'] as const).map((type) => (
-                          <button
-                            key={type}
-                            type="button"
-                            onClick={() => handleAddressTypeChange(type)}
-                            className={`flex-1 border-2 rounded-xl py-3 text-sm font-semibold transition-all ${
-                              address.address_type === type
-                                ? 'border-amber-500 bg-amber-500 text-white'
-                                : 'border-gray-300 text-gray-700 hover:border-amber-300'
-                            }`}
-                          >
-                            {type === 'home' ? '🏠 Home' : type === 'work' ? '🏢 Work' : '📍 Other'}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">Postal Code *</label>
+      <input
+        type="text"
+        name="postal_code"
+        value={address.postal_code}
+        onChange={handleInputChange}
+        placeholder="Enter postal code"
+        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400"
+        required
+      />
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-2">Address Type</label>
+      <div className="flex space-x-2">
+        {(['home', 'work', 'other'] as const).map((type) => (
+          <button
+            key={type}
+            type="button"
+            onClick={() => handleAddressTypeChange(type)}
+            className={`flex-1 border-2 rounded-xl py-3 text-sm font-semibold transition-all ${
+              address.address_type === type
+                ? 'border-amber-500 bg-amber-500 text-white'
+                : 'border-gray-300 text-gray-700 hover:border-amber-300'
+            }`}
+          >
+            {type === 'home' ? '🏠 Home' : type === 'work' ? '🏢 Work' : '📍 Other'}
+          </button>
+        ))}
+      </div>
+    </div>
+  </div>
 
-                  <div className="flex items-center mb-6">
-                    <input
-                      type="checkbox"
-                      name="is_default"
-                      checked={address.is_default}
-                      onChange={handleInputChange}
-                      className="w-4 h-4 text-amber-500 border-gray-300 rounded focus:ring-amber-500"
-                    />
-                    <label className="ml-2 text-sm text-gray-700">Set as default address</label>
-                  </div>
-                  
-                  <div className="flex gap-4">
-                    <button
-                      onClick={handleSaveAddress}
-                      className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white py-4 rounded-xl font-bold hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl"
-                    >
-                      Save Address
-                    </button>
-                    <button
-                      onClick={() => {
-                        setShowAddressForm(false);
-                        resetAddressForm();
-                      }}
-                      className="flex-1 border-2 border-gray-300 text-gray-700 py-4 rounded-xl font-bold hover:bg-gray-50 transition-all duration-300"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
+  <div className="flex items-center mb-6">
+    <input
+      type="checkbox"
+      name="is_default"
+      checked={address.is_default}
+      onChange={handleInputChange}
+      className="w-4 h-4 text-amber-500 border-gray-300 rounded focus:ring-amber-500"
+    />
+    <label className="ml-2 text-sm text-gray-700">Set as default address</label>
+  </div>
+  
+  <div className="flex gap-4">
+    <button
+      onClick={handleSaveAddress}
+      className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white py-4 rounded-xl font-bold hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl"
+    >
+      Save Address
+    </button>
+    <button
+      onClick={() => {
+        setShowAddressForm(false);
+        resetAddressForm();
+      }}
+      className="flex-1 border-2 border-gray-300 text-gray-700 py-4 rounded-xl font-bold hover:bg-gray-50 transition-all duration-300"
+    >
+      Cancel
+    </button>
+  </div>
+</div>
               )}
             </div>
 
