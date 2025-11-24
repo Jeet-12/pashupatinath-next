@@ -61,7 +61,7 @@ export const usePageTracking = () => {
         headers['Authorization'] = `Bearer ${authToken}`;
       }
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, {
+      const response = await fetch(`https://pashupatinathrudraksh.com/api/track-page-public`, {
         method: 'POST',
         headers,
         body: JSON.stringify(trackingData),
