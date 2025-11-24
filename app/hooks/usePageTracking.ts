@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useRef, useCallback } from 'react';
@@ -14,18 +15,19 @@ export const usePageTracking = () => {
   const searchParams = useSearchParams();
   
   const startTimeRef = useRef<number>(Date.now());
-  hasSentDataRef = useRef<boolean>(false);
+  const hasSentDataRef = useRef<boolean>(false);
   const currentUrlRef = useRef<string>('');
 
   const getAuthToken = useCallback((): string | null => {
     if (typeof window === 'undefined') return null;
     
-    // Try multiple possible token storage locations
+    // Try multiple possible token storage locations (same as your other API calls)
     const tokenSources = [
       localStorage.getItem('auth_token'),
       localStorage.getItem('token'),
       sessionStorage.getItem('auth_token'),
       sessionStorage.getItem('token'),
+      // Also check for session_token which might be used in your app
       localStorage.getItem('session_token'),
       sessionStorage.getItem('session_token'),
     ];
@@ -36,11 +38,8 @@ export const usePageTracking = () => {
   const sendTrackingData = useCallback(async (timeSpent: number) => {
     if (hasSentDataRef.current) return;
 
-    // Get the full current URL including protocol and domain
-    const fullCurrentUrl = window.location.origin + pathname + (searchParams.toString() ? `?${searchParams.toString()}` : '');
-
     const trackingData: TrackingData = {
-      url: fullCurrentUrl, // Use full URL here
+      url: currentUrlRef.current,
       timeSpent,
       pageTitle: document.title,
     };
@@ -48,8 +47,8 @@ export const usePageTracking = () => {
     try {
       const authToken = getAuthToken();
       
-      // Always use full URL for the API endpoint
-      const apiUrl = 'https://pashupatinathrudraksh.com/api/track-page-public';
+      // Always use the same endpoint - the controller will handle authentication
+      const endpoint = '/api/track-page-public';
       
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
@@ -57,11 +56,12 @@ export const usePageTracking = () => {
       };
 
       // If user has auth token, include it in the request
+      // The controller will extract and validate it
       if (authToken) {
         headers['Authorization'] = `Bearer ${authToken}`;
       }
 
-      const response = await fetch(apiUrl, {
+      const response = await fetch(`https://pashupatinathrudraksh.com/api/track-page-public`, {
         method: 'POST',
         headers,
         body: JSON.stringify(trackingData),
@@ -77,7 +77,7 @@ export const usePageTracking = () => {
     } catch (error) {
       console.error('❌ Failed to send page tracking data:', error);
     }
-  }, [getAuthToken, pathname, searchParams]);
+  }, [getAuthToken]);
 
   const trackTimeSpent = useCallback(() => {
     if (hasSentDataRef.current) return;
