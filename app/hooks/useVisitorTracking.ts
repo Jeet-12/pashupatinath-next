@@ -19,7 +19,7 @@ export const useVisitorTracking = () => {
       try {
         const fullUrl = `${window.location.origin}${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
         
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/visitors`, {
+        const response = await fetch(`https://ammaidli.in/api/visitors`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
