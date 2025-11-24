@@ -1190,6 +1190,26 @@ export default function ProductDetailsClient({
                 {product.cat_info?.title || 'Rudraksha'}
               </span>
             </div>
+            <motion.div 
+  className="flex items-center space-x-4 lg:space-x-6 mb-4 lg:mb-6"
+  initial={{ opacity: 0, y: 10 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ delay: 0.8 }}
+>
+  <div className="flex items-center space-x-2 lg:space-x-4">
+    <span className="text-2xl lg:text-4xl font-black bg-gradient-to-r from-[#f5821f] to-orange-600 bg-clip-text text-transparent">
+      ₹{currentPrice.toLocaleString()}
+    </span>
+    {hasDiscount && (
+      <>
+        <span className="text-lg lg:text-2xl text-gray-500 line-through font-semibold">
+          ₹{product.price.toLocaleString()}
+        </span>
+       
+      </>
+    )}
+  </div>
+</motion.div>
 
             {/* Enhanced Description */}
             <motion.div 
@@ -1208,37 +1228,51 @@ export default function ProductDetailsClient({
             </motion.div>
 
             {/* Enhanced Quantity Selector */}
-            <motion.div 
-              className="flex items-center space-x-3 lg:space-x-6 mb-4 lg:mb-8"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.6 }}
-            >
-              <span className="text-gray-700 font-black text-base lg:text-xl">Quantity:</span>
-              <div className="flex items-center bg-white border-2 border-amber-300 rounded-xl lg:rounded-3xl shadow-xl lg:shadow-2xl overflow-hidden">
-                <motion.button
-                  onClick={() => handleQuantityChange(quantity - 1)}
-                  className="px-3 lg:px-8 py-2 lg:py-5 text-gray-600 hover:text-amber-600 disabled:opacity-30 transition-all duration-200 text-lg lg:text-2xl font-black"
-                  disabled={quantity <= 1}
-                  whileHover={{ scale: 1.05, backgroundColor: "#fef3c7" }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  -
-                </motion.button>
-                <span className="px-4 lg:px-10 py-2 lg:py-5 text-gray-800 font-black text-lg lg:text-2xl bg-amber-50 min-w-12 lg:min-w-24 text-center border-x-2 border-amber-200">
-                  {quantity}
-                </span>
-                <motion.button
-                  onClick={() => handleQuantityChange(quantity + 1)}
-                  className="px-3 lg:px-8 py-2 lg:py-5 text-gray-600 hover:text-amber-600 disabled:opacity-30 transition-all duration-200 text-lg lg:text-2xl font-black"
-                  disabled={product.stock <= quantity}
-                  whileHover={{ scale: 1.05, backgroundColor: "#fef3c7" }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  +
-                </motion.button>
-              </div>
-            </motion.div>
+        {/* Enhanced Quantity Selector with Price */}
+<motion.div 
+  className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 mb-4 lg:mb-8"
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ delay: 1.6 }}
+>
+  {/* Quantity Controls */}
+  <div className="flex items-center space-x-3 lg:space-x-6">
+    <span className="text-gray-700 font-black text-base lg:text-xl">Quantity:</span>
+    <div className="flex items-center bg-white border-2 border-amber-300 rounded-xl lg:rounded-3xl shadow-xl lg:shadow-2xl overflow-hidden">
+      <motion.button
+        onClick={() => handleQuantityChange(quantity - 1)}
+        className="px-3 lg:px-8 py-2 lg:py-5 text-gray-600 hover:text-amber-600 disabled:opacity-30 transition-all duration-200 text-lg lg:text-2xl font-black"
+        disabled={quantity <= 1}
+        whileHover={{ scale: 1.05, backgroundColor: "#fef3c7" }}
+        whileTap={{ scale: 0.9 }}
+      >
+        -
+      </motion.button>
+      <span className="px-4 lg:px-10 py-2 lg:py-5 text-gray-800 font-black text-lg lg:text-2xl bg-amber-50 min-w-12 lg:min-w-24 text-center border-x-2 border-amber-200">
+        {quantity}
+      </span>
+      <motion.button
+        onClick={() => handleQuantityChange(quantity + 1)}
+        className="px-3 lg:px-8 py-2 lg:py-5 text-gray-600 hover:text-amber-600 disabled:opacity-30 transition-all duration-200 text-lg lg:text-2xl font-black"
+        disabled={product.stock <= quantity}
+        whileHover={{ scale: 1.05, backgroundColor: "#fef3c7" }}
+        whileTap={{ scale: 0.9 }}
+      >
+        +
+      </motion.button>
+    </div>
+     <div className="flex items-center space-x-3  bg-gradient-to-r from-amber-100 to-orange-100 rounded-xl lg:rounded-3xl p-3 lg:p-2 border-2 border-amber-200">
+
+    <span className="text-md font-black bg-gradient-to-r from-[#f5821f] to-orange-600 bg-clip-text text-transparent">
+      ₹{(currentPrice * quantity).toLocaleString()}
+    </span>
+    
+  </div>
+  </div>
+
+  {/* Total Price Display */}
+ 
+</motion.div>
 
             {/* Enhanced Action Buttons */}
             <motion.div 

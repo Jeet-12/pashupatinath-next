@@ -836,82 +836,74 @@ const CheckoutPage = () => {
 
       console.log('Opening Razorpay checkout with order ID:', razorpay_order_id);
 
-     const options: RazorpayOptions = {
-  key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
-  amount: Math.round(total * 100),
-  currency: 'INR',
-  name: 'Pashupatinath Rudraksha',
-  description: 'Order Payment',
-  image: '/logo.png',
-  order_id: razorpay_order_id,
-  handler: async function (response: RazorpayResponse) {
-    try {
-      console.log('Payment successful response:', response);
-      
-      // Verify payment signature AND complete order via Laravel
-      console.log('Verifying payment signature and completing order via Laravel...');
-      const verificationResult = await verifyPaymentAndCompleteOrder(response, internal_order_id);
-       
-      if (!verificationResult.success) {
-        setError(verificationResult.message || 'Payment verification failed. Please contact support.');
-        setIsLoading(false);
-        return;
-      }
+      const options: RazorpayOptions = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
+        amount: Math.round(total * 100),
+        currency: 'INR',
+        name: 'Pashupatinath Rudraksha',
+        description: 'Order Payment',
+        image: '/logo.png',
+        order_id: razorpay_order_id,
+        handler: async function (response: RazorpayResponse) {
+          try {
+            console.log('Payment successful response:', response);
+            
+            // Verify payment signature AND complete order via Laravel
+            console.log('Verifying payment signature and completing order via Laravel...');
+            const verificationResult = await verifyPaymentAndCompleteOrder(response, internal_order_id);
+             
+            if (!verificationResult.success) {
+              setError(verificationResult.message || 'Payment verification failed. Please contact support.');
+              setIsLoading(false);
+              return;
+            }
 
-      console.log('Payment verified and order completed successfully:', verificationResult.order);
+            console.log('Payment verified and order completed successfully:', verificationResult.order);
 
-      // Show success message
-      setIsLoading(false);
-      setOrderSuccess(true);
-      setOrderId(verificationResult.order?.order_number || 'N/A');
-      
-    } catch (err) {
-      console.error('Payment verification and order completion error:', err);
-      setError('Failed to complete order. Please contact support with your payment ID.');
-      setIsLoading(false);
-    }
-  },
-  prefill: {
-    name: selectedAddress ? `${selectedAddress.first_name} ${selectedAddress.last_name}`.trim() : '',
-    email: selectedAddress?.email || '',
-    contact: selectedAddress?.phone || '',
-  },
-  notes: {
-    address: selectedAddress ? `${selectedAddress.address_line_1}, ${selectedAddress.city}, ${selectedAddress.state}, ${selectedAddress.postal_code}` : '',
-    order_type: 'product_purchase',
-    internal_order_id: internal_order_id.toString()
-  },
-  theme: {
-    color: '#F59E0B',
-  },
-  // Enhanced modal configuration for mobile
-  modal: {
-    ondismiss: function() {
-      setIsLoading(false);
-      setError('Payment was cancelled. You can try again.');
-      console.log('Payment modal dismissed by user');
-    },
-    escape: false, // Prevent accidental dismissal on mobile
-    confirm_close: false, // Disable confirm close on mobile for better UX
-    animation: true, // Enable animations for mobile
-  },
-  retry: {
-    enabled: true,
-    max_count: 3
-  },
-  timeout: 300, // Reduce timeout for mobile
-  remember_customer: false, // Disable on mobile for security
-  // Mobile-specific configurations
-  config: {
-    display: {
-      language: 'en',
-      // Mobile-optimized display
-    }
-  },
-  // Add callback URL for external payment methods
-  callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/callback`,
-  redirect: true, // Enable redirect for external payment methods
-};
+            // Show success message
+            setIsLoading(false);
+            setOrderSuccess(true);
+            setOrderId(verificationResult.order?.order_number || 'N/A');
+            
+          } catch (err) {
+            console.error('Payment verification and order completion error:', err);
+            setError('Failed to complete order. Please contact support with your payment ID.');
+            setIsLoading(false);
+          }
+        },
+        prefill: {
+          name: selectedAddress ? `${selectedAddress.first_name} ${selectedAddress.last_name}`.trim() : '',
+          email: selectedAddress?.email || '',
+          contact: selectedAddress?.phone || '',
+        },
+        notes: {
+          address: selectedAddress ? `${selectedAddress.address_line_1}, ${selectedAddress.city}, ${selectedAddress.state}, ${selectedAddress.postal_code}` : '',
+          order_type: 'product_purchase',
+          internal_order_id: internal_order_id.toString()
+        },
+        theme: {
+          color: '#F59E0B',
+        },
+        modal: {
+          ondismiss: function() {
+            setIsLoading(false);
+            setError('Payment was cancelled. You can try again.');
+            console.log('Payment modal dismissed by user');
+          },
+          escape: true,
+          confirm_close: true
+        },
+        retry: {
+          enabled: true,
+          max_count: 3
+        },
+        timeout: 900,
+        remember_customer: true,
+        readonly: {
+          contact: true,
+          email: true
+        }
+      };
 
       // Create and open Razorpay instance
       const paymentObject = new window.Razorpay(options);
