@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useRef, useCallback } from 'react';
@@ -20,11 +21,13 @@ export const usePageTracking = () => {
   const getAuthToken = useCallback((): string | null => {
     if (typeof window === 'undefined') return null;
     
+    // Try multiple possible token storage locations (same as your other API calls)
     const tokenSources = [
       localStorage.getItem('auth_token'),
       localStorage.getItem('token'),
       sessionStorage.getItem('auth_token'),
       sessionStorage.getItem('token'),
+      // Also check for session_token which might be used in your app
       localStorage.getItem('session_token'),
       sessionStorage.getItem('session_token'),
     ];
@@ -35,11 +38,8 @@ export const usePageTracking = () => {
   const sendTrackingData = useCallback(async (timeSpent: number) => {
     if (hasSentDataRef.current) return;
 
-    // Get the complete full URL including domain, path, and query parameters
-    const fullUrl = window.location.href;
-
     const trackingData: TrackingData = {
-      url: fullUrl,
+      url: currentUrlRef.current,
       timeSpent,
       pageTitle: document.title,
     };
@@ -47,43 +47,32 @@ export const usePageTracking = () => {
     try {
       const authToken = getAuthToken();
       
-      // Use the full API URL
-      const apiUrl = 'https://pashupatinathrudraksh.com/api/track-page-public';
+      // Always use the same endpoint - the controller will handle authentication
+      const endpoint = '/api/track-page-public';
       
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       };
 
+      // If user has auth token, include it in the request
+      // The controller will extract and validate it
       if (authToken) {
         headers['Authorization'] = `Bearer ${authToken}`;
       }
 
-      console.log('📊 Sending tracking data:', {
-        url: fullUrl,
-        timeSpent,
-        hasToken: !!authToken
-      });
-
-      const response = await fetch(apiUrl, {
+      const response = await fetch(`https://pashupatinathrudraksh.com/api/track-page-public`, {
         method: 'POST',
         headers,
         body: JSON.stringify(trackingData),
-        credentials: 'include'
       });
 
       if (response.ok) {
         hasSentDataRef.current = true;
         const result = await response.json();
-        console.log(`📊 Page tracked successfully as ${result.user_type || 'guest'} user`);
+        console.log(`📊 Page tracked as ${result.user_type || 'guest'} user`);
       } else {
-        console.warn('⚠️ Page tracking request failed:', response.status, response.statusText);
-        try {
-          const errorText = await response.text();
-          console.warn('Error response:', errorText);
-        } catch (e) {
-          console.warn('Could not read error response');
-        }
+        console.warn('⚠️ Page tracking request failed:', response.status);
       }
     } catch (error) {
       console.error('❌ Failed to send page tracking data:', error);
@@ -130,8 +119,7 @@ export const usePageTracking = () => {
 
   // Reset tracking when route changes
   useEffect(() => {
-    // Use the complete full URL including domain
-    const fullUrl = window.location.href;
+    const fullUrl = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
     
     // If URL changed, track previous page and reset for new page
     if (currentUrlRef.current && currentUrlRef.current !== fullUrl) {
