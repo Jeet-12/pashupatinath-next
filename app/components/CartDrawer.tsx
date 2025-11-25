@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { getCart, removeFromCart, updateCartQuantity } from "../libs/api";
 import Image from "next/image";
+import { usePathname } from "next/navigation"; // Add this import
 
 type CartItem = {
   id: number;
@@ -24,6 +25,10 @@ export default function CartDrawer() {
   const [subtotal, setSubtotal] = useState<number | null>(null);
   const [removingItem, setRemovingItem] = useState<number | null>(null);
   const [updatingItem, setUpdatingItem] = useState<number | null>(null);
+  const pathname = usePathname(); // Get current path
+
+  // Check if current page is checkout page
+  const isCheckoutPage = pathname === '/checkout';
 
   const getImageUrl = (image: string | undefined): string => {
     if (!image) return "/placeholder-product.jpg";
@@ -182,6 +187,12 @@ export default function CartDrawer() {
   useEffect(() => {
     const onCountsUpdated = () => {
       fetchCart();
+      
+      // Don't open drawer on checkout page
+      if (isCheckoutPage) {
+        return;
+      }
+      
       // Check if we should prevent the drawer from opening
       const shouldPreventOpen = localStorage.getItem('preventCartDrawerOpen');
       if (shouldPreventOpen) {
@@ -193,6 +204,11 @@ export default function CartDrawer() {
     };
 
     const onOpenEvent = () => {
+      // Don't open drawer on checkout page
+      if (isCheckoutPage) {
+        return;
+      }
+      
       fetchCart();
       setOpen(true);
     };
@@ -218,7 +234,7 @@ export default function CartDrawer() {
         window.removeEventListener('openCartDrawer', onOpenEvent as EventListener);
       } catch {}
     }; // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isCheckoutPage]); // Add isCheckoutPage as dependency
 
   const handleProceedToOrder = () => {
     setOpen(false);
@@ -242,6 +258,11 @@ export default function CartDrawer() {
       maximumFractionDigits: 0,
     }).format(price);
   };
+
+  // Don't render the cart drawer on checkout page
+  if (isCheckoutPage) {
+    return null;
+  }
 
   return (
     <div aria-hidden={!open} className={`fixed inset-0 z-50 pointer-events-none`}> 
