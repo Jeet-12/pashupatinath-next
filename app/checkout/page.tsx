@@ -350,6 +350,9 @@ const CheckoutPage = () => {
 
  useEffect(() => {
   if (orderSuccess) {
+    // Scroll to the top of the page to show the success message
+    window.scrollTo(0, 0);
+
     // Set countdown to 20 seconds
     setCountdown(20);
     
