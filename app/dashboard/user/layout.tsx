@@ -10,11 +10,17 @@ interface UserLayoutProps {
 }
 
 const UserLayout: React.FC<UserLayoutProps> = ({ children }) => {
-    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(false); // Start closed on mobile
     const isMobile = useMobile();
 
     const toggleSidebar = () => {
         setSidebarOpen(!sidebarOpen);
+    };
+
+    const closeSidebar = () => {
+        if (isMobile) {
+            setSidebarOpen(false);
+        }
     };
 
     return (
@@ -23,7 +29,7 @@ const UserLayout: React.FC<UserLayoutProps> = ({ children }) => {
             {isMobile && sidebarOpen && (
                 <div
                     className="fixed inset-0 bg-black bg-opacity-50 z-20"
-                    onClick={() => setSidebarOpen(false)}
+                    onClick={closeSidebar}
                 />
             )}
 
@@ -32,6 +38,7 @@ const UserLayout: React.FC<UserLayoutProps> = ({ children }) => {
                 isOpen={sidebarOpen}
                 isMobile={isMobile}
                 onToggle={toggleSidebar}
+                onItemClick={closeSidebar} // Pass close function
             />
 
             {/* Main Content */}

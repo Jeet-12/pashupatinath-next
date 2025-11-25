@@ -269,7 +269,75 @@ const CheckoutPage = () => {
     return requirements.join(' • ');
   };
 
-  // Add this useEffect to debug coupon state
+  // Enhanced responsive text sizes
+  const getTextSize = (size: 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl') => {
+    if (isMobile) {
+      const mobileSizes = {
+        'xs': 'text-xs',
+        'sm': 'text-xs',
+        'base': 'text-sm',
+        'lg': 'text-base',
+        'xl': 'text-lg',
+        '2xl': 'text-xl',
+        '3xl': 'text-2xl',
+        '4xl': 'text-2xl'
+      };
+      return mobileSizes[size];
+    } else {
+      // Desktop sizes - larger than mobile
+      const desktopSizes = {
+        'xs': 'text-sm',
+        'sm': 'text-base',
+        'base': 'text-lg',
+        'lg': 'text-xl',
+        'xl': 'text-2xl',
+        '2xl': 'text-3xl',
+        '3xl': 'text-4xl',
+        '4xl': 'text-5xl'
+      };
+      return desktopSizes[size];
+    }
+  };
+
+  // Enhanced responsive spacing
+  const getSpacing = (type: 'p' | 'm', size: number) => {
+    if (isMobile) {
+      return `${type}-${Math.max(2, size - 2)}`;
+    }
+    return `${type}-${size}`;
+  };
+
+  // Enhanced container padding for desktop
+  const getContainerPadding = () => {
+    return isMobile ? 'px-3' : 'px-6';
+  };
+
+  // Enhanced section padding for desktop
+  const getSectionPadding = () => {
+    return isMobile ? 'p-4' : 'p-6';
+  };
+
+  // Enhanced button sizes for desktop
+  const getButtonSize = () => {
+    return isMobile ? 'py-2 px-3 text-sm' : 'py-3 px-6 text-lg';
+  };
+
+  // Enhanced input sizes for desktop
+  const getInputSize = () => {
+    return isMobile ? 'py-2 px-3 text-sm' : 'py-3 px-4 text-base';
+  };
+
+  // Enhanced icon sizes for desktop
+  const getIconSize = () => {
+    return isMobile ? 'w-4 h-4' : 'w-6 h-6';
+  };
+
+  // Enhanced card size for desktop
+  const getCardSize = () => {
+    return isMobile ? 'w-8 h-8' : 'w-12 h-12';
+  };
+
+ // Add this useEffect to debug coupon state
   useEffect(() => {
     console.log('Coupon State:', {
       appliedCoupon,
@@ -290,7 +358,7 @@ const CheckoutPage = () => {
         if (prev <= 1) {
           clearInterval(timer);
           // Redirect to orders page instead of home
-          router.push('/dashboard/user/orders');
+          router.push('/');
           return 0;
         }
         return prev - 1;
@@ -986,32 +1054,6 @@ const CheckoutPage = () => {
     }
   };
 
-  // Mobile responsive text sizes
-  const getTextSize = (size: 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl') => {
-    if (isMobile) {
-      const mobileSizes = {
-        'xs': 'text-xs',
-        'sm': 'text-xs',
-        'base': 'text-sm',
-        'lg': 'text-base',
-        'xl': 'text-lg',
-        '2xl': 'text-xl',
-        '3xl': 'text-2xl',
-        '4xl': 'text-2xl'
-      };
-      return mobileSizes[size];
-    }
-    return `text-${size}`;
-  };
-
-  // Mobile responsive padding/margin
-  const getSpacing = (type: 'p' | 'm', size: number) => {
-    if (isMobile) {
-      return `${type}-${Math.max(2, size - 2)}`;
-    }
-    return `${type}-${size}`;
-  };
-
   // Render Coupon Section
   const renderCouponSection = () => (
     <div className="mb-4">
@@ -1383,7 +1425,7 @@ const CheckoutPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-amber-50 to-orange-50 py-4">
-      <div className={`container mx-auto px-3 max-w-7xl ${isMobile ? 'px-2' : ''}`}>
+      <div className={`container mx-auto ${getContainerPadding()} max-w-7xl`}>
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className={`font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent ${getTextSize('3xl')}`}>
@@ -1396,11 +1438,11 @@ const CheckoutPage = () => {
           {/* Left Column - Address & Payment */}
           <div className="xl:col-span-2 space-y-4">
             {/* Delivery Address Section */}
-            <div className="bg-white rounded-2xl shadow-xl border border-white/20 p-4">
+            <div className={`bg-white rounded-2xl shadow-xl border border-white/20 ${getSectionPadding()}`}>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center space-x-3">
-                  <div className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10'} bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg`}>
-                    <svg className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className={`${getCardSize()} bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg`}>
+                    <svg className={`${getIconSize()} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
@@ -1412,7 +1454,7 @@ const CheckoutPage = () => {
                 </div>
                 <button
                   onClick={() => setShowAddressList(!showAddressList)}
-                  className="bg-amber-500 text-white px-3 py-2 rounded-lg font-semibold hover:bg-amber-600 transition-all duration-300 shadow-lg hover:shadow-xl text-xs"
+                  className={`bg-amber-500 text-white ${getButtonSize()} rounded-lg font-semibold hover:bg-amber-600 transition-all duration-300 shadow-lg hover:shadow-xl`}
                 >
                   {showAddressList ? 'Hide' : 'Change'}
                 </button>
@@ -1542,8 +1584,8 @@ const CheckoutPage = () => {
                   className="w-full border-2 border-dashed border-amber-300 rounded-xl py-3 text-amber-600 hover:border-amber-500 hover:bg-amber-50 transition-all duration-300 font-bold text-sm group"
                 >
                   <div className="flex items-center justify-center space-x-2">
-                    <div className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'} bg-amber-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform`}>
-                      <svg className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className={`${getCardSize()} bg-amber-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                      <svg className={`${getIconSize()} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                       </svg>
                     </div>
@@ -1556,8 +1598,8 @@ const CheckoutPage = () => {
               {showAddressForm && (
                 <div className="bg-gradient-to-br from-white to-amber-50 rounded-xl p-4 border-2 border-amber-200 shadow-lg mt-4">
                   <div className="flex items-center space-x-2 mb-4">
-                    <div className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'} bg-amber-500 rounded-lg flex items-center justify-center`}>
-                      <svg className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className={`${getCardSize()} bg-amber-500 rounded-lg flex items-center justify-center`}>
+                      <svg className={`${getIconSize()} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                       </svg>
                     </div>
@@ -1566,26 +1608,26 @@ const CheckoutPage = () => {
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">First Name *</label>
+                      <label className={`block text-xs font-medium text-gray-700 mb-1 ${getTextSize('sm')}`}>First Name *</label>
                       <input
                         type="text"
                         name="first_name"
                         value={address.first_name}
                         onChange={handleInputChange}
                         placeholder="Enter first name"
-                        className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400 text-sm"
+                        className={`w-full border-2 border-gray-300 rounded-lg ${getInputSize()} focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400`}
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Last Name *</label>
+                      <label className={`block text-xs font-medium text-gray-700 mb-1 ${getTextSize('sm')}`}>Last Name *</label>
                       <input
                         type="text"
                         name="last_name"
                         value={address.last_name}
                         onChange={handleInputChange}
                         placeholder="Enter last name"
-                        className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400 text-sm"
+                        className={`w-full border-2 border-gray-300 rounded-lg ${getInputSize()} focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400`}
                         required
                       />
                     </div>
@@ -1593,26 +1635,26 @@ const CheckoutPage = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Email *</label>
+                      <label className={`block text-xs font-medium text-gray-700 mb-1 ${getTextSize('sm')}`}>Email *</label>
                       <input
                         type="email"
                         name="email"
                         value={address.email}
                         onChange={handleInputChange}
                         placeholder="Enter email address"
-                        className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400 text-sm"
+                        className={`w-full border-2 border-gray-300 rounded-lg ${getInputSize()} focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400`}
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Phone *</label>
+                      <label className={`block text-xs font-medium text-gray-700 mb-1 ${getTextSize('sm')}`}>Phone *</label>
                       <input
                         type="tel"
                         name="phone"
                         value={address.phone}
                         onChange={handleInputChange}
                         placeholder="Enter phone number"
-                        className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400 text-sm"
+                        className={`w-full border-2 border-gray-300 rounded-lg ${getInputSize()} focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400`}
                         required
                       />
                     </div>
@@ -1620,83 +1662,83 @@ const CheckoutPage = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Country</label>
+                      <label className={`block text-xs font-medium text-gray-700 mb-1 ${getTextSize('sm')}`}>Country</label>
                       <input
                         type="text"
                         name="country"
                         value={address.country}
                         onChange={handleInputChange}
                         placeholder="Country"
-                        className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400 bg-gray-100 text-sm"
+                        className={`w-full border-2 border-gray-300 rounded-lg ${getInputSize()} focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400 bg-gray-100`}
                         readOnly
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">State *</label>
+                      <label className={`block text-xs font-medium text-gray-700 mb-1 ${getTextSize('sm')}`}>State *</label>
                       <input
                         type="text"
                         name="state"
                         value={address.state}
                         onChange={handleInputChange}
                         placeholder="Enter state"
-                        className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400 text-sm"
+                        className={`w-full border-2 border-gray-300 rounded-lg ${getInputSize()} focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400`}
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">City *</label>
+                      <label className={`block text-xs font-medium text-gray-700 mb-1 ${getTextSize('sm')}`}>City *</label>
                       <input
                         type="text"
                         name="city"
                         value={address.city}
                         onChange={handleInputChange}
                         placeholder="Enter city"
-                        className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400 text-sm"
+                        className={`w-full border-2 border-gray-300 rounded-lg ${getInputSize()} focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400`}
                         required
                       />
                     </div>
                   </div>
 
                   <div className="mb-3">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Address Line 1 *</label>
+                    <label className={`block text-xs font-medium text-gray-700 mb-1 ${getTextSize('sm')}`}>Address Line 1 *</label>
                     <input
                       type="text"
                       name="address_line_1"
                       value={address.address_line_1}
                       onChange={handleInputChange}
                       placeholder="Enter street address"
-                      className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400 text-sm"
+                      className={`w-full border-2 border-gray-300 rounded-lg ${getInputSize()} focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400`}
                       required
                     />
                   </div>
 
                   <div className="mb-3">
-                    <label className="block text-xs font-medium text-gray-700 mb-1">Address Line 2</label>
+                    <label className={`block text-xs font-medium text-gray-700 mb-1 ${getTextSize('sm')}`}>Address Line 2</label>
                     <input
                       type="text"
                       name="address_line_2"
                       value={address.address_line_2}
                       onChange={handleInputChange}
                       placeholder="Apartment, suite, unit, etc. (optional)"
-                      className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400 text-sm"
+                      className={`w-full border-2 border-gray-300 rounded-lg ${getInputSize()} focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400`}
                     />
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Postal Code *</label>
+                      <label className={`block text-xs font-medium text-gray-700 mb-1 ${getTextSize('sm')}`}>Postal Code *</label>
                       <input
                         type="text"
                         name="postal_code"
                         value={address.postal_code}
                         onChange={handleInputChange}
                         placeholder="Enter postal code"
-                        className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400 text-sm"
+                        className={`w-full border-2 border-gray-300 rounded-lg ${getInputSize()} focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400`}
                         required
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">Address Type</label>
+                      <label className={`block text-xs font-medium text-gray-700 mb-1 ${getTextSize('sm')}`}>Address Type</label>
                       <div className="flex space-x-1">
                         {(['home', 'work', 'other'] as const).map((type) => (
                           <button
@@ -1730,7 +1772,7 @@ const CheckoutPage = () => {
                   <div className="flex gap-3">
                     <button
                       onClick={handleSaveAddress}
-                      className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3 rounded-lg font-bold hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl text-sm"
+                      className={`flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white ${getButtonSize()} rounded-lg font-bold hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl`}
                     >
                       Save Address
                     </button>
@@ -1739,7 +1781,7 @@ const CheckoutPage = () => {
                         setShowAddressForm(false);
                         resetAddressForm();
                       }}
-                      className="flex-1 border-2 border-gray-300 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-50 transition-all duration-300 text-sm"
+                      className={`flex-1 border-2 border-gray-300 text-gray-700 ${getButtonSize()} rounded-lg font-bold hover:bg-gray-50 transition-all duration-300`}
                     >
                       Cancel
                     </button>
@@ -1749,10 +1791,10 @@ const CheckoutPage = () => {
             </div>
 
             {/* Payment Method Section */}
-            <div className="bg-white rounded-2xl shadow-xl border border-white/20 p-4">
+            <div className={`bg-white rounded-2xl shadow-xl border border-white/20 ${getSectionPadding()}`}>
               <div className="flex items-center space-x-3 mb-4">
-                <div className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10'} bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg`}>
-                  <svg className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className={`${getCardSize()} bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg`}>
+                  <svg className={`${getIconSize()} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
                 </div>
@@ -1844,7 +1886,7 @@ const CheckoutPage = () => {
 
           {/* Right Column - Order Summary */}
           <div className="xl:col-span-1">
-            <div className="bg-white rounded-2xl shadow-xl border border-white/20 p-4 sticky top-4">
+            <div className={`bg-white rounded-2xl shadow-xl border border-white/20 ${getSectionPadding()} sticky top-4`}>
               <h2 className={`font-bold text-gray-900 mb-4 ${getTextSize('xl')}`}>Order Summary</h2>
 
               {/* Product Details */}
@@ -1901,42 +1943,42 @@ const CheckoutPage = () => {
               {/* Price Breakdown */}
               <div className="space-y-2 mb-4">
                 <div className="flex justify-between">
-                  <span className="text-gray-600 text-sm">Subtotal</span>
-                  <span className="text-gray-900 font-semibold text-sm">₹{subtotal.toLocaleString()}</span>
+                  <span className={`text-gray-600 ${getTextSize('sm')}`}>Subtotal</span>
+                  <span className={`text-gray-900 font-semibold ${getTextSize('sm')}`}>₹{subtotal.toLocaleString()}</span>
                 </div>
                 
                 {discount > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600 text-sm">Product Discount</span>
-                    <span className="text-green-600 font-semibold text-sm">-₹{discount.toLocaleString()}</span>
+                    <span className={`text-gray-600 ${getTextSize('sm')}`}>Product Discount</span>
+                    <span className={`text-green-600 font-semibold ${getTextSize('sm')}`}>-₹{discount.toLocaleString()}</span>
                   </div>
                 )}
 
                 {couponDiscount > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600 text-sm">Coupon Discount</span>
-                    <span className="text-green-600 font-semibold text-sm">-₹{couponDiscount.toLocaleString()}</span>
+                    <span className={`text-gray-600 ${getTextSize('sm')}`}>Coupon Discount</span>
+                    <span className={`text-green-600 font-semibold ${getTextSize('sm')}`}>-₹{couponDiscount.toLocaleString()}</span>
                   </div>
                 )}
 
                 {selectedPayment === 'online' && onlineDiscount > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600 text-sm">Online Payment Discount (5%)</span>
-                    <span className="text-green-600 font-semibold text-sm">-₹{onlineDiscount.toLocaleString()}</span>
+                    <span className={`text-gray-600 ${getTextSize('sm')}`}>Online Payment Discount (5%)</span>
+                    <span className={`text-green-600 font-semibold ${getTextSize('sm')}`}>-₹{onlineDiscount.toLocaleString()}</span>
                   </div>
                 )}
 
                 <div className="flex justify-between">
-                  <span className="text-gray-600 text-sm">Shipping</span>
-                  <span className="text-gray-900 font-semibold text-sm">
+                  <span className={`text-gray-600 ${getTextSize('sm')}`}>Shipping</span>
+                  <span className={`text-gray-900 font-semibold ${getTextSize('sm')}`}>
                     {shippingFee === 0 ? 'FREE' : `₹${shippingFee}`}
                   </span>
                 </div>
 
                 {selectedPayment === 'cod' && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600 text-sm">COD Charges</span>
-                    <span className="text-red-600 font-semibold text-sm">+₹{codCharges}</span>
+                    <span className={`text-gray-600 ${getTextSize('sm')}`}>COD Charges</span>
+                    <span className={`text-red-600 font-semibold ${getTextSize('sm')}`}>+₹{codCharges}</span>
                   </div>
                 )}
               </div>
@@ -1944,8 +1986,8 @@ const CheckoutPage = () => {
               {/* Total */}
               <div className="border-t border-gray-200 pt-3 mb-4">
                 <div className="flex justify-between">
-                  <span className="font-bold text-gray-900 text-base">Total Amount</span>
-                  <span className="font-bold text-amber-600 text-base">₹{total.toLocaleString()}</span>
+                  <span className={`font-bold text-gray-900 ${getTextSize('base')}`}>Total Amount</span>
+                  <span className={`font-bold text-amber-600 ${getTextSize('base')}`}>₹{total.toLocaleString()}</span>
                 </div>
                 <div className="mt-1 space-y-0.5">
                   {selectedPayment === 'online' && onlineDiscount > 0 && (
@@ -1970,7 +2012,7 @@ const CheckoutPage = () => {
               <button
                 onClick={handlePlaceOrder}
                 disabled={isLoading || !selectedAddress}
-                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3 rounded-lg font-bold hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                className={`w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white ${getButtonSize()} rounded-lg font-bold hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {isLoading ? (
                   <div className="flex items-center justify-center space-x-1">

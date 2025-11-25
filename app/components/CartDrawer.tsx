@@ -182,7 +182,14 @@ export default function CartDrawer() {
   useEffect(() => {
     const onCountsUpdated = () => {
       fetchCart();
-      setOpen(true);
+      // Check if we should prevent the drawer from opening
+      const shouldPreventOpen = localStorage.getItem('preventCartDrawerOpen');
+      if (shouldPreventOpen) {
+        // Consume the flag so it doesn't affect future cart updates
+        localStorage.removeItem('preventCartDrawerOpen');
+      } else {
+        setOpen(true);
+      }
     };
 
     const onOpenEvent = () => {
