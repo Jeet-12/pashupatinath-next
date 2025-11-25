@@ -33,12 +33,11 @@ type Review = ApiReview & {
     photo?: string;
     provider?: string;
     review: string;
-    
   };
-   photo?: string; 
+  photo?: string;
   images?: string[];
-  rate:number;
-  created_at:string;
+  rate: number;
+  created_at: string;
 };
 
 type RelatedProduct = {
@@ -59,6 +58,93 @@ type NewReviewState = {
   title: string;
   comment: string;
   photos?: File[];
+};
+
+// Floating Add to Cart Button Component
+const FloatingAddToCart = ({ 
+  product, 
+  quantity, 
+  currentPrice, 
+  onAddToCart, 
+  onBuyNow 
+}: { 
+  product: Product;
+  quantity: number;
+  currentPrice: number;
+  onAddToCart: () => void;
+  onBuyNow: () => void;
+}) => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollThreshold = 300;
+      setIsVisible(window.scrollY > scrollThreshold);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  if (!isVisible) return null;
+
+  return (
+    <motion.div
+      className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl z-50 lg:hidden"
+      initial={{ y: 100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: 100, opacity: 0 }}
+      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+    >
+      <div className="container mx-auto px-4 py-3">
+        <div className="flex items-center justify-between space-x-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center space-x-2">
+              <span className="text-sm font-bold text-gray-900">
+                ₹{(currentPrice * quantity).toLocaleString()}
+              </span>
+              {product.discount > 0 && (
+                <span className="text-xs text-gray-500 line-through">
+                  ₹{product.price.toLocaleString()}
+                </span>
+              )}
+            </div>
+            <div className="text-xs text-green-600 font-medium">
+              {product.stock > 0 ? 'In Stock' : 'Out of Stock'}
+            </div>
+          </div>
+          
+          <div className="flex space-x-2">
+            <motion.button
+              onClick={onAddToCart}
+              disabled={product.stock === 0}
+              className={`px-4 py-3 rounded-xl font-bold text-sm min-w-[100px] ${
+                product.stock === 0
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg'
+              }`}
+              whileTap={{ scale: 0.95 }}
+            >
+              Add to Cart
+            </motion.button>
+            
+            <motion.button
+              onClick={onBuyNow}
+              disabled={product.stock === 0}
+              className={`px-4 py-3 rounded-xl font-bold text-sm min-w-[100px] ${
+                product.stock === 0
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-[#493723] text-white shadow-lg'
+              }`}
+              whileTap={{ scale: 0.95 }}
+            >
+              Buy Now
+            </motion.button>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
 };
 
 // Fixed Desktop Zoom Component with Proper Image Display
@@ -775,7 +861,7 @@ export default function ProductDetailsClient({
   const [relatedProducts, setRelatedProducts] = useState<RelatedProduct[]>(initialRelatedProducts);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
-  const [isLoading, setIsLoading] = useState(!initialProduct); // Only show loading if no initial product
+  const [isLoading, setIsLoading] = useState(!initialProduct);
   const [wishlist, setWishlist] = useState<number[]>([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
@@ -950,35 +1036,35 @@ export default function ProductDetailsClient({
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-  const files = e.target.files;
-  if (!files) return;
+    const files = e.target.files;
+    if (!files) return;
 
-  const newPhotos = Array.from(files).slice(0, 5 - (newReview.photos?.length || 0));
-  
-  // Validate file types and sizes
-  const validPhotos = newPhotos.filter(file => {
-    const isValidType = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type);
-    const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB limit
+    const newPhotos = Array.from(files).slice(0, 5 - (newReview.photos?.length || 0));
     
-    if (!isValidType) {
-      console.warn(`Invalid file type: ${file.type}`);
-      return false;
-    }
-    if (!isValidSize) {
-      console.warn(`File too large: ${file.size} bytes`);
-      return false;
-    }
-    
-    return true;
-  });
+    // Validate file types and sizes
+    const validPhotos = newPhotos.filter(file => {
+      const isValidType = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type);
+      const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB limit
+      
+      if (!isValidType) {
+        console.warn(`Invalid file type: ${file.type}`);
+        return false;
+      }
+      if (!isValidSize) {
+        console.warn(`File too large: ${file.size} bytes`);
+        return false;
+      }
+      
+      return true;
+    });
 
-  setNewReview(prev => ({
-    ...prev,
-    photos: [...(prev.photos || []), ...validPhotos]
-  }));
+    setNewReview(prev => ({
+      ...prev,
+      photos: [...(prev.photos || []), ...validPhotos]
+    }));
 
-  e.target.value = '';
-};
+    e.target.value = '';
+  };
 
   const handleRemoveImage = (index: number) => {
     setNewReview(prev => ({
@@ -1175,45 +1261,49 @@ export default function ProductDetailsClient({
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.6, duration: 0.8 }}
           >
-            <h1 className="text-xl lg:text-4xl xl:text-5xl font-bold text-amber-900 mb-4 lg:mb-6 leading-tight bg-gradient-to-r from-amber-900 to-orange-900 bg-clip-text text-transparent">
+            <h1 className="text-lg lg:text-4xl xl:text-5xl font-bold text-amber-900 mb-3 lg:mb-6 leading-tight bg-gradient-to-r from-amber-900 to-orange-900 bg-clip-text text-transparent">
               {product.title}
             </h1>
             
             {/* Rating and Category */}
-            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 lg:space-x-6 mb-4 lg:mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 lg:space-x-6 mb-3 lg:mb-6">
               <div className="flex items-center space-x-2 lg:space-x-3">
                 <ReviewStars rating={averageRating} size="lg" />
-                <span className="text-lg lg:text-2xl font-bold text-gray-700">({averageRating})</span>
+                <span className="text-base lg:text-2xl font-bold text-gray-700">({averageRating})</span>
               </div>
               <span className="hidden sm:block text-amber-400 text-lg lg:text-2xl">|</span>
-              <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 lg:px-6 py-1 lg:py-3 rounded-xl lg:rounded-2xl text-sm lg:text-base font-black shadow-lg max-w-max">
+              <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 lg:px-6 py-1 lg:py-3 rounded-xl lg:rounded-2xl text-xs lg:text-base font-black shadow-lg max-w-max">
                 {product.cat_info?.title || 'Rudraksha'}
               </span>
             </div>
+
+            {/* Price Section */}
             <motion.div 
-  className="flex items-center space-x-4 lg:space-x-6 mb-4 lg:mb-6"
-  initial={{ opacity: 0, y: 10 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ delay: 0.8 }}
->
-  <div className="flex items-center space-x-2 lg:space-x-4">
-    <span className="text-2xl lg:text-4xl font-black bg-gradient-to-r from-[#f5821f] to-orange-600 bg-clip-text text-transparent">
-      ₹{currentPrice.toLocaleString()}
-    </span>
-    {hasDiscount && (
-      <>
-        <span className="text-lg lg:text-2xl text-gray-500 line-through font-semibold">
-          ₹{product.price.toLocaleString()}
-        </span>
-       
-      </>
-    )}
-  </div>
-</motion.div>
+              className="flex items-center space-x-3 lg:space-x-6 mb-3 lg:mb-6"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.8 }}
+            >
+              <div className="flex items-center space-x-2 lg:space-x-4">
+                <span className="text-xl lg:text-4xl font-black bg-gradient-to-r from-[#f5821f] to-orange-600 bg-clip-text text-transparent">
+                  ₹{currentPrice.toLocaleString()}
+                </span>
+                {hasDiscount && (
+                  <>
+                    <span className="text-base lg:text-2xl text-gray-500 line-through font-semibold">
+                      ₹{product.price.toLocaleString()}
+                    </span>
+                    <span className="bg-red-500 text-white text-xs lg:text-base px-2 lg:px-4 py-1 lg:py-2 rounded-lg lg:rounded-2xl font-bold">
+                      Save ₹{discountAmount.toLocaleString()}
+                    </span>
+                  </>
+                )}
+              </div>
+            </motion.div>
 
             {/* Enhanced Description */}
             <motion.div 
-              className="text-gray-700 mb-4 lg:mb-8 leading-relaxed text-sm lg:text-lg bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl lg:rounded-3xl p-3 lg:p-6 border-2 border-amber-200/50 shadow-lg  "
+              className="text-gray-700 mb-3 lg:mb-6 leading-relaxed text-xs lg:text-lg bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl lg:rounded-3xl p-3 lg:p-6 border-2 border-amber-200/50 shadow-lg"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 1.4 }}
@@ -1228,51 +1318,45 @@ export default function ProductDetailsClient({
             </motion.div>
 
             {/* Enhanced Quantity Selector */}
-        {/* Enhanced Quantity Selector with Price */}
-<motion.div 
-  className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0 mb-4 lg:mb-8"
-  initial={{ opacity: 0, y: 20 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ delay: 1.6 }}
->
-  {/* Quantity Controls */}
-  <div className="flex items-center space-x-3 lg:space-x-6">
-    <span className="text-gray-700 font-black text-base lg:text-xl">Quantity:</span>
-    <div className="flex items-center bg-white border-2 border-amber-300 rounded-xl lg:rounded-3xl shadow-xl lg:shadow-2xl overflow-hidden">
-      <motion.button
-        onClick={() => handleQuantityChange(quantity - 1)}
-        className="px-3 lg:px-8 py-2 lg:py-5 text-gray-600 hover:text-amber-600 disabled:opacity-30 transition-all duration-200 text-lg lg:text-2xl font-black"
-        disabled={quantity <= 1}
-        whileHover={{ scale: 1.05, backgroundColor: "#fef3c7" }}
-        whileTap={{ scale: 0.9 }}
-      >
-        -
-      </motion.button>
-      <span className="px-4 lg:px-10 py-2 lg:py-5 text-gray-800 font-black text-lg lg:text-2xl bg-amber-50 min-w-12 lg:min-w-24 text-center border-x-2 border-amber-200">
-        {quantity}
-      </span>
-      <motion.button
-        onClick={() => handleQuantityChange(quantity + 1)}
-        className="px-3 lg:px-8 py-2 lg:py-5 text-gray-600 hover:text-amber-600 disabled:opacity-30 transition-all duration-200 text-lg lg:text-2xl font-black"
-        disabled={product.stock <= quantity}
-        whileHover={{ scale: 1.05, backgroundColor: "#fef3c7" }}
-        whileTap={{ scale: 0.9 }}
-      >
-        +
-      </motion.button>
-    </div>
-     <div className="flex items-center space-x-3  bg-gradient-to-r from-amber-100 to-orange-100 rounded-xl lg:rounded-3xl p-3 lg:p-2 border-2 border-amber-200">
-
-    <span className="text-md font-black bg-gradient-to-r from-[#f5821f] to-orange-600 bg-clip-text text-transparent">
-      ₹{(currentPrice * quantity).toLocaleString()}
-    </span>
-    
-  </div>
-  </div>
-
-  {/* Total Price Display */}
- 
-</motion.div>
+            <motion.div 
+              className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-3 lg:space-y-0 mb-4 lg:mb-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.6 }}
+            >
+              {/* Quantity Controls */}
+              <div className="flex items-center space-x-3 lg:space-x-6">
+                <span className="text-gray-700 font-bold text-sm lg:text-xl">Quantity:</span>
+                <div className="flex items-center bg-white border-2 border-amber-300 rounded-xl lg:rounded-3xl shadow-xl lg:shadow-2xl overflow-hidden">
+                  <motion.button
+                    onClick={() => handleQuantityChange(quantity - 1)}
+                    className="px-3 lg:px-8 py-2 lg:py-5 text-gray-600 hover:text-amber-600 disabled:opacity-30 transition-all duration-200 text-base lg:text-2xl font-bold"
+                    disabled={quantity <= 1}
+                    whileHover={{ scale: 1.05, backgroundColor: "#fef3c7" }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    -
+                  </motion.button>
+                  <span className="px-3 lg:px-10 py-2 lg:py-5 text-gray-800 font-bold text-base lg:text-2xl bg-amber-50 min-w-10 lg:min-w-24 text-center border-x-2 border-amber-200">
+                    {quantity}
+                  </span>
+                  <motion.button
+                    onClick={() => handleQuantityChange(quantity + 1)}
+                    className="px-3 lg:px-8 py-2 lg:py-5 text-gray-600 hover:text-amber-600 disabled:opacity-30 transition-all duration-200 text-base lg:text-2xl font-bold"
+                    disabled={product.stock <= quantity}
+                    whileHover={{ scale: 1.05, backgroundColor: "#fef3c7" }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    +
+                  </motion.button>
+                </div>
+                <div className="flex items-center space-x-2 bg-gradient-to-r from-amber-100 to-orange-100 rounded-xl lg:rounded-3xl p-2 lg:p-3 border-2 border-amber-200">
+                  <span className="text-sm lg:text-lg font-bold bg-gradient-to-r from-[#f5821f] to-orange-600 bg-clip-text text-transparent">
+                    ₹{(currentPrice * quantity).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </motion.div>
 
             {/* Enhanced Action Buttons */}
             <motion.div 
@@ -1284,7 +1368,7 @@ export default function ProductDetailsClient({
               <motion.button
                 onClick={addToCart}
                 disabled={product.stock === 0}
-                className={`flex-1 font-black py-3 lg:py-6 rounded-xl lg:rounded-3xl transition-all duration-500 flex items-center justify-center text-base lg:text-xl ${
+                className={`flex-1 font-bold py-3 lg:py-6 rounded-xl lg:rounded-3xl transition-all duration-500 flex items-center justify-center text-sm lg:text-xl ${
                   product.stock === 0 
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
                     : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-xl lg:shadow-3xl hover:shadow-2xl lg:hover:shadow-4xl transform hover:-translate-y-1 lg:hover:-translate-y-2'
@@ -1300,7 +1384,7 @@ export default function ProductDetailsClient({
               <motion.button
                 onClick={buyNow}
                 disabled={product.stock === 0}
-                className={`flex-1 font-black py-3 lg:py-6 rounded-xl lg:rounded-3xl transition-all duration-500 flex items-center justify-center text-base lg:text-xl ${
+                className={`flex-1 font-bold py-3 lg:py-6 rounded-xl lg:rounded-3xl transition-all duration-500 flex items-center justify-center text-sm lg:text-xl ${
                   product.stock === 0 
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
                     : 'bg-[#493723] hover:bg-[#3a2c1c] text-white shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95'
@@ -1334,7 +1418,7 @@ export default function ProductDetailsClient({
                 <motion.button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`flex-shrink-0 px-4 lg:px-10 py-3 lg:py-6 font-black text-sm lg:text-lg border-b-4 transition-all duration-500 ${
+                  className={`flex-shrink-0 px-3 lg:px-10 py-2 lg:py-6 font-bold text-xs lg:text-lg border-b-4 transition-all duration-500 ${
                     activeTab === tab
                       ? 'border-amber-500 text-amber-600 bg-white shadow-lg'
                       : 'border-transparent text-gray-500 hover:text-amber-500 hover:bg-white/70'
@@ -1342,14 +1426,10 @@ export default function ProductDetailsClient({
                   whileHover={{ scale: 1.02, y: -1 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <div className="flex items-center space-x-2 lg:space-x-3">
-                    {tab === 'description' }
-                    {tab === 'reviews'}
-                    {tab === 'shipping'}
-                    {tab === 'benefits'}
+                  <div className="flex items-center space-x-1 lg:space-x-3">
                     <span className="whitespace-nowrap">{tab.charAt(0).toUpperCase() + tab.slice(1)}</span>
                     {tab === 'reviews' && (
-                      <span className="bg-amber-500 text-white text-xs lg:text-sm px-2 lg:px-3 py-1 rounded-full">
+                      <span className="bg-amber-500 text-white text-xs lg:text-sm px-1 lg:px-3 py-0.5 lg:py-1 rounded-full">
                         {reviews.length}
                       </span>
                     )}
@@ -1360,7 +1440,7 @@ export default function ProductDetailsClient({
           </div>
 
           {/* Enhanced Tab Content */}
-          <div className="p-4 lg:p-10">
+          <div className="p-3 lg:p-10">
             <AnimatePresence mode="wait">
               <motion.div
                 key={activeTab}
@@ -1371,11 +1451,11 @@ export default function ProductDetailsClient({
               >
                 {activeTab === 'description' && (
                   <div className="prose prose-sm lg:prose-lg max-w-none">
-                    <h3 className="text-xl lg:text-4xl font-black text-amber-900 mb-4 lg:mb-8 bg-gradient-to-r from-amber-900 to-orange-900 bg-clip-text text-transparent">
+                    <h3 className="text-lg lg:text-4xl font-bold text-amber-900 mb-3 lg:mb-8 bg-gradient-to-r from-amber-900 to-orange-900 bg-clip-text text-transparent">
                       About this Sacred {product.title}
                     </h3>
                     <div 
-                      className="text-gray-700 leading-relaxed text-sm lg:text-xl space-y-3 lg:space-y-6 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl lg:rounded-3xl p-4 lg:p-8 border-2 border-amber-200/50"
+                      className="text-gray-700 leading-relaxed text-xs lg:text-xl space-y-2 lg:space-y-6 bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl lg:rounded-3xl p-3 lg:p-8 border-2 border-amber-200/50"
                       dangerouslySetInnerHTML={{ 
                         __html: product.description || product.summary || 'No description available' 
                       }} 
@@ -1406,9 +1486,9 @@ export default function ProductDetailsClient({
                   <EnhancedShippingInfo />
                 )}
 
-                {/* {activetab === 'benefits' && (
+                {activeTab === 'benefits' && (
                   <EnhancedBenefitsSection product={product} />
-                )} */}
+                )}
               </motion.div>
             </AnimatePresence>
           </div>
@@ -1420,6 +1500,15 @@ export default function ProductDetailsClient({
           getImageUrl={getImageUrl}
         />
       </div>
+
+      {/* Floating Add to Cart Button for Mobile */}
+      <FloatingAddToCart
+        product={product}
+        quantity={quantity}
+        currentPrice={currentPrice}
+        onAddToCart={addToCart}
+        onBuyNow={buyNow}
+      />
     </div>
   );
 }
@@ -1488,27 +1577,27 @@ const EnhancedReviewsSection = ({
   };
 
   return (
-    <div className="space-y-6 lg:space-y-8">
+    <div className="space-y-4 lg:space-y-8">
       {/* Enhanced Header with Better Layout */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 lg:gap-8">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 lg:gap-8">
         <div className="flex-1">
-          <h3 className="text-xl lg:text-3xl font-black text-amber-900 mb-4 bg-gradient-to-r from-amber-900 to-orange-900 bg-clip-text text-transparent">
+          <h3 className="text-lg lg:text-3xl font-bold text-amber-900 mb-3 lg:mb-4 bg-gradient-to-r from-amber-900 to-orange-900 bg-clip-text text-transparent">
             Customer Experiences
           </h3>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3 lg:gap-6">
-            <div className="flex items-center gap-3">
-              <div className="text-3xl lg:text-5xl font-black bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 lg:gap-6">
+            <div className="flex items-center gap-2 lg:gap-3">
+              <div className="text-2xl lg:text-5xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 bg-clip-text text-transparent">
                 {averageRating}
               </div>
               <ReviewStars rating={averageRating} size="lg" />
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-600 font-semibold text-sm lg:text-base">
+            <div className="flex items-center gap-1 lg:gap-2">
+              <span className="text-gray-600 font-semibold text-xs lg:text-base">
                 {reviews.length} {reviews.length === 1 ? 'Review' : 'Reviews'}
               </span>
               <span className="hidden sm:block text-amber-400">•</span>
-              <span className="text-green-600 font-semibold text-sm lg:text-base flex items-center gap-1">
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <span className="text-green-600 font-semibold text-xs lg:text-base flex items-center gap-1">
+                <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
                 Verified Purchases
@@ -1520,7 +1609,7 @@ const EnhancedReviewsSection = ({
         {/* Review Button - Toggles form visibility */}
         <motion.button
           onClick={() => setShowReviewForm(!showReviewForm)}
-          className={`px-6 lg:px-8 py-3 lg:py-4 rounded-xl lg:rounded-2xl transition-all duration-300 font-bold text-sm lg:text-base shadow-lg hover:shadow-xl flex items-center gap-2 lg:gap-3 min-w-[160px] justify-center ${
+          className={`px-4 lg:px-8 py-2 lg:py-4 rounded-xl lg:rounded-2xl transition-all duration-300 font-bold text-xs lg:text-base shadow-lg hover:shadow-xl flex items-center gap-1 lg:gap-3 min-w-[140px] lg:min-w-[160px] justify-center ${
             showReviewForm 
               ? 'bg-gray-500 text-white hover:bg-gray-600' 
               : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600'
@@ -1528,10 +1617,10 @@ const EnhancedReviewsSection = ({
           whileHover={{ scale: 1.05, y: -2 }}
           whileTap={{ scale: 0.95 }}
         >
-          <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3 h-3 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
-          {showReviewForm ? 'Cancel Review' : 'Write Review'}
+          {showReviewForm ? 'Cancel' : 'Write Review'}
         </motion.button>
       </div>
 
@@ -1540,15 +1629,15 @@ const EnhancedReviewsSection = ({
         <motion.div 
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-green-50 border border-green-200 rounded-xl p-4"
+          className="bg-green-50 border border-green-200 rounded-xl p-3 lg:p-4"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex items-center gap-2 lg:gap-3">
+            <div className="w-5 h-5 lg:w-6 lg:h-6 bg-green-500 rounded-full flex items-center justify-center">
+              <svg className="w-3 h-3 lg:w-4 lg:h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <span className="text-green-800 font-medium">Review submitted successfully! Thank you for your feedback.</span>
+            <span className="text-green-800 font-medium text-sm lg:text-base">Review submitted successfully! Thank you for your feedback.</span>
           </div>
         </motion.div>
       )}
@@ -1557,15 +1646,15 @@ const EnhancedReviewsSection = ({
         <motion.div 
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-red-50 border border-red-200 rounded-xl p-4"
+          className="bg-red-50 border border-red-200 rounded-xl p-3 lg:p-4"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex items-center gap-2 lg:gap-3">
+            <div className="w-5 h-5 lg:w-6 lg:h-6 bg-red-500 rounded-full flex items-center justify-center">
+              <svg className="w-3 h-3 lg:w-4 lg:h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-            <span className="text-red-800 font-medium">{reviewError}</span>
+            <span className="text-red-800 font-medium text-sm lg:text-base">{reviewError}</span>
           </div>
         </motion.div>
       )}
@@ -1574,30 +1663,30 @@ const EnhancedReviewsSection = ({
       <AnimatePresence>
         {showReviewForm && (
           <motion.div 
-            className="bg-white rounded-2xl lg:rounded-3xl p-6 lg:p-8 border-2 border-amber-200 shadow-xl"
+            className="bg-white rounded-xl lg:rounded-3xl p-4 lg:p-8 border-2 border-amber-200 shadow-xl"
             initial={{ opacity: 0, height: 0, y: -20 }}
             animate={{ opacity: 1, height: 'auto', y: 0 }}
             exit={{ opacity: 0, height: 0, y: -20 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
           >
-            <h4 className="text-lg lg:text-xl font-black text-black mb-6 lg:mb-8 flex items-center gap-2">
-              <svg className="w-5 h-5 lg:w-6 lg:h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <h4 className="text-base lg:text-xl font-bold text-black mb-4 lg:mb-8 flex items-center gap-1 lg:gap-2">
+              <svg className="w-4 h-4 lg:w-6 lg:h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
               Share Your Experience
             </h4>
 
-            <form onSubmit={handleReviewSubmit} className="space-y-6 lg:space-y-8">
+            <form onSubmit={handleReviewSubmit} className="space-y-4 lg:space-y-8">
               {/* Rating Section */}
               <div>
-                <label className="block text-base font-bold text-black mb-3 lg:mb-4">Your Rating *</label>
-                <div className="flex gap-2 lg:gap-3 justify-center lg:justify-start">
+                <label className="block text-sm lg:text-base font-bold text-black mb-2 lg:mb-4">Your Rating *</label>
+                <div className="flex gap-1 lg:gap-3 justify-center lg:justify-start">
                   {[1, 2, 3, 4, 5].map(star => (
                     <motion.button
                       key={star}
                       type="button"
                       onClick={() => handleStarClick(star)}
-                      className="text-3xl lg:text-4xl focus:outline-none transition-transform duration-200"
+                      className="text-2xl lg:text-4xl focus:outline-none transition-transform duration-200"
                       whileHover={{ scale: 1.2 }}
                       whileTap={{ scale: 0.9 }}
                     >
@@ -1609,8 +1698,8 @@ const EnhancedReviewsSection = ({
                     </motion.button>
                   ))}
                 </div>
-                <div className="text-center lg:text-left mt-2">
-                  <span className="text-sm text-black font-medium">
+                <div className="text-center lg:text-left mt-1 lg:mt-2">
+                  <span className="text-xs lg:text-sm text-black font-medium">
                     {newReview.rating === 5 ? 'Excellent - Loved it! ⭐⭐⭐⭐⭐' :
                      newReview.rating === 4 ? 'Good - Happy with purchase ⭐⭐⭐⭐' :
                      newReview.rating === 3 ? 'Average - It was okay ⭐⭐⭐' :
@@ -1622,12 +1711,12 @@ const EnhancedReviewsSection = ({
 
               {/* Title Input */}
               <div>
-                <label className="block text-base font-bold text-black mb-2 lg:mb-3">Review Title *</label>
+                <label className="block text-sm lg:text-base font-bold text-black mb-1 lg:mb-3">Review Title *</label>
                 <input
                   type="text"
                   value={newReview.title}
                   onChange={handleTitleChange}
-                  className="w-full border border-gray-300 rounded-xl lg:rounded-2xl px-4 py-3 lg:py-4 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-base text-black placeholder-black bg-white"
+                  className="w-full border border-gray-300 rounded-xl lg:rounded-2xl px-3 lg:px-4 py-2 lg:py-4 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm lg:text-base text-black placeholder-black bg-white"
                   placeholder="Summarize your experience in a few words..."
                   required
                   disabled={isSubmittingReview}
@@ -1636,18 +1725,18 @@ const EnhancedReviewsSection = ({
 
               {/* Comment Textarea */}
               <div>
-                <label className="block text-base font-bold text-black mb-2 lg:mb-3">Detailed Review *</label>
+                <label className="block text-sm lg:text-base font-bold text-black mb-1 lg:mb-3">Detailed Review *</label>
                 <textarea
                   value={newReview.comment}
                   onChange={handleCommentChange}
-                  rows={4}
-                  className="w-full border border-gray-300 rounded-xl lg:rounded-2xl px-4 py-3 lg:py-4 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-base text-black placeholder-black resize-none bg-white"
+                  rows={3}
+                  className="w-full border border-gray-300 rounded-xl lg:rounded-2xl px-3 lg:px-4 py-2 lg:py-4 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-sm lg:text-base text-black placeholder-black resize-none bg-white"
                   placeholder="Share your detailed experience with this product. What did you like? How has it helped you?"
                   required
                   disabled={isSubmittingReview}
                 />
-                <div className="text-right mt-2">
-                  <span className="text-sm text-black">
+                <div className="text-right mt-1 lg:mt-2">
+                  <span className="text-xs lg:text-sm text-black">
                     {newReview.comment.length}/500 characters
                   </span>
                 </div>
@@ -1655,12 +1744,12 @@ const EnhancedReviewsSection = ({
 
               {/* Image Upload Section */}
               <div>
-                <label className="block text-base font-bold text-black mb-2 lg:mb-3">
+                <label className="block text-sm lg:text-base font-bold text-black mb-1 lg:mb-3">
                   Add Photos ({newReview.photos?.length || 0}/5)
                 </label>
                 
                 {/* File Input Area */}
-                <div className="border-2 border-dashed border-gray-300 rounded-xl lg:rounded-2xl p-6 text-center hover:border-amber-400 transition-colors cursor-pointer bg-gray-50/50">
+                <div className="border-2 border-dashed border-gray-300 rounded-xl lg:rounded-2xl p-4 lg:p-6 text-center hover:border-amber-400 transition-colors cursor-pointer bg-gray-50/50">
                   <input 
                     type="file" 
                     className="hidden" 
@@ -1671,33 +1760,33 @@ const EnhancedReviewsSection = ({
                     disabled={(newReview.photos?.length || 0) >= 5 || isSubmittingReview}
                   />
                   <label htmlFor="review-images" className="cursor-pointer block">
-                    <svg className="w-12 h-12 mx-auto text-gray-600 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-8 h-8 lg:w-12 lg:h-12 mx-auto text-gray-600 mb-2 lg:mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <p className="text-black font-medium mb-1">Click to upload photos</p>
-                    <p className="text-black text-sm">PNG, JPG, WEBP up to 5MB each • Max 5 photos</p>
+                    <p className="text-black font-medium text-xs lg:text-base mb-1">Click to upload photos</p>
+                    <p className="text-black text-xs lg:text-sm">PNG, JPG, WEBP up to 5MB each • Max 5 photos</p>
                     {(newReview.photos?.length || 0) >= 5 && (
-                      <p className="text-amber-600 text-sm mt-2 font-medium">Maximum 5 photos reached</p>
+                      <p className="text-amber-600 text-xs lg:text-sm mt-1 lg:mt-2 font-medium">Maximum 5 photos reached</p>
                     )}
                   </label>
                 </div>
 
                 {/* Image Previews */}
                 {(newReview.photos?.length || 0) > 0 && (
-                  <div className="mt-4">
-                    <p className="text-sm text-black mb-3 font-medium">Photo Previews:</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                  <div className="mt-3 lg:mt-4">
+                    <p className="text-xs lg:text-sm text-black mb-2 lg:mb-3 font-medium">Photo Previews:</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 lg:gap-3">
                       {newReview.photos?.map((photo, index) => (
                         <div key={index} className="relative group">
                           <img 
                             src={URL.createObjectURL(photo)} 
                             alt={`Preview ${index + 1}`}
-                            className="w-full h-24 object-cover rounded-lg border border-gray-200 group-hover:opacity-80 transition-opacity"
+                            className="w-full h-16 lg:h-24 object-cover rounded-lg border border-gray-200 group-hover:opacity-80 transition-opacity"
                           />
                           <button
                             type="button"
                             onClick={() => handleRemoveImage(index)}
-                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold hover:bg-red-600 transition-colors shadow-lg"
+                            className="absolute -top-1 -right-1 lg:-top-2 lg:-right-2 bg-red-500 text-white rounded-full w-4 h-4 lg:w-6 lg:h-6 flex items-center justify-center text-xs lg:text-sm font-bold hover:bg-red-600 transition-colors shadow-lg"
                             title="Remove photo"
                             disabled={isSubmittingReview}
                           >
@@ -1711,11 +1800,11 @@ const EnhancedReviewsSection = ({
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 lg:gap-4 pt-4 border-t border-gray-200">
+              <div className="flex flex-col sm:flex-row gap-2 lg:gap-4 pt-3 lg:pt-4 border-t border-gray-200">
                 <motion.button
                   type="submit"
                   disabled={isSubmittingReview}
-                  className={`flex-1 py-3 lg:py-4 rounded-xl lg:rounded-2xl transition-all duration-300 font-bold text-base shadow-lg hover:shadow-xl flex items-center justify-center gap-2 ${
+                  className={`flex-1 py-2 lg:py-4 rounded-xl lg:rounded-2xl transition-all duration-300 font-bold text-sm lg:text-base shadow-lg hover:shadow-xl flex items-center justify-center gap-1 lg:gap-2 ${
                     isSubmittingReview
                       ? 'bg-gray-400 text-white cursor-not-allowed'
                       : 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600'
@@ -1728,13 +1817,13 @@ const EnhancedReviewsSection = ({
                       <motion.div
                         animate={{ rotate: 360 }}
                         transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                        className="w-4 h-4 lg:w-5 lg:h-5 border-2 border-white border-t-transparent rounded-full"
                       />
                       Submitting...
                     </>
                   ) : (
                     <>
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       Submit Review
@@ -1748,11 +1837,11 @@ const EnhancedReviewsSection = ({
                     setNewReview({ rating: 5, title: '', comment: '', photos: [] });
                   }}
                   disabled={isSubmittingReview}
-                  className="flex-1 border border-gray-300 text-black py-3 lg:py-4 rounded-xl lg:rounded-2xl hover:bg-gray-50 transition-all duration-300 font-bold text-base flex items-center justify-center gap-2"
+                  className="flex-1 border border-gray-300 text-black py-2 lg:py-4 rounded-xl lg:rounded-2xl hover:bg-gray-50 transition-all duration-300 font-bold text-sm lg:text-base flex items-center justify-center gap-1 lg:gap-2"
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                   Cancel
@@ -1764,7 +1853,7 @@ const EnhancedReviewsSection = ({
       </AnimatePresence>
 
       {/* Enhanced Reviews List with Image Display */}
-      <div className="space-y-4 lg:space-y-6">
+      <div className="space-y-3 lg:space-y-6">
         {reviews.length > 0 ? (
           reviews.map((review) => {
             const reviewImages = getReviewImages(review);
@@ -1772,21 +1861,21 @@ const EnhancedReviewsSection = ({
             return (
               <motion.div 
                 key={review.id} 
-                className="bg-white rounded-xl lg:rounded-2xl p-4 lg:p-6 border border-amber-100 shadow-sm hover:shadow-md transition-all duration-300"
+                className="bg-white rounded-xl lg:rounded-2xl p-3 lg:p-6 border border-amber-100 shadow-sm hover:shadow-md transition-all duration-300"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 whileHover={{ y: -2 }}
               >
-                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-3 lg:gap-4 mb-3 lg:mb-4">
+                <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-2 lg:gap-4 mb-2 lg:mb-4">
                   <div className="flex-1">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 lg:gap-3 mb-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-1 lg:gap-3 mb-1 lg:mb-2">
                       <ReviewStars rating={review.rate || 5} size="md" />
-                      <span className="text-gray-700 font-semibold text-sm lg:text-base">
+                      <span className="text-gray-700 font-semibold text-xs lg:text-base">
                         {review.user_info?.name || 'Anonymous User'}
                       </span>
                       {review.user_info?.email && (
-                        <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-medium flex items-center gap-1 w-fit">
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                        <span className="bg-green-100 text-green-700 text-xs px-1 lg:px-2 py-0.5 lg:py-1 rounded-full font-medium flex items-center gap-1 w-fit">
+                          <svg className="w-2 h-2 lg:w-3 lg:h-3" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                           Verified Purchase
@@ -1795,20 +1884,20 @@ const EnhancedReviewsSection = ({
                     </div>
                     
                     {review.review && (
-                      <p className="text-gray-700 text-sm lg:text-base leading-relaxed mb-3">{review.review}</p>
+                      <p className="text-gray-700 text-xs lg:text-base leading-relaxed mb-2 lg:mb-3">{review.review}</p>
                     )}
 
                     {/* Review Images Display */}
                     {reviewImages.length > 0 && (
-                      <div className="mt-4">
-                        <p className="text-sm text-gray-600 mb-2 font-medium">Attached Photos:</p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                      <div className="mt-2 lg:mt-4">
+                        <p className="text-xs lg:text-sm text-gray-600 mb-1 lg:mb-2 font-medium">Attached Photos:</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-1 lg:gap-2">
                           {reviewImages.map((imageUrl, index) => (
                             <div key={index} className="relative group">
                               <img 
                                 src={imageUrl} 
                                 alt={`Review photo ${index + 1}`}
-                                className="w-full h-20 lg:h-40 object-fill rounded-lg border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
+                                className="w-full h-12 lg:h-40 object-fill rounded-lg border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"
                                 onClick={() => window.open(imageUrl, '_blank')}
                               />
                               <div className="absolute inset-0 bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-200 rounded-lg" />
@@ -1818,7 +1907,7 @@ const EnhancedReviewsSection = ({
                       </div>
                     )}
                   </div>
-                  <span className="text-gray-500 text-xs lg:text-sm bg-gray-50 px-2 py-1 rounded-full self-start lg:self-center">
+                  <span className="text-gray-500 text-xs lg:text-sm bg-gray-50 px-1 lg:px-2 py-0.5 lg:py-1 rounded-full self-start lg:self-center">
                     {review.created_at ? new Date(review.created_at).toLocaleDateString('en-US', {
                       year: 'numeric',
                       month: 'short',
@@ -1827,15 +1916,15 @@ const EnhancedReviewsSection = ({
                   </span>
                 </div>
                 
-                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                  <button className="text-amber-600 hover:text-amber-700 font-medium text-sm flex items-center gap-2 transition-colors">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center justify-between pt-2 lg:pt-3 border-t border-gray-100">
+                  <button className="text-amber-600 hover:text-amber-700 font-medium text-xs lg:text-sm flex items-center gap-1 lg:gap-2 transition-colors">
+                    <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
                     </svg>
                     Helpful ({0})
                   </button>
-                  <button className="text-gray-500 hover:text-gray-700 text-sm flex items-center gap-2 transition-colors">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <button className="text-gray-500 hover:text-gray-700 text-xs lg:text-sm flex items-center gap-1 lg:gap-2 transition-colors">
+                    <svg className="w-3 h-3 lg:w-4 lg:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
                     </svg>
                     Share
@@ -1847,19 +1936,19 @@ const EnhancedReviewsSection = ({
         ) : (
           /* Enhanced Empty State - Only show when form is not open */
           !showReviewForm && (
-            <div className="text-center py-8 lg:py-12 bg-white rounded-xl lg:rounded-2xl border border-amber-100">
-              <div className="w-16 h-16 lg:w-20 lg:h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 lg:w-10 lg:h-10 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="text-center py-6 lg:py-12 bg-white rounded-xl lg:rounded-2xl border border-amber-100">
+              <div className="w-12 h-12 lg:w-20 lg:h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3 lg:mb-4">
+                <svg className="w-6 h-6 lg:w-10 lg:h-10 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>
               </div>
-              <h4 className="text-lg lg:text-xl font-bold text-amber-900 mb-2">No Reviews Yet</h4>
-              <p className="text-gray-600 text-sm lg:text-base mb-6 max-w-md mx-auto">
+              <h4 className="text-base lg:text-xl font-bold text-amber-900 mb-1 lg:mb-2">No Reviews Yet</h4>
+              <p className="text-gray-600 text-xs lg:text-base mb-4 lg:mb-6 max-w-md mx-auto">
                 Be the first to share your spiritual experience with this sacred product.
               </p>
               <motion.button
                 onClick={() => setShowReviewForm(true)}
-                className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-6 lg:px-8 py-2 lg:py-3 rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all duration-300 font-bold text-sm lg:text-base shadow-lg hover:shadow-xl"
+                className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-4 lg:px-8 py-1 lg:py-3 rounded-xl hover:from-amber-600 hover:to-orange-600 transition-all duration-300 font-bold text-xs lg:text-base shadow-lg hover:shadow-xl"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -1876,29 +1965,29 @@ const EnhancedReviewsSection = ({
 // Enhanced Shipping Information Component
 const EnhancedShippingInfo = () => {
   return (
-    <div className="space-y-6 lg:space-y-10">
+    <div className="space-y-4 lg:space-y-10">
       <div>
-        <h4 className="text-lg lg:text-3xl font-black text-amber-800 mb-4 lg:mb-8">🚚 Shipping Information</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-8">
-          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl lg:rounded-3xl p-4 lg:p-8 border-2 border-amber-200 shadow-lg lg:shadow-2xl">
-            <h5 className="font-black text-amber-900 text-lg lg:text-2xl mb-2 lg:mb-4">Standard Shipping</h5>
-            <p className="text-gray-700 text-sm lg:text-lg mb-2 lg:mb-3 flex items-center space-x-2 lg:space-x-3">
-              <span className="text-sm lg:text-base">⏱️</span>
+        <h4 className="text-base lg:text-3xl font-bold text-amber-800 mb-3 lg:mb-8">🚚 Shipping Information</h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 lg:gap-8">
+          <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl lg:rounded-3xl p-3 lg:p-8 border-2 border-amber-200 shadow-lg lg:shadow-2xl">
+            <h5 className="font-bold text-amber-900 text-sm lg:text-2xl mb-1 lg:mb-4">Standard Shipping</h5>
+            <p className="text-gray-700 text-xs lg:text-lg mb-1 lg:mb-3 flex items-center space-x-1 lg:space-x-3">
+              <span className="text-xs lg:text-base">⏱️</span>
               <span>5-7 business days</span>
             </p>
-            <p className="text-gray-700 text-sm lg:text-lg flex items-center space-x-2 lg:space-x-3">
-              <span className="text-sm lg:text-base">🎁</span>
+            <p className="text-gray-700 text-xs lg:text-lg flex items-center space-x-1 lg:space-x-3">
+              <span className="text-xs lg:text-base">🎁</span>
               <span className="font-semibold text-green-600">Free shipping on all orders</span>
             </p>
           </div>
-          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl lg:rounded-3xl p-4 lg:p-8 border-2 border-green-200 shadow-lg lg:shadow-2xl">
-            <h5 className="font-black text-green-900 text-lg lg:text-2xl mb-2 lg:mb-4">Express Shipping</h5>
-            <p className="text-gray-700 text-sm lg:text-lg mb-2 lg:mb-3 flex items-center space-x-2 lg:space-x-3">
-              <span className="text-sm lg:text-base">⚡</span>
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl lg:rounded-3xl p-3 lg:p-8 border-2 border-green-200 shadow-lg lg:shadow-2xl">
+            <h5 className="font-bold text-green-900 text-sm lg:text-2xl mb-1 lg:mb-4">Express Shipping</h5>
+            <p className="text-gray-700 text-xs lg:text-lg mb-1 lg:mb-3 flex items-center space-x-1 lg:space-x-3">
+              <span className="text-xs lg:text-base">⚡</span>
               <span>2-3 business days</span>
             </p>
-            <p className="text-gray-700 text-sm lg:text-lg flex items-center space-x-2 lg:space-x-3">
-              <span className="text-sm lg:text-base">📞</span>
+            <p className="text-gray-700 text-xs lg:text-lg flex items-center space-x-1 lg:space-x-3">
+              <span className="text-xs lg:text-base">📞</span>
               <span className="font-semibold text-blue-600">Contact us for express shipping rates</span>
             </p>
           </div>
@@ -1945,22 +2034,22 @@ const EnhancedBenefitsSection = ({ product }: { product: Product }) => {
 
   return (
     <div>
-      <h3 className="text-xl lg:text-4xl font-black text-amber-900 mb-6 lg:mb-12 bg-gradient-to-r from-amber-900 to-orange-900 bg-clip-text text-transparent">
+      <h3 className="text-lg lg:text-4xl font-bold text-amber-900 mb-4 lg:mb-12 bg-gradient-to-r from-amber-900 to-orange-900 bg-clip-text text-transparent">
         Spiritual Benefits
       </h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 lg:gap-8">
         {benefits.map((benefit, index) => (
           <motion.div
             key={index}
-            className="bg-gradient-to-br from-white to-amber-50 rounded-xl lg:rounded-3xl p-4 lg:p-8 border-2 border-amber-200 shadow-lg lg:shadow-2xl hover:shadow-xl lg:hover:shadow-3xl transition-all duration-500 group"
+            className="bg-gradient-to-br from-white to-amber-50 rounded-xl lg:rounded-3xl p-3 lg:p-8 border-2 border-amber-200 shadow-lg lg:shadow-2xl hover:shadow-xl lg:hover:shadow-3xl transition-all duration-500 group"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
             whileHover={{ scale: 1.02, y: -2 }}
           >
-            <div className="text-2xl lg:text-4xl mb-2 lg:mb-4 group-hover:scale-110 transition-transform duration-300">{benefit.icon}</div>
-            <h4 className="font-black text-amber-900 text-base lg:text-xl mb-2 lg:mb-3">{benefit.title}</h4>
-            <p className="text-gray-700 text-sm lg:text-lg leading-relaxed">{benefit.description}</p>
+            <div className="text-xl lg:text-4xl mb-1 lg:mb-4 group-hover:scale-110 transition-transform duration-300">{benefit.icon}</div>
+            <h4 className="font-bold text-amber-900 text-sm lg:text-xl mb-1 lg:mb-3">{benefit.title}</h4>
+            <p className="text-gray-700 text-xs lg:text-lg leading-relaxed">{benefit.description}</p>
           </motion.div>
         ))}
       </div>
@@ -1979,10 +2068,10 @@ const EnhancedRelatedProducts = ({ relatedProducts, getImageUrl }: any) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 1.2 }}
     >
-      <h2 className="text-xl lg:text-4xl font-black text-amber-900 mb-6 lg:mb-12 text-center bg-gradient-to-r from-amber-900 to-orange-900 bg-clip-text text-transparent">
+      <h2 className="text-lg lg:text-4xl font-bold text-amber-900 mb-4 lg:mb-12 text-center bg-gradient-to-r from-amber-900 to-orange-900 bg-clip-text text-transparent">
         You May Also Like
       </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-8">
         {relatedProducts.map((relatedProduct: any) => {
           const firstImage = relatedProduct.photo?.split(',')[0]?.trim();
           const productImage = getImageUrl(firstImage);
@@ -2001,7 +2090,7 @@ const EnhancedRelatedProducts = ({ relatedProducts, getImageUrl }: any) => {
               animate={{ opacity: 1, y: 0 }}
             >
               <Link href={`/product-details/${relatedProduct.slug}`}>
-                <div className="relative h-40 lg:h-56 overflow-hidden">
+                <div className="relative h-32 lg:h-56 overflow-hidden">
                   <Image
                     src={productImage}
                     alt={relatedProduct.title}
@@ -2013,26 +2102,26 @@ const EnhancedRelatedProducts = ({ relatedProducts, getImageUrl }: any) => {
                     }}
                   />
                   {hasDiscount && (
-                    <span className="absolute top-2 lg:top-4 left-2 lg:left-4 bg-gradient-to-r from-red-500 to-orange-600 text-white text-xs lg:text-sm font-black py-1 lg:py-2 px-2 lg:px-4 rounded-lg lg:rounded-2xl shadow-lg lg:shadow-2xl border-2 border-white/20">
+                    <span className="absolute top-1 lg:top-4 left-1 lg:left-4 bg-gradient-to-r from-red-500 to-orange-600 text-white text-xs lg:text-sm font-bold py-0.5 lg:py-2 px-1 lg:px-4 rounded-lg lg:rounded-2xl shadow-lg lg:shadow-2xl border-2 border-white/20">
                       🔥 {relatedProduct.discount}% OFF
                     </span>
                   )}
                   {relatedProduct.is_featured && (
-                    <span className="absolute top-2 lg:top-4 right-2 lg:right-4 bg-[#493723] from-green-500 to-emerald-600 text-white text-xs lg:text-sm font-black py-1 lg:py-2 px-2 lg:px-4 rounded-lg lg:rounded-2xl shadow-lg lg:shadow-2xl border-2 border-white/20">
+                    <span className="absolute top-1 lg:top-4 right-1 lg:right-4 bg-[#493723] from-green-500 to-emerald-600 text-white text-xs lg:text-sm font-bold py-0.5 lg:py-2 px-1 lg:px-4 rounded-lg lg:rounded-2xl shadow-lg lg:shadow-2xl border-2 border-white/20">
                       ✨ FEATURED
                     </span>
                   )}
                 </div>
-                <div className="p-3 lg:p-6">
-                  <h3 className="font-black text-amber-900 line-clamp-2 mb-2 lg:mb-4 group-hover:text-amber-700 transition-colors text-sm lg:text-lg leading-tight">
+                <div className="p-2 lg:p-6">
+                  <h3 className="font-bold text-amber-900 line-clamp-2 mb-1 lg:mb-4 group-hover:text-amber-700 transition-colors text-xs lg:text-lg leading-tight">
                     {relatedProduct.title}
                   </h3>
-                  <div className="flex items-center space-x-2 lg:space-x-3 mb-2 lg:mb-4">
+                  <div className="flex items-center space-x-1 lg:space-x-3 mb-1 lg:mb-4">
                     <ReviewStars rating={productRating} size="sm" />
                     <span className="text-gray-600 text-xs lg:text-base">({productRating})</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-lg lg:text-2xl font-black bg-gradient-to-r from-[#f5821f] to-orange-600 bg-clip-text text-transparent">
+                    <span className="text-sm lg:text-2xl font-bold bg-gradient-to-r from-[#f5821f] to-orange-600 bg-clip-text text-transparent">
                       ₹{currentPrice.toLocaleString()}
                     </span>
                     {hasDiscount && (
@@ -2040,7 +2129,7 @@ const EnhancedRelatedProducts = ({ relatedProducts, getImageUrl }: any) => {
                     )}
                   </div>
                   <motion.button
-                    className="w-full mt-3 lg:mt-6 bg-gradient-to-r from-amber-500 to-orange-500 text-white py-2 lg:py-4 rounded-lg lg:rounded-2xl font-black hover:from-amber-600 hover:to-orange-600 transition-all duration-500 shadow-lg hover:shadow-xl text-sm lg:text-base"
+                    className="w-full mt-2 lg:mt-6 bg-gradient-to-r from-amber-500 to-orange-500 text-white py-1 lg:py-4 rounded-lg lg:rounded-2xl font-bold hover:from-amber-600 hover:to-orange-600 transition-all duration-500 shadow-lg hover:shadow-xl text-xs lg:text-base"
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >

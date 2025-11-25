@@ -35,12 +35,37 @@ WhatsAppFloatingButton.displayName = 'WhatsAppFloatingButton';
 const ChatbotModal = memo(() => {
   const [isVisible, setIsVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
-  const [messages, setMessages] = useState<Array<{type: string; content: string; buttonComponent?: React.ReactNode}>>([]);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [userData, setUserData] = useState<Record<string, string>>({});
   const [isTyping, setIsTyping] = useState(false);
   const chatMessagesRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
+
+  // Local storage keys
+  const CHATBOT_MESSAGES_KEY = 'chatbot_messages';
+  const CHATBOT_STEP_KEY = 'chatbot_currentStep';
+  const CHATBOT_USER_DATA_KEY = 'chatbot_userData';
+
+  // Initialize state from localStorage
+  const [messages, setMessages] = useState<Array<{type: string; content: string; buttonComponent?: React.ReactNode}>>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(CHATBOT_MESSAGES_KEY);
+      return saved ? JSON.parse(saved) : [];
+    }
+    return [];
+  });
+  const [currentStep, setCurrentStep] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(CHATBOT_STEP_KEY);
+      return saved ? JSON.parse(saved) : 0;
+    }
+    return 0;
+  });
+  const [userData, setUserData] = useState<Record<string, string>>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(CHATBOT_USER_DATA_KEY);
+      return saved ? JSON.parse(saved) : {};
+    }
+    return {};
+  });
 
   const rudrakshaItems = [
     { name: 'Ganesh Rudraksha', path: '/products?category=ganesh' },
@@ -83,33 +108,36 @@ const ChatbotModal = memo(() => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Save state to localStorage whenever it changes
+  useEffect(() => {
+    // We need to handle the buttonComponent which is not serializable
+    const serializableMessages = messages.map(({ buttonComponent, ...rest }) => rest);
+    localStorage.setItem(CHATBOT_MESSAGES_KEY, JSON.stringify(serializableMessages));
+  }, [messages]);
+
+  useEffect(() => {
+    localStorage.setItem(CHATBOT_STEP_KEY, JSON.stringify(currentStep));
+  }, [currentStep]);
+
+  useEffect(() => {
+    localStorage.setItem(CHATBOT_USER_DATA_KEY, JSON.stringify(userData));
+  }, [userData]);
+
   // Scroll to top when important messages are added
   useEffect(() => {
     if (chatMessagesRef.current && messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
-      
-      // Check if this is an important message that should show from top
-      const isImportantMessage = 
-        lastMessage.type === 'bot' && 
-        (lastMessage.content.includes('Welcome') || 
-         lastMessage.content.includes('PROFESSIONAL RUDRAKSHA RECOMMENDATION'));
-      
-      if (isImportantMessage) {
-        // Scroll to top immediately and then again after a short delay
-        chatMessagesRef.current.scrollTop = 0;
-        
-        const scrollToTop = () => {
+
+      if (lastMessage.type === 'bot') {
+        // For any bot message, scroll to the top of the chat window.
+        // This ensures the user sees the beginning of the bot's response.
+        setTimeout(() => {
           if (chatMessagesRef.current) {
             chatMessagesRef.current.scrollTop = 0;
           }
-        };
-        
-        // Multiple attempts to ensure it stays at top
-        setTimeout(scrollToTop, 50);
-        setTimeout(scrollToTop, 100);
-        setTimeout(scrollToTop, 200);
+        }, 100);
       } else {
-        // For regular messages, scroll to bottom
+        // For user messages, scroll to the bottom to show the latest message.
         setTimeout(() => {
           if (chatMessagesRef.current) {
             chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
@@ -151,15 +179,17 @@ I will analyze your birth chart using authentic Vedic numerology to recommend th
   }, [isVisible, messages.length]);
 
   const toggleChatbot = () => {
-    setIsVisible(!isVisible);
-    if (!isVisible) {
-      // Reset when opening
-      setMessages([]);
-      setCurrentStep(0);
-      setUserData({});
-    }
+    setIsVisible(prev => !prev);
   };
 
+  const handleNewChat = () => {
+    setMessages([]);
+    setCurrentStep(0);
+    setUserData({});
+    localStorage.removeItem(CHATBOT_MESSAGES_KEY);
+    localStorage.removeItem(CHATBOT_STEP_KEY);
+    localStorage.removeItem(CHATBOT_USER_DATA_KEY);
+  };
   const handleClose = (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsVisible(false);
@@ -332,8 +362,10 @@ I will analyze your birth chart using authentic Vedic numerology to recommend th
 
     const rudraksha = rudrakshaDatabase[recommendedMukhi as keyof typeof rudrakshaDatabase];
 
-    // First message with analysis and buy button
-    const analysisMessage = {
+    // Message 1: Main title
+    const analysisTitleMessage = {
+      type: 'bot',
+      // The content for the main title
       type: 'bot',
       content: `🔮 **PROFESSIONAL RUDRAKSHA RECOMMENDATION**
 
@@ -357,7 +389,30 @@ Accuracy Score: 92/100 based on your Life Path Number ${lifePathNumber}`,
       buttonComponent: <BuyNowButton mukhi={recommendedMukhi} />
     };
 
-    // Second message with alert
+    // Message 2: Specific recommendation and details, including the button
+    const analysisDetailsMessage = {
+      type: 'bot',
+      content: `✨ **RECOMMENDED RUDRAKSHA:**
+<span style="font-size: 20px; color: #8B4513; font-weight: bold;">${recommendedMukhi} Mukhi Rudraksha</span>
+
+🙏 **RULING DEITY:**
+${rudraksha.deity}
+
+📿 **SACRED MANTRA:**
+Om Hreem Namah
+
+🔍 **WHY THIS RUDRAKSHA IS PERFECT FOR YOU:**
+${rudraksha.benefits}
+
+💼 **CAREER BENEFITS FOR ${userData.career?.toUpperCase() || 'YOUR PROFESSION'}:**
+Enhanced performance, spiritual protection, and career growth
+
+🎯 **NUMEROLOGICAL COMPATIBILITY:**
+Accuracy Score: 92/100 based on your Life Path Number ${lifePathNumber}`,
+      buttonComponent: <BuyNowButton mukhi={recommendedMukhi} />
+    };
+
+    // Message 3: Spiritual Timing Alert
     const finalMessage = {
       type: 'bot',
       content: `<div style="background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%); color: white; padding: 15px; border-radius: 10px; margin: 15px 0;">
@@ -366,7 +421,28 @@ Accuracy Score: 92/100 based on your Life Path Number ${lifePathNumber}`,
 </div>`
     };
 
-    setMessages(prev => [...prev, analysisMessage, finalMessage]);
+    // Add the main title message first
+    setMessages(prev => [...prev, analysisTitleMessage]);
+
+    // Sequence the next messages with delays
+    setTimeout(() => {
+      setIsTyping(true); // Show typing indicator for the next message
+      setTimeout(() => {
+        setIsTyping(false);
+        // Add the detailed recommendation
+        setMessages(prev => [...prev, analysisDetailsMessage]);
+
+        // After another delay, add the final alert message
+        setTimeout(() => {
+          setIsTyping(true); // Show typing indicator briefly for the alert
+          setTimeout(() => {
+            setIsTyping(false);
+            setMessages(prev => [...prev, finalMessage]);
+          }, 800); // Typing duration for alert
+        }, 1500); // Delay before showing alert
+      }, 800); // Typing duration for detailed recommendation
+    }, 1000); // Delay before showing detailed recommendation
+
     setCurrentStep(prev => prev + 1); // Move past questions
   };
 
@@ -410,12 +486,18 @@ Accuracy Score: 92/100 based on your Life Path Number ${lifePathNumber}`,
               </div>
               <h2 className="text-lg font-bold font-serif">RudraGuide Pro</h2>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-xs text-green-200">Live</span>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={handleNewChat}
+                className="close-chatbot bg-transparent border-none text-white text-lg cursor-pointer hover:text-amber-200 transition-colors"
+                aria-label="New Chat"
+                title="Start New Chat"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+              </button>
               <button 
                 onClick={handleClose}
-                className="close-chatbot bg-transparent border-none text-white text-lg cursor-pointer hover:text-amber-200 transition-colors ml-2"
+                className="close-chatbot bg-transparent border-none text-white text-lg cursor-pointer hover:text-amber-200 transition-colors"
                 aria-label="Close chatbot"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -148,8 +148,8 @@ export const handleAuthError = (error: any, currentPath?: string): boolean => {
     
     // Store current path for redirect back after login
     const pathToStore = currentPath || window.location.pathname + window.location.search;
-    if (pathToStore && !pathToStore.includes('/login') && !pathToStore.includes('/register')) {
-      sessionStorage.setItem('login_redirect', pathToStore);
+    if (typeof window !== 'undefined' && pathToStore && !pathToStore.includes('/login') && !pathToStore.includes('/register')) {
+      localStorage.setItem('login_redirect', pathToStore);
     }
     
     // Redirect to login
@@ -251,8 +251,8 @@ export const apiCall = async (endpoint: string, method: string = 'GET', data: an
 
       // Store current URL for redirect back after login
       const currentPath = typeof window !== 'undefined' ? window.location.pathname + window.location.search : '/';
-      if (currentPath && !currentPath.includes('/login') && !currentPath.includes('/register')) {
-        sessionStorage.setItem('login_redirect', currentPath);
+      if (typeof window !== 'undefined' && currentPath && !currentPath.includes('/login') && !currentPath.includes('/register')) {
+        localStorage.setItem('login_redirect', currentPath);
       }
 
       // Notify same-tab listeners (header) and other windows

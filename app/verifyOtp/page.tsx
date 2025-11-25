@@ -102,14 +102,11 @@ function OTPVerificationPageInner() {
           setSessionToken(null);
           
           // Get redirect destination
-          const redirectTo = 
-            result.data?.redirect_to || 
-            redirectParam ||
-            sessionStorage.getItem('login_redirect') || 
+          const redirectTo = localStorage.getItem('login_redirect') || 
             "/";
           
           // Clear stored redirects
-          sessionStorage.removeItem('login_redirect');
+          localStorage.removeItem('login_redirect');
           
           // Check if we have auth token (user is logged in)
           const authToken = getAuthToken();

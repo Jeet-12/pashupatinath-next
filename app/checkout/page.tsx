@@ -159,6 +159,7 @@ const CheckoutPage = () => {
   const [orderId, setOrderId] = useState<string>('');
   const [error, setError] = useState<string>('');
   const [_razorpayLoaded, setRazorpayLoaded] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   
   // Coupon states
   const [couponCode, setCouponCode] = useState('');
@@ -168,6 +169,21 @@ const CheckoutPage = () => {
   const [showCouponForm, setShowCouponForm] = useState(false);
   const [availableCoupons, setAvailableCoupons] = useState<Coupon[]>([]);
   const [showAvailableCoupons, setShowAvailableCoupons] = useState(false);
+
+  // Check screen size on mount and resize
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    
+    // Load Razorpay SDK
+    initializeRazorpay();
+    
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
 
   // Enhanced image URL handler
   const getImageUrl = (image: string | undefined): string => {
@@ -284,21 +300,6 @@ const CheckoutPage = () => {
     return () => clearInterval(timer);
   }
 }, [orderSuccess, router]);
-  
-  // Check screen size and load Razorpay
-  useEffect(() => {
-    const checkScreenSize = () => {
-      // setIsMobile(window.innerWidth < 768);
-    };
-
-    checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    
-    // Load Razorpay SDK
-    initializeRazorpay();
-    
-    return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
 
   // Memoized load functions to prevent useEffect dependency issues
   const loadCartData = useCallback(async () => {
@@ -962,6 +963,9 @@ const CheckoutPage = () => {
         await processRazorpayPayment();
       } else {
         const response = await createOrder(orderData);
+        
+        // Prevent cart drawer from opening on success
+        localStorage.setItem('preventCartDrawerOpen', 'true');
 
         if (response.success && response.data) {
           setIsLoading(false);
@@ -971,6 +975,9 @@ const CheckoutPage = () => {
           setError(response.message || 'Failed to create order');  
           setIsLoading(false);
         }
+
+        // It's good practice to clean up the flag
+        setTimeout(() => localStorage.removeItem('preventCartDrawerOpen'), 1000);
       }
     } catch (err: any) {
       console.error('Order error:', err);
@@ -979,47 +986,73 @@ const CheckoutPage = () => {
     }
   };
 
+  // Mobile responsive text sizes
+  const getTextSize = (size: 'xs' | 'sm' | 'base' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl') => {
+    if (isMobile) {
+      const mobileSizes = {
+        'xs': 'text-xs',
+        'sm': 'text-xs',
+        'base': 'text-sm',
+        'lg': 'text-base',
+        'xl': 'text-lg',
+        '2xl': 'text-xl',
+        '3xl': 'text-2xl',
+        '4xl': 'text-2xl'
+      };
+      return mobileSizes[size];
+    }
+    return `text-${size}`;
+  };
+
+  // Mobile responsive padding/margin
+  const getSpacing = (type: 'p' | 'm', size: number) => {
+    if (isMobile) {
+      return `${type}-${Math.max(2, size - 2)}`;
+    }
+    return `${type}-${size}`;
+  };
+
   // Render Coupon Section
   const renderCouponSection = () => (
-    <div className="mb-6">
+    <div className="mb-4">
       {appliedCoupon ? (
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border-2 border-green-200 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
+        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-3 border-2 border-green-200 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
               </div>
               <div>
-                <span className="font-bold text-green-800">Coupon Applied</span>
-                <p className="text-green-600 text-sm">{appliedCoupon.description}</p>
+                <span className={`font-bold text-green-800 ${getTextSize('sm')}`}>Coupon Applied</span>
+                <p className="text-green-600 text-xs">{appliedCoupon.description}</p>
               </div>
             </div>
             <button
               onClick={handleRemoveCoupon}
-              className="text-red-600 hover:text-red-700 text-sm font-semibold hover:bg-red-50 px-3 py-1 rounded-lg transition-colors"
+              className="text-red-600 hover:text-red-700 text-xs font-semibold hover:bg-red-50 px-2 py-1 rounded transition-colors"
             >
               Remove
             </button>
           </div>
           <div className="flex justify-between items-center">
-            <span className="text-green-800 font-semibold">{appliedCoupon.code}</span>
-            <span className="text-green-600 font-bold text-lg">
+            <span className="text-green-800 font-semibold text-sm">{appliedCoupon.code}</span>
+            <span className="text-green-600 font-bold text-base">
               -₹{couponDiscount.toLocaleString()}
             </span>
           </div>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {!showCouponForm ? (
             <div className="space-y-2">
               <button
                 onClick={() => setShowCouponForm(true)}
-                className="w-full text-amber-600 hover:text-amber-700 font-semibold text-sm bg-amber-50 hover:bg-amber-100 py-3 rounded-xl transition-all duration-300 border-2 border-dashed border-amber-300 hover:border-amber-400"
+                className="w-full text-amber-600 hover:text-amber-700 font-semibold text-xs bg-amber-50 hover:bg-amber-100 py-2 rounded-lg transition-all duration-300 border-2 border-dashed border-amber-300 hover:border-amber-400"
               >
-                <div className="flex items-center justify-center space-x-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center justify-center space-x-1">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
                   </svg>
                   <span>Apply Coupon Code</span>
@@ -1028,36 +1061,36 @@ const CheckoutPage = () => {
               {availableCoupons.length > 0 && (
                 <button
                   onClick={() => setShowAvailableCoupons(!showAvailableCoupons)}
-                  className="w-full text-blue-600 hover:text-blue-700 text-xs bg-blue-50 hover:bg-blue-100 py-2 rounded-lg transition-all duration-300"
+                  className="w-full text-blue-600 hover:text-blue-700 text-xs bg-blue-50 hover:bg-blue-100 py-1 rounded transition-all duration-300"
                 >
                   {showAvailableCoupons ? 'Hide Available Coupons' : `Show ${availableCoupons.length} Available Coupons`}
                 </button>
               )}
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               <div className="flex space-x-2">
                 <input
                   type="text"
                   value={couponCode}
                   onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                   placeholder="Enter coupon code"
-                  className="flex-1 border-2 border-amber-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 text-sm"
+                  className={`flex-1 border-2 border-amber-300 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 ${getTextSize('sm')}`}
                 />
                 <button
                   onClick={() => handleApplyCoupon()}
                   disabled={isApplyingCoupon}
-                  className="bg-amber-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-amber-600 transition-all duration-300 disabled:opacity-50 text-sm min-w-20"
+                  className="bg-amber-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-amber-600 transition-all duration-300 disabled:opacity-50 text-xs min-w-16"
                 >
                   {isApplyingCoupon ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
+                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto"></div>
                   ) : (
                     'Apply'
                   )}
                 </button>
               </div>
               {couponError && (
-                <p className="text-red-600 text-sm bg-red-50 p-2 rounded-lg">{couponError}</p>
+                <p className="text-red-600 text-xs bg-red-50 p-1 rounded">{couponError}</p>
               )}
               <div className="flex justify-between">
                 <button
@@ -1065,14 +1098,14 @@ const CheckoutPage = () => {
                     setShowCouponForm(false);
                     setCouponError('');
                   }}
-                  className="text-gray-600 hover:text-gray-700 text-sm"
+                  className="text-gray-600 hover:text-gray-700 text-xs"
                 >
                   Cancel
                 </button>
                 {availableCoupons.length > 0 && (
                   <button
                     onClick={() => setShowAvailableCoupons(!showAvailableCoupons)}
-                    className="text-blue-600 hover:text-blue-700 text-sm"
+                    className="text-blue-600 hover:text-blue-700 text-xs"
                   >
                     {showAvailableCoupons ? 'Hide Coupons' : 'View Available'}
                   </button>
@@ -1083,17 +1116,16 @@ const CheckoutPage = () => {
 
           {/* Available Coupons List */}
           {showAvailableCoupons && availableCoupons.length > 0 && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200">
-              <h4 className="font-semibold text-gray-900 mb-3">Available Coupons</h4>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
+            <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+              <h4 className={`font-semibold text-gray-900 mb-2 ${getTextSize('sm')}`}>Available Coupons</h4>
+              <div className="space-y-2 max-h-32 overflow-y-auto">
                 {availableCoupons.map((coupon) => {
                   const isApplicable = isCouponApplicable(coupon);
-                  // const isAlreadyApplied = appliedCoupon?.code === coupon.code;
                   
                   return (
                     <div
                       key={coupon.id}
-                      className={`p-3 rounded-lg border transition-colors ${
+                      className={`p-2 rounded border transition-colors ${
                         isApplicable
                           ? 'bg-white border-gray-200 hover:border-amber-300 cursor-pointer'
                           : 'bg-gray-100 border-gray-300 opacity-60 cursor-not-allowed'
@@ -1102,13 +1134,13 @@ const CheckoutPage = () => {
                     >
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <span className={`font-bold ${
+                          <div className="flex items-center space-x-1 mb-1">
+                            <span className={`font-bold text-xs ${
                               isApplicable  ? 'text-green-600' : 'text-amber-600'
                             }`}>
                               {coupon.code}
                             </span>
-                            <span className={`text-xs px-2 py-1 rounded-full ${
+                            <span className={`text-xs px-1 py-0.5 rounded-full ${
                               isApplicable 
                                   ? 'bg-green-100 text-green-800' 
                                   : 'bg-amber-100 text-amber-800'
@@ -1117,35 +1149,29 @@ const CheckoutPage = () => {
                             </span>
                           </div>
                           {coupon.description && (
-                            <p className={`text-sm ${
+                            <p className={`text-xs ${
                               isApplicable ? 'text-gray-600' : 'text-gray-500'
                             }`}>
                               {coupon.description}
                             </p>
                           )}
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-gray-500 mt-0.5">
                             {getCouponRequirements(coupon)}
                           </p>
                           {!isApplicable && coupon.min_amount && (
-                            <p className="text-xs text-red-500 mt-1">
+                            <p className="text-xs text-red-500 mt-0.5">
                               Add ₹{(parseFloat(coupon.min_amount) - subtotal).toLocaleString()} more to apply
                             </p>
                           )}
-                          {/* {isAlreadyApplied && (
-                            <p className="text-xs text-green-600 mt-1 font-semibold">
-                              Coupon already applied
-                            </p>
-                          )} */}
                         </div>
                         <button 
-                          className={`text-sm font-semibold px-3 py-1 rounded ${
+                          className={`text-xs font-semibold px-2 py-1 rounded ${
                             isApplicable 
                               ? 'text-amber-600 hover:text-amber-700 hover:bg-amber-50'
                               : 'text-gray-400 cursor-not-allowed'
                           }`}
-                          disabled={!isApplicable }
+                          disabled={!isApplicable}
                         >
-                          {/* {isAlreadyApplied ? 'Applied' : 'Apply'} */}
                           Apply
                         </button>
                       </div>
@@ -1163,45 +1189,45 @@ const CheckoutPage = () => {
   if (orderSuccess) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full transform hover:scale-105 transition-all duration-500">
+        <div className={`bg-white rounded-2xl shadow-2xl p-6 max-w-lg w-full transform hover:scale-105 transition-all duration-500 ${isMobile ? 'mx-2' : ''}`}>
           {/* Success Animation */}
-          <div className="text-center mb-8">
+          <div className="text-center mb-6">
             <div className="relative inline-block">
-              <div className="w-24 h-24 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg animate-bounce">
-                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className={`${isMobile ? 'w-16 h-16' : 'w-24 h-24'} bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg animate-bounce`}>
+                <svg className={`${isMobile ? 'w-8 h-8' : 'w-12 h-12'} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
             </div>
             
-            <h2 className="text-4xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-4">
+            <h2 className={`${getTextSize('3xl')} font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-3`}>
               Order Confirmed!
             </h2>
-            <p className="text-gray-600 text-lg leading-relaxed">
+            <p className={`text-gray-600 ${getTextSize('base')} leading-relaxed`}>
               Thank you for your purchase. Your order is being processed.
             </p>
           </div>
 
           {/* Order Summary Card */}
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 mb-6 border border-green-200 shadow-sm">
-            <div className="flex justify-between items-start mb-4">
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 mb-4 border border-green-200 shadow-sm">
+            <div className="flex justify-between items-start mb-3">
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">Order Summary</h3>
-                <p className="text-green-600 text-sm">#{orderId}</p>
+                <h3 className={`font-semibold text-gray-900 ${getTextSize('base')}`}>Order Summary</h3>
+                <p className="text-green-600 text-xs">#{orderId}</p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-600">Placed on</p>
-                <p className="text-gray-900 font-medium">{new Date().toLocaleDateString()}</p>
+                <p className="text-xs text-gray-600">Placed on</p>
+                <p className="text-gray-900 font-medium text-xs">{new Date().toLocaleDateString()}</p>
               </div>
             </div>
 
             {/* Order Items */}
-            <div className="space-y-3 mb-4">
-              <h4 className="font-semibold text-gray-900 mb-2">Items ({cartItems.length})</h4>
-              {cartItems.slice(0, 3).map((item) => (
-                <div key={item.id} className="flex items-center justify-between bg-white rounded-lg p-3 shadow-sm">
-                  <div className="flex items-center space-x-3">
-                    <div className="relative w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
+            <div className="space-y-2 mb-3">
+              <h4 className={`font-semibold text-gray-900 mb-1 ${getTextSize('sm')}`}>Items ({cartItems.length})</h4>
+              {cartItems.slice(0, 2).map((item) => (
+                <div key={item.id} className="flex items-center justify-between bg-white rounded p-2 shadow-sm">
+                  <div className="flex items-center space-x-2">
+                    <div className="relative w-8 h-8 bg-gray-100 rounded overflow-hidden">
                       <Image
                         src={getImageUrl(item.image)}
                         alt={item.name}
@@ -1215,7 +1241,7 @@ const CheckoutPage = () => {
                             const fallback = document.createElement('div');
                             fallback.className = 'w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center';
                             fallback.innerHTML = `
-                              <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                               </svg>
                             `;
@@ -1225,49 +1251,49 @@ const CheckoutPage = () => {
                       />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900 text-sm line-clamp-1">{item.name}</p>
+                      <p className={`font-medium text-gray-900 line-clamp-1 ${getTextSize('xs')}`}>{item.name}</p>
                       <p className="text-gray-500 text-xs">Qty: {item.quantity}</p>
                     </div>
                   </div>
-                  <p className="font-semibold text-green-600">₹{(item.price * item.quantity).toLocaleString()}</p>
+                  <p className="font-semibold text-green-600 text-xs">₹{(item.price * item.quantity).toLocaleString()}</p>
                 </div>
               ))}
-              {cartItems.length > 3 && (
+              {cartItems.length > 2 && (
                 <div className="text-center">
-                  <p className="text-gray-500 text-sm">+{cartItems.length - 3} more items</p>
+                  <p className="text-gray-500 text-xs">+{cartItems.length - 2} more items</p>
                 </div>
               )}
             </div>
 
             {/* Price Breakdown */}
-            <div className="border-t border-green-200 pt-4 space-y-2">
-              <div className="flex justify-between text-sm">
+            <div className="border-t border-green-200 pt-3 space-y-1">
+              <div className="flex justify-between text-xs">
                 <span className="text-gray-600">Subtotal</span>
                 <span className="text-gray-900">₹{subtotal.toLocaleString()}</span>
               </div>
               {couponDiscount > 0 && (
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs">
                   <span className="text-gray-600">Coupon Discount</span>
                   <span className="text-green-600">-₹{couponDiscount.toLocaleString()}</span>
                 </div>
               )}
               {onlineDiscount > 0 && (
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs">
                   <span className="text-gray-600">Online Payment Discount</span>
                   <span className="text-green-600">-₹{onlineDiscount.toLocaleString()}</span>
                 </div>
               )}
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-xs">
                 <span className="text-gray-600">Shipping</span>
                 <span className="text-gray-900">{shippingFee === 0 ? 'FREE' : `₹${shippingFee}`}</span>
               </div>
               {codCharges > 0 && (
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-xs">
                   <span className="text-gray-600">COD Charges</span>
                   <span className="text-red-600">+₹{codCharges}</span>
                 </div>
               )}
-              <div className="flex justify-between text-lg font-bold pt-2 border-t border-green-200">
+              <div className="flex justify-between text-sm font-bold pt-2 border-t border-green-200">
                 <span className="text-gray-900">Total Amount</span>
                 <span className="text-green-600">₹{total.toLocaleString()}</span>
               </div>
@@ -1276,39 +1302,39 @@ const CheckoutPage = () => {
 
           {/* Delivery Information */}
           {selectedAddress && (
-            <div className="bg-blue-50 rounded-2xl p-5 mb-6 border border-blue-200">
-              <div className="flex items-start space-x-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-blue-50 rounded-xl p-3 mb-4 border border-blue-200">
+              <div className="flex items-start space-x-2">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                  <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                 </div>
                 <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900 mb-2">Delivery Address</h4>
-                  <p className="text-gray-700 font-medium">{selectedAddress.first_name} {selectedAddress.last_name}</p>
-                  <p className="text-gray-600 text-sm">
+                  <h4 className={`font-semibold text-gray-900 mb-1 ${getTextSize('sm')}`}>Delivery Address</h4>
+                  <p className="text-gray-700 font-medium text-sm">{selectedAddress.first_name} {selectedAddress.last_name}</p>
+                  <p className="text-gray-600 text-xs">
                     {selectedAddress.address_line_1}
                     {selectedAddress.address_line_2 && `, ${selectedAddress.address_line_2}`}
                   </p>
-                  <p className="text-gray-600 text-sm">
+                  <p className="text-gray-600 text-xs">
                     {selectedAddress.city}, {selectedAddress.state} - {selectedAddress.postal_code}
                   </p>
-                  <p className="text-gray-600 text-sm">📱 {selectedAddress.phone}</p>
+                  <p className="text-gray-600 text-xs">📱 {selectedAddress.phone}</p>
                 </div>
               </div>
             </div>
           )}
 
           {/* Next Steps */}
-          <div className="bg-purple-50 rounded-2xl p-5 mb-6 border border-purple-200">
-            <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
-              <svg className="w-5 h-5 text-purple-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="bg-purple-50 rounded-xl p-3 mb-4 border border-purple-200">
+            <h4 className={`font-semibold text-gray-900 mb-2 flex items-center ${getTextSize('sm')}`}>
+              <svg className="w-4 h-4 text-purple-600 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               What's Next?
             </h4>
-            <div className="space-y-2 text-sm text-gray-600">
+            <div className="space-y-1 text-xs text-gray-600">
               <p>✅ Order confirmation email sent</p>
               <p>🔄 Order processing started</p>
               <p>📦 Expected dispatch within 24 hours</p>
@@ -1317,37 +1343,37 @@ const CheckoutPage = () => {
           </div>
 
           {/* Auto Redirect Timer */}
-          <div className="text-center mb-6">
-            <div className="inline-flex items-center space-x-2 bg-orange-50 px-4 py-2 rounded-full border border-orange-200">
-              <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center">
+          <div className="text-center mb-4">
+            <div className="inline-flex items-center space-x-1 bg-orange-50 px-3 py-1 rounded-full border border-orange-200">
+              <div className="w-5 h-5 bg-orange-500 rounded-full flex items-center justify-center">
                 <span className="text-white text-xs font-bold">⏱</span>
               </div>
-              <span className="text-orange-700 text-sm font-medium">
-                Redirecting to home in <span className="font-bold">{countdown}</span> seconds
+              <span className="text-orange-700 text-xs font-medium">
+                Redirecting in <span className="font-bold">{countdown}</span>s
               </span>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="space-y-3">
+          <div className="space-y-2">
             <button
               onClick={() => router.push('/dashboard/user/orders')}
-              className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-4 rounded-2xl font-bold hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center space-x-2"
+              className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 rounded-xl font-bold hover:from-green-600 hover:to-emerald-700 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 flex items-center justify-center space-x-2"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
-              <span>View Order Details</span>
+              <span className={getTextSize('sm')}>View Order Details</span>
             </button>
             
             <button
               onClick={() => router.push('/')}
-              className="w-full border-2 border-gray-300 text-gray-700 py-4 rounded-2xl font-bold hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 flex items-center justify-center space-x-2"
+              className="w-full border-2 border-gray-300 text-gray-700 py-3 rounded-xl font-bold hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 flex items-center justify-center space-x-2"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
               </svg>
-              <span>Continue Shopping</span>
+              <span className={getTextSize('sm')}>Continue Shopping</span>
             </button>
           </div>
         </div>
@@ -1356,70 +1382,70 @@ const CheckoutPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-amber-50 to-orange-50 py-8">
-      <div className="container mx-auto px-4 max-w-7xl">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-amber-50 to-orange-50 py-4">
+      <div className={`container mx-auto px-3 max-w-7xl ${isMobile ? 'px-2' : ''}`}>
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+        <div className="text-center mb-6">
+          <h1 className={`font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent ${getTextSize('3xl')}`}>
             Complete Your Order
           </h1>
-          <p className="text-gray-600 mt-2">Review your items and delivery details</p>
+          <p className={`text-gray-600 mt-1 ${getTextSize('sm')}`}>Review your items and delivery details</p>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
           {/* Left Column - Address & Payment */}
-          <div className="xl:col-span-2 space-y-8">
+          <div className="xl:col-span-2 space-y-4">
             {/* Delivery Address Section */}
-            <div className="bg-white rounded-3xl shadow-xl border border-white/20 p-8">
-              <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-white rounded-2xl shadow-xl border border-white/20 p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10'} bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg`}>
+                    <svg className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
                   </div>
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">Delivery Address</h2>
-                    <p className="text-gray-600">Where should we deliver your order?</p>
+                    <h2 className={`font-bold text-gray-900 ${getTextSize('xl')}`}>Delivery Address</h2>
+                    <p className={`text-gray-600 ${getTextSize('xs')}`}>Where should we deliver your order?</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowAddressList(!showAddressList)}
-                  className="bg-amber-500 text-white px-6 py-3 rounded-xl font-semibold hover:bg-amber-600 transition-all duration-300 shadow-lg hover:shadow-xl"
+                  className="bg-amber-500 text-white px-3 py-2 rounded-lg font-semibold hover:bg-amber-600 transition-all duration-300 shadow-lg hover:shadow-xl text-xs"
                 >
-                  {showAddressList ? 'Hide Addresses' : 'Change Address'}
+                  {showAddressList ? 'Hide' : 'Change'}
                 </button>
               </div>
 
               {/* Selected Address Display */}
               {selectedAddress && !showAddressList && (
-                <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-2xl p-6 border-2 border-amber-200 shadow-sm mb-6">
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-3 border-2 border-amber-200 shadow-sm mb-4">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-xl font-bold text-gray-900">
+                      <div className="flex items-center gap-1 mb-2 flex-wrap">
+                        <span className={`font-bold text-gray-900 ${getTextSize('base')}`}>
                           {getFullName(selectedAddress)}
                         </span>
-                        <div className="flex gap-2">
-                          <span className="bg-amber-500 text-white text-sm px-3 py-1 rounded-full font-semibold">
+                        <div className="flex gap-1">
+                          <span className="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold">
                             {selectedAddress.address_type === 'home' ? '🏠 Home' : 
                              selectedAddress.address_type === 'work' ? '🏢 Work' : '📍 Other'}
                           </span>
                           {selectedAddress.is_default && (
-                            <span className="bg-green-500 text-white text-sm px-3 py-1 rounded-full font-semibold">Default</span>
+                            <span className="bg-green-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold">Default</span>
                           )}
                         </div>
                       </div>
-                      <p className="text-gray-700 text-lg mb-2 font-medium">
+                      <p className={`text-gray-700 mb-1 font-medium ${getTextSize('sm')}`}>
                         {selectedAddress.address_line_1}
                         {selectedAddress.address_line_2 && `, ${selectedAddress.address_line_2}`}
                       </p>
-                      <p className="text-gray-600">
+                      <p className="text-gray-600 text-xs">
                         {selectedAddress.city}, {selectedAddress.state}, {selectedAddress.country} - {selectedAddress.postal_code}
                       </p>
-                      <p className="text-gray-600">📱 {selectedAddress.phone}</p>
-                      <p className="text-gray-600">📧 {selectedAddress.email}</p>
+                      <p className="text-gray-600 text-xs">📱 {selectedAddress.phone}</p>
+                      <p className="text-gray-600 text-xs">📧 {selectedAddress.email}</p>
                     </div>
                   </div>
                 </div>
@@ -1427,26 +1453,26 @@ const CheckoutPage = () => {
 
               {/* Address List */}
               {showAddressList && (
-                <div className="mb-8 space-y-4 max-h-96 overflow-y-auto pr-4">
+                <div className="mb-4 space-y-3 max-h-64 overflow-y-auto pr-2">
                   {addresses.length > 0 ? (
                     addresses.map((addr) => (
                       <div
                         key={addr.id}
-                        className={`border-2 rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:scale-105 ${
+                        className={`border-2 rounded-xl p-3 cursor-pointer transition-all duration-300 hover:scale-105 ${
                           selectedAddress?.id === addr.id
                             ? 'border-amber-500 bg-gradient-to-r from-amber-50 to-orange-50 shadow-lg'
                             : 'border-gray-200 hover:border-amber-300 bg-white'
                         }`}
                         onClick={() => handleSelectAddress(addr)}
                       >
-                        <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start justify-between gap-2">
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-3">
-                              <span className="text-lg font-bold text-gray-900">
+                            <div className="flex items-center gap-1 mb-2 flex-wrap">
+                              <span className={`font-bold text-gray-900 ${getTextSize('sm')}`}>
                                 {getFullName(addr)}
                               </span>
-                              <div className="flex gap-2">
-                                <span className={`text-sm px-3 py-1 rounded-full font-semibold ${
+                              <div className="flex gap-1">
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
                                   addr.address_type === 'home' 
                                     ? 'bg-blue-100 text-blue-800' 
                                     : addr.address_type === 'work'
@@ -1457,28 +1483,28 @@ const CheckoutPage = () => {
                                    addr.address_type === 'work' ? '🏢 Work' : '📍 Other'}
                                 </span>
                                 {addr.is_default && (
-                                  <span className="bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full font-semibold">Default</span>
+                                  <span className="bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded-full font-semibold">Default</span>
                                 )}
                               </div>
                             </div>
-                            <p className="text-gray-700 font-medium mb-2">
+                            <p className={`text-gray-700 font-medium mb-1 ${getTextSize('sm')}`}>
                               {addr.address_line_1}
                               {addr.address_line_2 && `, ${addr.address_line_2}`}
                             </p>
-                            <p className="text-gray-600">
+                            <p className="text-gray-600 text-xs">
                               {addr.city}, {addr.state}, {addr.country} - {addr.postal_code}
                             </p>
-                            <p className="text-gray-600">📱 {addr.phone}</p>
-                            <p className="text-gray-600">📧 {addr.email}</p>
+                            <p className="text-gray-600 text-xs">📱 {addr.phone}</p>
+                            <p className="text-gray-600 text-xs">📧 {addr.email}</p>
                           </div>
-                          <div className="flex gap-3 ml-4 flex-col items-end">
+                          <div className="flex gap-2 ml-2 flex-col items-end">
                             {!addr.is_default && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleSetDefaultAddress(addr.id);
                                 }}
-                                className="text-green-600 hover:text-green-700 font-semibold text-sm bg-green-50 px-3 py-2 rounded-lg hover:bg-green-100 transition-colors"
+                                className="text-green-600 hover:text-green-700 font-semibold text-xs bg-green-50 px-2 py-1 rounded hover:bg-green-100 transition-colors"
                               >
                                 Set Default
                               </button>
@@ -1488,7 +1514,7 @@ const CheckoutPage = () => {
                                 e.stopPropagation();
                                 handleDeleteAddress(addr.id);
                               }}
-                              className="text-red-600 hover:text-red-700 font-semibold text-sm bg-red-50 px-3 py-2 rounded-lg hover:bg-red-100 transition-colors"
+                              className="text-red-600 hover:text-red-700 font-semibold text-xs bg-red-50 px-2 py-1 rounded hover:bg-red-100 transition-colors"
                             >
                               Delete
                             </button>
@@ -1497,13 +1523,13 @@ const CheckoutPage = () => {
                       </div>
                     ))
                   ) : (
-                    <div className="text-center py-8 bg-white rounded-2xl border-2 border-dashed border-gray-300">
-                      <svg className="w-20 h-20 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="text-center py-4 bg-white rounded-xl border-2 border-dashed border-gray-300">
+                      <svg className="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
-                      <h3 className="text-xl font-bold text-gray-900 mb-2">No Addresses Found</h3>
-                      <p className="text-gray-600 mb-6">Add your first delivery address to continue</p>
+                      <h3 className={`font-bold text-gray-900 mb-1 ${getTextSize('base')}`}>No Addresses Found</h3>
+                      <p className="text-gray-600 text-xs mb-3">Add your first delivery address to continue</p>
                     </div>
                   )}
                 </div>
@@ -1513,11 +1539,11 @@ const CheckoutPage = () => {
               {!showAddressForm && (
                 <button
                   onClick={() => setShowAddressForm(true)}
-                  className="w-full border-2 border-dashed border-amber-300 rounded-2xl py-6 text-amber-600 hover:border-amber-500 hover:bg-amber-50 transition-all duration-300 font-bold text-lg group"
+                  className="w-full border-2 border-dashed border-amber-300 rounded-xl py-3 text-amber-600 hover:border-amber-500 hover:bg-amber-50 transition-all duration-300 font-bold text-sm group"
                 >
-                  <div className="flex items-center justify-center space-x-3">
-                    <div className="w-10 h-10 bg-amber-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div className="flex items-center justify-center space-x-2">
+                    <div className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'} bg-amber-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform`}>
+                      <svg className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                       </svg>
                     </div>
@@ -1528,253 +1554,253 @@ const CheckoutPage = () => {
 
               {/* Add Address Form */}
               {showAddressForm && (
-                <div className="bg-gradient-to-br from-white to-amber-50 rounded-2xl p-8 border-2 border-amber-200 shadow-lg mt-6">
-  <div className="flex items-center space-x-3 mb-6">
-    <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
-      <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-      </svg>
-    </div>
-    <h3 className="text-xl font-bold text-gray-900">Add New Address</h3>
-  </div>
-  
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
-      <input
-        type="text"
-        name="first_name"
-        value={address.first_name}
-        onChange={handleInputChange}
-        placeholder="Enter first name"
-        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400"
-        required
-      />
-    </div>
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
-      <input
-        type="text"
-        name="last_name"
-        value={address.last_name}
-        onChange={handleInputChange}
-        placeholder="Enter last name"
-        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400"
-        required
-      />
-    </div>
-  </div>
+                <div className="bg-gradient-to-br from-white to-amber-50 rounded-xl p-4 border-2 border-amber-200 shadow-lg mt-4">
+                  <div className="flex items-center space-x-2 mb-4">
+                    <div className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8'} bg-amber-500 rounded-lg flex items-center justify-center`}>
+                      <svg className={`${isMobile ? 'w-3 h-3' : 'w-4 h-4'} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                      </svg>
+                    </div>
+                    <h3 className={`font-bold text-gray-900 ${getTextSize('base')}`}>Add New Address</h3>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">First Name *</label>
+                      <input
+                        type="text"
+                        name="first_name"
+                        value={address.first_name}
+                        onChange={handleInputChange}
+                        placeholder="Enter first name"
+                        className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400 text-sm"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Last Name *</label>
+                      <input
+                        type="text"
+                        name="last_name"
+                        value={address.last_name}
+                        onChange={handleInputChange}
+                        placeholder="Enter last name"
+                        className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400 text-sm"
+                        required
+                      />
+                    </div>
+                  </div>
 
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-      <input
-        type="email"
-        name="email"
-        value={address.email}
-        onChange={handleInputChange}
-        placeholder="Enter email address"
-        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400"
-        required
-      />
-    </div>
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">Phone *</label>
-      <input
-        type="tel"
-        name="phone"
-        value={address.phone}
-        onChange={handleInputChange}
-        placeholder="Enter phone number"
-        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400"
-        required
-      />
-    </div>
-  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Email *</label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={address.email}
+                        onChange={handleInputChange}
+                        placeholder="Enter email address"
+                        className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400 text-sm"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Phone *</label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={address.phone}
+                        onChange={handleInputChange}
+                        placeholder="Enter phone number"
+                        className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400 text-sm"
+                        required
+                      />
+                    </div>
+                  </div>
 
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">Country</label>
-      <input
-        type="text"
-        name="country"
-        value={address.country}
-        onChange={handleInputChange}
-        placeholder="Country"
-        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400 bg-gray-100"
-        readOnly
-      />
-    </div>
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">State *</label>
-      <input
-        type="text"
-        name="state"
-        value={address.state}
-        onChange={handleInputChange}
-        placeholder="Enter state"
-        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400"
-        required
-      />
-    </div>
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">City *</label>
-      <input
-        type="text"
-        name="city"
-        value={address.city}
-        onChange={handleInputChange}
-        placeholder="Enter city"
-        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400"
-        required
-      />
-    </div>
-  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Country</label>
+                      <input
+                        type="text"
+                        name="country"
+                        value={address.country}
+                        onChange={handleInputChange}
+                        placeholder="Country"
+                        className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400 bg-gray-100 text-sm"
+                        readOnly
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">State *</label>
+                      <input
+                        type="text"
+                        name="state"
+                        value={address.state}
+                        onChange={handleInputChange}
+                        placeholder="Enter state"
+                        className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400 text-sm"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">City *</label>
+                      <input
+                        type="text"
+                        name="city"
+                        value={address.city}
+                        onChange={handleInputChange}
+                        placeholder="Enter city"
+                        className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400 text-sm"
+                        required
+                      />
+                    </div>
+                  </div>
 
-  <div className="mb-4">
-    <label className="block text-sm font-medium text-gray-700 mb-2">Address Line 1 *</label>
-    <input
-      type="text"
-      name="address_line_1"
-      value={address.address_line_1}
-      onChange={handleInputChange}
-      placeholder="Enter street address"
-      className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400"
-      required
-    />
-  </div>
+                  <div className="mb-3">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Address Line 1 *</label>
+                    <input
+                      type="text"
+                      name="address_line_1"
+                      value={address.address_line_1}
+                      onChange={handleInputChange}
+                      placeholder="Enter street address"
+                      className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400 text-sm"
+                      required
+                    />
+                  </div>
 
-  <div className="mb-4">
-    <label className="block text-sm font-medium text-gray-700 mb-2">Address Line 2</label>
-    <input
-      type="text"
-      name="address_line_2"
-      value={address.address_line_2}
-      onChange={handleInputChange}
-      placeholder="Apartment, suite, unit, etc. (optional)"
-      className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400"
-    />
-  </div>
+                  <div className="mb-3">
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Address Line 2</label>
+                    <input
+                      type="text"
+                      name="address_line_2"
+                      value={address.address_line_2}
+                      onChange={handleInputChange}
+                      placeholder="Apartment, suite, unit, etc. (optional)"
+                      className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400 text-sm"
+                    />
+                  </div>
 
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">Postal Code *</label>
-      <input
-        type="text"
-        name="postal_code"
-        value={address.postal_code}
-        onChange={handleInputChange}
-        placeholder="Enter postal code"
-        className="w-full border-2 border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400"
-        required
-      />
-    </div>
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">Address Type</label>
-      <div className="flex space-x-2">
-        {(['home', 'work', 'other'] as const).map((type) => (
-          <button
-            key={type}
-            type="button"
-            onClick={() => handleAddressTypeChange(type)}
-            className={`flex-1 border-2 rounded-xl py-3 text-sm font-semibold transition-all ${
-              address.address_type === type
-                ? 'border-amber-500 bg-amber-500 text-white'
-                : 'border-gray-300 text-gray-700 hover:border-amber-300'
-            }`}
-          >
-            {type === 'home' ? '🏠 Home' : type === 'work' ? '🏢 Work' : '📍 Other'}
-          </button>
-        ))}
-      </div>
-    </div>
-  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Postal Code *</label>
+                      <input
+                        type="text"
+                        name="postal_code"
+                        value={address.postal_code}
+                        onChange={handleInputChange}
+                        placeholder="Enter postal code"
+                        className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:border-amber-500 text-gray-700 placeholder-gray-400 text-sm"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Address Type</label>
+                      <div className="flex space-x-1">
+                        {(['home', 'work', 'other'] as const).map((type) => (
+                          <button
+                            key={type}
+                            type="button"
+                            onClick={() => handleAddressTypeChange(type)}
+                            className={`flex-1 border-2 rounded-lg py-2 text-xs font-semibold transition-all ${
+                              address.address_type === type
+                                ? 'border-amber-500 bg-amber-500 text-white'
+                                : 'border-gray-300 text-gray-700 hover:border-amber-300'
+                            }`}
+                          >
+                            {type === 'home' ? '🏠 Home' : type === 'work' ? '🏢 Work' : '📍 Other'}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
 
-  <div className="flex items-center mb-6">
-    <input
-      type="checkbox"
-      name="is_default"
-      checked={address.is_default}
-      onChange={handleInputChange}
-      className="w-4 h-4 text-amber-500 border-gray-300 rounded focus:ring-amber-500"
-    />
-    <label className="ml-2 text-sm text-gray-700">Set as default address</label>
-  </div>
-  
-  <div className="flex gap-4">
-    <button
-      onClick={handleSaveAddress}
-      className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white py-4 rounded-xl font-bold hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl"
-    >
-      Save Address
-    </button>
-    <button
-      onClick={() => {
-        setShowAddressForm(false);
-        resetAddressForm();
-      }}
-      className="flex-1 border-2 border-gray-300 text-gray-700 py-4 rounded-xl font-bold hover:bg-gray-50 transition-all duration-300"
-    >
-      Cancel
-    </button>
-  </div>
-</div>
+                  <div className="flex items-center mb-4">
+                    <input
+                      type="checkbox"
+                      name="is_default"
+                      checked={address.is_default}
+                      onChange={handleInputChange}
+                      className="w-3 h-3 text-amber-500 border-gray-300 rounded focus:ring-amber-500"
+                    />
+                    <label className="ml-2 text-xs text-gray-700">Set as default address</label>
+                  </div>
+                  
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleSaveAddress}
+                      className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3 rounded-lg font-bold hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl text-sm"
+                    >
+                      Save Address
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowAddressForm(false);
+                        resetAddressForm();
+                      }}
+                      className="flex-1 border-2 border-gray-300 text-gray-700 py-3 rounded-lg font-bold hover:bg-gray-50 transition-all duration-300 text-sm"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
 
             {/* Payment Method Section */}
-            <div className="bg-white rounded-3xl shadow-xl border border-white/20 p-8">
-              <div className="flex items-center space-x-4 mb-8">
-                <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-white rounded-2xl shadow-xl border border-white/20 p-4">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className={`${isMobile ? 'w-8 h-8' : 'w-10 h-10'} bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg`}>
+                  <svg className={`${isMobile ? 'w-4 h-4' : 'w-5 h-5'} text-white`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                   </svg>
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Payment Method</h2>
-                  <p className="text-gray-600">Choose how you want to pay</p>
+                  <h2 className={`font-bold text-gray-900 ${getTextSize('xl')}`}>Payment Method</h2>
+                  <p className={`text-gray-600 ${getTextSize('xs')}`}>Choose how you want to pay</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Online Payment Option */}
                 <div
-                  className={`border-2 rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:scale-105 ${
+                  className={`border-2 rounded-xl p-3 cursor-pointer transition-all duration-300 hover:scale-105 ${
                     selectedPayment === 'online'
                       ? 'border-green-500 bg-gradient-to-r from-green-50 to-emerald-50 shadow-lg'
                       : 'border-gray-200 hover:border-green-300 bg-white'
                   }`}
                   onClick={() => setSelectedPayment('online')}
                 >
-                  <div className="flex items-center space-x-4 mb-4">
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
                       selectedPayment === 'online' ? 'border-green-500 bg-green-500' : 'border-gray-300'
                     }`}>
                       {selectedPayment === 'online' && (
-                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                        <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
                       )}
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-bold text-gray-900">Online Payment</h3>
-                      <p className="text-green-600 font-semibold">Get 5% OFF</p>
+                      <h3 className={`font-bold text-gray-900 ${getTextSize('base')}`}>Online Payment</h3>
+                      <p className="text-green-600 font-semibold text-xs">Get 5% OFF</p>
                     </div>
                     <div className="flex space-x-1">
-                      <div className="w-8 h-6 bg-blue-500 rounded flex items-center justify-center">
+                      <div className="w-6 h-4 bg-blue-500 rounded flex items-center justify-center">
                         <span className="text-white text-xs font-bold">V</span>
                       </div>
-                      <div className="w-8 h-6 bg-yellow-500 rounded flex items-center justify-center">
+                      <div className="w-6 h-4 bg-yellow-500 rounded flex items-center justify-center">
                         <span className="text-white text-xs font-bold">M</span>
                       </div>
-                      <div className="w-8 h-6 bg-red-500 rounded flex items-center justify-center">
+                      <div className="w-6 h-4 bg-red-500 rounded flex items-center justify-center">
                         <span className="text-white text-xs font-bold">R</span>
                       </div>
                     </div>
                   </div>
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 text-xs">
                     Pay securely with Credit/Debit card, UPI, Net Banking
                   </p>
-                  <div className="mt-4 p-3 bg-green-50 rounded-xl">
-                    <p className="text-green-700 text-sm font-semibold">
+                  <div className="mt-3 p-2 bg-green-50 rounded-lg">
+                    <p className="text-green-700 text-xs font-semibold">
                       ✅ Secure & Encrypted • Instant Confirmation • 5% Discount Applied
                     </p>
                   </div>
@@ -1782,32 +1808,32 @@ const CheckoutPage = () => {
 
                 {/* COD Payment Option */}
                 <div
-                  className={`border-2 rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:scale-105 ${
+                  className={`border-2 rounded-xl p-3 cursor-pointer transition-all duration-300 hover:scale-105 ${
                     selectedPayment === 'cod'
                       ? 'border-blue-500 bg-gradient-to-r from-blue-50 to-cyan-50 shadow-lg'
                       : 'border-gray-200 hover:border-blue-300 bg-white'
                   }`}
                   onClick={() => setSelectedPayment('cod')}
                 >
-                  <div className="flex items-center space-x-4 mb-4">
-                    <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
                       selectedPayment === 'cod' ? 'border-blue-500 bg-blue-500' : 'border-gray-300'
                     }`}>
                       {selectedPayment === 'cod' && (
-                        <div className="w-2 h-2 bg-white rounded-full"></div>
+                        <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
                       )}
                     </div>
                     <div className="flex-1">
-                      <h3 className="text-lg font-bold text-gray-900">Cash on Delivery</h3>
-                      <p className="text-red-600 font-semibold">₹50 Extra Charges</p>
+                      <h3 className={`font-bold text-gray-900 ${getTextSize('base')}`}>Cash on Delivery</h3>
+                      <p className="text-red-600 font-semibold text-xs">₹50 Extra Charges</p>
                     </div>
-                    <div className="text-2xl">💰</div>
+                    <div className="text-xl">💰</div>
                   </div>
-                  <p className="text-gray-600">
+                  <p className="text-gray-600 text-xs">
                     Pay when your order is delivered
                   </p>
-                  <div className="mt-4 p-3 bg-blue-50 rounded-xl">
-                    <p className="text-blue-700 text-sm font-semibold">
+                  <div className="mt-3 p-2 bg-blue-50 rounded-lg">
+                    <p className="text-blue-700 text-xs font-semibold">
                       ⚠️ ₹50 COD charges apply • Pay cash to delivery agent
                     </p>
                   </div>
@@ -1818,16 +1844,16 @@ const CheckoutPage = () => {
 
           {/* Right Column - Order Summary */}
           <div className="xl:col-span-1">
-            <div className="bg-white rounded-3xl shadow-xl border border-white/20 p-8 sticky top-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Order Summary</h2>
+            <div className="bg-white rounded-2xl shadow-xl border border-white/20 p-4 sticky top-4">
+              <h2 className={`font-bold text-gray-900 mb-4 ${getTextSize('xl')}`}>Order Summary</h2>
 
               {/* Product Details */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-3">Products ({cartItems.length})</h3>
-                <div className="space-y-3 max-h-60 overflow-y-auto pr-2">
+              <div className="mb-4">
+                <h3 className={`font-semibold text-gray-900 mb-2 ${getTextSize('base')}`}>Products ({cartItems.length})</h3>
+                <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
                   {cartItems.map((item) => (
-                    <div key={item.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                      <div className="relative w-16 h-16 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
+                    <div key={item.id} className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
+                      <div className="relative w-12 h-12 flex-shrink-0 bg-gray-100 rounded overflow-hidden">
                         <Image
                           src={getImageUrl(item.image)}
                           alt={item.name}
@@ -1841,7 +1867,7 @@ const CheckoutPage = () => {
                               const fallback = document.createElement('div');
                               fallback.className = 'w-full h-full bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center';
                               fallback.innerHTML = `
-                                <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
                               `;
@@ -1851,15 +1877,15 @@ const CheckoutPage = () => {
                         />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-base font-semibold text-gray-900 truncate">{item.name}</h4>
-                        <p className="text-xs text-gray-600">{item.category}</p>
-                        <div className="flex items-center justify-between mt-1">
-                          <span className="text-sm font-bold text-amber-600">₹{item.price.toLocaleString()}</span>
-                          <span className="text-sm text-gray-500">Qty: {item.quantity}</span>
+                        <h4 className={`font-semibold text-gray-900 truncate ${getTextSize('sm')}`}>{item.name}</h4>
+                        <p className="text-gray-600 text-xs">{item.category}</p>
+                        <div className="flex items-center justify-between mt-0.5">
+                          <span className="text-xs font-bold text-amber-600">₹{item.price.toLocaleString()}</span>
+                          <span className="text-gray-500 text-xs">Qty: {item.quantity}</span>
                         </div>
                         {/* Show discount if available */}
                         {item.discount && item.discount > 0 && (
-                          <div className="inline-block bg-green-100 text-green-800 text-xs px-2 py-1 rounded mt-1">
+                          <div className="inline-block bg-green-100 text-green-800 text-xs px-1 py-0.5 rounded mt-0.5">
                             {item.discount}% OFF
                           </div>
                         )}
@@ -1873,73 +1899,67 @@ const CheckoutPage = () => {
               {renderCouponSection()}
 
               {/* Price Breakdown */}
-              <div className="space-y-3 mb-6">
+              <div className="space-y-2 mb-4">
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal</span>
-                  <span className="text-gray-900 font-semibold">₹{subtotal.toLocaleString()}</span>
+                  <span className="text-gray-600 text-sm">Subtotal</span>
+                  <span className="text-gray-900 font-semibold text-sm">₹{subtotal.toLocaleString()}</span>
                 </div>
                 
                 {discount > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Product Discount</span>
-                    <span className="text-green-600 font-semibold">-₹{discount.toLocaleString()}</span>
+                    <span className="text-gray-600 text-sm">Product Discount</span>
+                    <span className="text-green-600 font-semibold text-sm">-₹{discount.toLocaleString()}</span>
                   </div>
                 )}
 
                 {couponDiscount > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Coupon Discount</span>
-                    <span className="text-green-600 font-semibold">-₹{couponDiscount.toLocaleString()}</span>
+                    <span className="text-gray-600 text-sm">Coupon Discount</span>
+                    <span className="text-green-600 font-semibold text-sm">-₹{couponDiscount.toLocaleString()}</span>
                   </div>
                 )}
 
                 {selectedPayment === 'online' && onlineDiscount > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Online Payment Discount (5%)</span>
-                    <span className="text-green-600 font-semibold">-₹{onlineDiscount.toLocaleString()}</span>
+                    <span className="text-gray-600 text-sm">Online Payment Discount (5%)</span>
+                    <span className="text-green-600 font-semibold text-sm">-₹{onlineDiscount.toLocaleString()}</span>
                   </div>
                 )}
 
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Shipping</span>
-                  <span className="text-gray-900 font-semibold">
+                  <span className="text-gray-600 text-sm">Shipping</span>
+                  <span className="text-gray-900 font-semibold text-sm">
                     {shippingFee === 0 ? 'FREE' : `₹${shippingFee}`}
                   </span>
                 </div>
 
                 {selectedPayment === 'cod' && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600">COD Charges</span>
-                    <span className="text-red-600 font-semibold">+₹{codCharges}</span>
+                    <span className="text-gray-600 text-sm">COD Charges</span>
+                    <span className="text-red-600 font-semibold text-sm">+₹{codCharges}</span>
                   </div>
                 )}
-
-                {/* {subtotal < 2000 && (
-                  <div className="text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
-                    Add ₹{(2000 - subtotal).toLocaleString()} more for FREE shipping!
-                  </div>
-                )} */}
               </div>
 
               {/* Total */}
-              <div className="border-t border-gray-200 pt-4 mb-6">
-                <div className="flex justify-between text-xl">
-                  <span className="font-bold text-gray-900">Total Amount</span>
-                  <span className="font-bold text-amber-600">₹{total.toLocaleString()}</span>
+              <div className="border-t border-gray-200 pt-3 mb-4">
+                <div className="flex justify-between">
+                  <span className="font-bold text-gray-900 text-base">Total Amount</span>
+                  <span className="font-bold text-amber-600 text-base">₹{total.toLocaleString()}</span>
                 </div>
-                <div className="mt-2 space-y-1">
+                <div className="mt-1 space-y-0.5">
                   {selectedPayment === 'online' && onlineDiscount > 0 && (
-                    <p className="text-green-600 text-sm">
+                    <p className="text-green-600 text-xs">
                       You save ₹{(onlineDiscount + couponDiscount).toLocaleString()} with online payment & coupon!
                     </p>
                   )}
                   {selectedPayment === 'cod' && couponDiscount > 0 && (
-                    <p className="text-green-600 text-sm">
+                    <p className="text-green-600 text-xs">
                       You save ₹{couponDiscount.toLocaleString()} with coupon!
                     </p>
                   )}
                   {selectedPayment === 'cod' && (
-                    <p className="text-red-600 text-sm">
+                    <p className="text-red-600 text-xs">
                       ₹{codCharges} COD charges added
                     </p>
                   )}
@@ -1950,11 +1970,11 @@ const CheckoutPage = () => {
               <button
                 onClick={handlePlaceOrder}
                 disabled={isLoading || !selectedAddress}
-                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-4 rounded-xl font-bold hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+                className="w-full bg-gradient-to-r from-amber-500 to-orange-500 text-white py-3 rounded-lg font-bold hover:from-amber-600 hover:to-orange-600 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
                 {isLoading ? (
-                  <div className="flex items-center justify-center space-x-2">
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div className="flex items-center justify-center space-x-1">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                     <span>Processing...</span>
                   </div>
                 ) : selectedPayment === 'online' ? (
@@ -1965,12 +1985,12 @@ const CheckoutPage = () => {
               </button>
 
               {/* Security Badge */}
-              <div className="mt-4 text-center">
-                <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
-                  <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="mt-3 text-center">
+                <div className="flex items-center justify-center space-x-1 text-xs text-gray-500">
+                  <svg className="w-3 h-3 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
-                  <span>100% Secure Payment • SSL Encrypted</span>
+                  <span className="text-xs">100% Secure Payment • SSL Encrypted</span>
                 </div>
               </div>
             </div>
