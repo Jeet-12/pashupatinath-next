@@ -1264,20 +1264,7 @@ export default function ProductDetailsClient({
             <h1 className="text-lg lg:text-4xl xl:text-5xl font-bold text-amber-900 mb-3 lg:mb-6 leading-tight bg-gradient-to-r from-amber-900 to-orange-900 bg-clip-text text-transparent">
               {product.title}
             </h1>
-            
-            {/* Rating and Category */}
-            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 lg:space-x-6 mb-3 lg:mb-6">
-              <div className="flex items-center space-x-2 lg:space-x-3">
-                <ReviewStars rating={averageRating} size="lg" />
-                <span className="text-base lg:text-2xl font-bold text-gray-700">({averageRating})</span>
-              </div>
-              <span className="hidden sm:block text-amber-400 text-lg lg:text-2xl">|</span>
-              <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 lg:px-6 py-1 lg:py-3 rounded-xl lg:rounded-2xl text-xs lg:text-base font-black shadow-lg max-w-max">
-                {product.cat_info?.title || 'Rudraksha'}
-              </span>
-            </div>
-
-            {/* Price Section */}
+              {/* Price Section */}
             <motion.div 
               className="flex items-center space-x-3 lg:space-x-6 mb-3 lg:mb-6"
               initial={{ opacity: 0, y: 10 }}
@@ -1300,6 +1287,20 @@ export default function ProductDetailsClient({
                 )}
               </div>
             </motion.div>
+            
+            {/* Rating and Category */}
+            <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 lg:space-x-6 mb-3 lg:mb-6">
+              <div className="flex items-center space-x-2 lg:space-x-3">
+                <ReviewStars rating={averageRating} size="lg" />
+                <span className="text-base lg:text-2xl font-bold text-gray-700">({averageRating})</span>
+              </div>
+              <span className="hidden sm:block text-amber-400 text-lg lg:text-2xl">|</span>
+              <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 lg:px-6 py-1 lg:py-3 rounded-xl lg:rounded-2xl text-xs lg:text-base font-black shadow-lg max-w-max">
+                {product.cat_info?.title || 'Rudraksha'}
+              </span>
+            </div>
+
+          
 
             {/* Enhanced Description */}
             <motion.div 
